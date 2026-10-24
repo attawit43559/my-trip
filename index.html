@@ -100,6 +100,11 @@ p{margin:0}
 .fld.warn input{background:var(--warn-bg);box-shadow:inset 0 0 0 2px var(--accent-line)}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .grid2 .full{grid-column:1/-1}
+.grid2>*{min-width:0}
+/* iOS gives date and time inputs a fixed natural width that ignores width:100%; drop the native box so they fit their column */
+.fld input[type=date],.fld input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;line-height:normal;text-align:left;padding:0 12px}
+.fld input[type=date]::-webkit-date-and-time-value,.fld input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.3em}
+.fld input::-webkit-datetime-edit{padding:0}
 .stepper-card{background:var(--surface);border-radius:24px;padding:4px 16px}
 .step-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
 .step-row+.step-row{border-top:1px solid var(--line)}
@@ -1393,7 +1398,7 @@ document.addEventListener("click", async e => {
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-25f";
+const BUILD = "2026-10-25g";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
