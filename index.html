@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
@@ -140,6 +141,12 @@ p{margin:0}
 .f-card .hd b{display:flex;align-items:center;gap:8px}
 .home-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 .home-top h1{font-size:24px}
+.me-btn{width:44px;height:44px;border-radius:999px;border:0;background:var(--surface);color:var(--ink);font-weight:600;padding:0;overflow:hidden;flex:none;display:inline-flex;align-items:center;justify-content:center}
+.me-btn img{width:100%;height:100%;object-fit:cover;display:block}
+.login{min-height:calc(100vh - 40px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.login img.logo{width:96px;height:96px;border-radius:22px;box-shadow:0 6px 20px rgba(29,27,46,.15)}
+.login h1{font-size:28px;margin:0}
+#gbtn{min-height:44px;display:flex;justify-content:center}
 .new-btn{height:44px;padding:0 16px 0 12px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:500;font-size:15px;flex:none}
 .eyebrow{font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.02em}
 .tlist{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:20px;overflow:hidden}
@@ -413,23 +420,28 @@ async function api(action, body={}, signal){
   if(!CONNECTED) throw {code:"not_connected"};
   let res;
   try {
-    res = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action, ...body}), signal});
+    res = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action, token:S.token, ...body}), signal});
   } catch(e){ throw {code: e && e.name === "AbortError" ? "cancelled" : "offline"}; }
   let j; try { j = await res.json(); } catch(_) { throw {code:"server_error"}; }
-  if(!j.ok) throw {code: String(j.error || "server_error").split(":")[0]};
+  if(!j.ok){
+    const code = String(j.error || "server_error").split(":")[0];
+    if(code === "auth_required" && action !== "login") needLogin();
+    throw {code};
+  }
   return j.data;
 }
 /* writes wait in an outbox and are sent in order; a failed send is retried later */
 let flushing = false;
 function queue(action, body){ C.outbox.push({action, body}); persist(); flush(); }
 async function flush(){
-  if(flushing || !CONNECTED) return;
+  if(flushing || !CONNECTED || !S.token) return;
   flushing = true;
   try {
     while(C.outbox.length){
       const op = C.outbox[0];
       try { await api(op.action, op.body); C.outbox.shift(); persist(); }
       catch(e){
+        if(e.code === "auth_required") break;   // kept until the person signs in again
         if(e.code === "offline" || e.code === "server_error"){ setTimeout(flush, 8000); break; }
         C.outbox.shift(); persist();   // the server refused it; retrying cannot help
       }
@@ -457,14 +469,14 @@ const store = {
   },
   async updateTrip(id, patch){ C.trips[id] = deepMerge(C.trips[id], patch); emit(); queue("saveTrip", {trip:{id, ...patch}}); },
   async joinTrip(id){
-    const trip = await api("joinTrip", {id, me:S.me, name:S.myName});
+    const trip = await api("joinTrip", {id});
     if(!trip) throw {code:"not_found"};
     C.trips[id] = trip; if(!C.myTrips.includes(id)) C.myTrips.unshift(id); emit();
     return trip;
   },
   async leaveTrip(id){
     C.myTrips = C.myTrips.filter(x => x !== id); delete C.trips[id]; delete C.items[id]; emit();
-    queue("leaveTrip", {id, me:S.me});
+    queue("leaveTrip", {id});
   },
   async deleteTrip(id){
     C.myTrips = C.myTrips.filter(x => x !== id); delete C.trips[id]; delete C.items[id]; emit();
@@ -499,14 +511,15 @@ function syncDates(tripId){
   if(sp.startDate !== (t.startDate||"") || sp.days !== (t.days||0)) store.updateTrip(tripId, sp);
 }
 async function refreshTrips(){
-  if(!CONNECTED || !C.myTrips.length){ S.tripsReady = true; return; }
+  if(!CONNECTED || !S.token){ S.tripsReady = true; return; }
   try {
-    const list = await api("getTrips", {ids:C.myTrips});
-    const found = new Set(list.map(t => t.id));
+    // the account's own list, so any phone signed in to it shows the same trips
+    const list = await api("myTrips");
     const waiting = new Set(C.outbox.filter(o => o.action === "saveTrip").map(o => o.body.trip.id));
+    const gone = new Set(C.outbox.filter(o => o.action === "deleteTrip" || o.action === "leaveTrip").map(o => o.body.id));
     list.forEach(t => { if(!waiting.has(t.id)) C.trips[t.id] = t; });
-    // trips removed elsewhere, or that no longer include this phone, drop off the list
-    C.myTrips = C.myTrips.filter(id => waiting.has(id) || (found.has(id) && (C.trips[id].memberIds||[]).includes(S.me)));
+    const ids = list.map(t => t.id).filter(id => !gone.has(id));
+    C.myTrips = [...C.myTrips.filter(id => waiting.has(id) && !ids.includes(id)), ...ids];
     S.tripsReady = true; emit();
   } catch(_) { S.tripsReady = true; emit(); }
 }
@@ -605,7 +618,7 @@ function vHome(){
   const row = t => swipeWrap(t, `<button class="list-row" data-act="open" data-id="${esc(t.id)}"><span class="thumb tc t-${tone(t.id)}">${ic("pin",24)}</span>
     <span class="grow"><span class="t-name">${esc(t.name)}</span><br><span class="muted small">${esc(rangeLabel(t))}</span></span>${ic("chev")}</button>`, "small");
   return `<main class="screen">
-    <header class="home-top"><h1>ทริปของฉัน</h1><button class="new-btn" data-act="new">${ic("plus",18)}สร้างทริป</button></header>
+    <header class="home-top"><h1>ทริปของฉัน</h1><span style="display:flex;gap:8px;align-items:center"><button class="new-btn" data-act="new">${ic("plus",18)}สร้างทริป</button><button class="me-btn" data-act="account" aria-label="บัญชี ${esc(S.myName)}">${S.user && S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" referrerpolicy="no-referrer">` : esc((S.myName||"?").slice(0,1))}</button></span></header>
     ${!S.tripsReady ? `<p class="muted">กำลังโหลดทริป…</p>` :
       S.trips.length === 0 ? `<div class="card empty">${MOUNTAINS}
         <p class="muted">ยังไม่มีทริป</p></div>` :
@@ -874,6 +887,22 @@ function vReview(){
   </main>`;
 }
 
+function vLogin(){
+  return `<main class="screen login">
+    <img class="logo" src="icons/icon-512.png" alt="">
+    <h1>My Trip</h1>
+    <div id="gbtn"></div>
+    ${S.loginErr ? `<p class="err" role="alert">${esc(S.loginErr)}</p>` : ""}
+    ${S.loggingIn ? `<p class="muted small">กำลังเข้าสู่ระบบ…</p>` : ""}
+  </main>`;
+}
+function vAccount(){
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
+    <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
+    <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
+  </div></div>`;
+}
 function vJoin(){
   const t = S.joinTrip;
   if(S.joinMissing) return `<main class="screen"><div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ไม่พบทริป</h1></div>
@@ -884,7 +913,6 @@ function vJoin(){
     <section class="trip-head" style="padding:22px">${MOUNTAINS}
       <div style="display:flex;flex-direction:column;gap:6px;position:relative"><p class="small">${esc(nameOf(t.ownerId))} ชวนคุณไปเที่ยว</p><h1>${esc(t.name)}</h1><p>${esc(rangeLabel(t))}${t.destination?` · ${esc(t.destination)}`:""}</p></div>
     </section>
-    ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="join-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
     <button class="btn primary" data-act="join-confirm">เข้าร่วมทริปนี้</button>
   </main>`;
 }
@@ -955,6 +983,7 @@ function itemLinks(it){
 function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "trip-menu") return vTripMenu(s);
+  if(s.kind === "account") return vAccount();
   const t = S.trip;
   if(s.kind === "item"){
     const it = S.items.find(i => i.id === s.id); if(!it) return "";
@@ -997,7 +1026,7 @@ function vSheet(){
 
 /* ---------- render ---------- */
 function render(){
-  const views = {home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
+  const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
   const v = views[S.view];
   const active = document.activeElement && document.activeElement.id;
   document.getElementById("app").innerHTML = (v ? v() : `<div class="load muted">กำลังโหลด…</div>`)
@@ -1005,6 +1034,7 @@ function render(){
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
   document.body.style.overflow = S.sheet ? "hidden" : "";
+  if(S.view === "login") mountGoogleButton();
 }
 
 const s_ = v => (v === null || v === undefined) ? "" : String(v).trim();
@@ -1205,18 +1235,11 @@ async function startJoin(code){
 }
 async function confirmJoin(){
   const t = S.joinTrip; if(!t) return;
-  if(!saveMyName()) return;
   try{
     await store.joinTrip(t.id);
     S.joinCode = ""; try { history.replaceState(null, "", location.pathname); } catch(_){}
     openTrip(t.id); toast("เข้าร่วมทริปแล้ว");
   } catch(e){ fail(e); }
-}
-function saveMyName(){
-  S.myName = s_(S.myName).slice(0, 40);
-  if(!S.myName){ toast("ใส่ชื่อของคุณก่อนนะ"); return false; }
-  try { localStorage.setItem("mytrip-me", JSON.stringify({id:S.me, name:S.myName})); } catch(_){}
-  return true;
 }
 
 /* ---------- events ---------- */
@@ -1371,6 +1394,8 @@ document.addEventListener("click", async e => {
       try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
       break; }
     case "join-confirm": confirmJoin(); break;
+    case "account": S.sheet = {kind:"account"}; render(); break;
+    case "logout": logout(); break;
     case "trip-menu": S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:false}; render(); break;
     case "trip-ask": S.swipeOpen = null; S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:true}; render(); break;
     case "menu-invite": openTrip(el.dataset.id, "invite"); break;
@@ -1393,9 +1418,58 @@ document.addEventListener("click", async e => {
   }
 });
 
+/* ---------- sign-in ---------- */
+const GOOGLE_CLIENT_ID = "469048508643-2k3ek7jap7j6sr0ns2t24sj8m9rao2ot.apps.googleusercontent.com";
+const SESSION_KEY = "mytrip-session";
+function setSession(sess){
+  S.token = sess ? sess.token : null; S.user = sess ? sess.user : null;
+  S.me = S.user ? S.user.uid : null; S.myName = S.user ? S.user.name : "";
+}
+let gisReady = false;
+function mountGoogleButton(){
+  const el = document.getElementById("gbtn");
+  if(!el || el.childElementCount) return;
+  if(!(window.google && google.accounts && google.accounts.id)){ setTimeout(mountGoogleButton, 300); return; }
+  if(!gisReady){
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, auto_select:true, cancel_on_tap_outside:false, use_fedcm_for_prompt:true});
+    gisReady = true;
+  }
+  google.accounts.id.renderButton(el, {theme:"filled_blue", size:"large", shape:"pill", text:"signin_with", locale:"th", width:260});
+  google.accounts.id.prompt();
+}
+async function onGoogleCredential(resp){
+  S.loggingIn = true; S.loginErr = ""; render();
+  let old = null; try { old = (JSON.parse(localStorage.getItem("mytrip-me")) || {}).id; } catch(_){}
+  try{
+    const r = await api("login", {idToken:resp.credential, claim:old || undefined});
+    if(C.lastUser && C.lastUser !== r.user.uid){ C.trips = {}; C.items = {}; C.myTrips = []; C.outbox = []; }
+    C.lastUser = r.user.uid; persist();
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(r)); localStorage.removeItem("mytrip-me"); } catch(_){}
+    setSession(r); S.loggingIn = false;
+    afterLogin();
+  } catch(e){ S.loggingIn = false; S.loginErr = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง"; render(); }
+}
+function afterLogin(){
+  flush(); refreshTrips();
+  const code = S.pendingJoin; S.pendingJoin = null;
+  if(code) startJoin(code); else go("home");
+}
+function needLogin(){
+  if(S.view === "login") return;
+  try { localStorage.removeItem(SESSION_KEY); } catch(_){}
+  setSession(null); go("login");
+}
+async function logout(){
+  try { await api("logout"); } catch(_){}
+  try { localStorage.removeItem(SESSION_KEY); } catch(_){}
+  try { google.accounts.id.disableAutoSelect(); } catch(_){}
+  C.trips = {}; C.items = {}; C.myTrips = []; C.outbox = []; C.lastUser = null; persist();
+  setSession(null); S.trips = []; go("login");
+}
+
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-25h";
+const BUILD = "2026-10-26a";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -1408,11 +1482,10 @@ async function checkUpdate(){
   } catch(_){}
 }
 (() => {
-  let me = null; try { me = JSON.parse(localStorage.getItem("mytrip-me")); } catch(_){}
-  if(!me || !me.id){ me = {id:"p-" + rid(), name:""}; try { localStorage.setItem("mytrip-me", JSON.stringify(me)); } catch(_){} }
-  S.me = me.id; S.myName = me.name || ""; S.savedName = !!me.name;
+  let sess = null; try { sess = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(_){}
+  setSession(sess && sess.token ? sess : null);
   unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
-  const refresh = () => { checkUpdate(); flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
+  const refresh = () => { checkUpdate(); if(!S.token) return; flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
   document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
   window.addEventListener("online", flush);
   setInterval(refresh, 60000);
@@ -1421,6 +1494,7 @@ async function checkUpdate(){
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
   // drop the invite part of the address straight away, so a refresh, bookmark or home-screen icon opens the trip list
   if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
+  if(!S.token){ S.pendingJoin = m ? m[1] : null; go("login"); return; }
   if(m) startJoin(m[1]); else go("home");
 })();
 })();

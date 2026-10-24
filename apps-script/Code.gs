@@ -12,12 +12,15 @@
  *   CLAUDE_MODEL    optional, default claude-haiku-5-5
  *   OPENAI_API_KEY  key from platform.openai.com          (for openai)
  *   OPENAI_MODEL    optional, default gpt-4.1-mini
+ *   GOOGLE_CLIENT_ID  OAuth web client id used by "Sign in with Google"
  *
  * Deploy → New deployment → Web app → Execute as: Me, Who has access: Anyone.
  */
 
 const TRIPS = 'trips';
 const ITEMS = 'items';
+const SESSIONS = 'sessions';
+const OPEN_ACTIONS = { ping: true, login: true };
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -33,6 +36,12 @@ function doPost(e) {
   try {
     const fn = ACTIONS[req.action];
     if (!fn) return json_({ ok: false, error: 'unknown_action' });
+    if (!OPEN_ACTIONS[req.action]) {
+      // who is asking comes from the signed-in session, never from the request body
+      const user = auth_(req.token);
+      req.me = user.uid;
+      req.name = user.name;
+    }
     return json_({ ok: true, data: fn(req) });
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
@@ -48,16 +57,43 @@ function json_(obj) {
 const ACTIONS = {
   ping: () => ({ pong: true }),
 
-  // trips this device knows about
-  getTrips: (req) => {
-    const ids = (req.ids || []).map(String);
-    const want = new Set(ids);
-    return rows_(TRIPS).filter(r => want.has(r.id)).map(r => r.obj);
+  // exchange a Google sign-in for a session; trips this phone made before sign-in move to the account
+  login: (req) => {
+    const g = verifyGoogle_(req.idToken);
+    const user = { uid: 'g-' + g.sub, name: String(g.given_name || g.name || g.email || '').slice(0, 40), email: g.email || '', picture: g.picture || '' };
+    const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+    withLock_(() => {
+      upsert_(SESSIONS, token, user.uid, user);
+      if (req.claim && /^p-[a-z0-9]{6,40}$/.test(String(req.claim))) claim_(String(req.claim), user);
+    });
+    CacheService.getScriptCache().put('s:' + token, JSON.stringify(user), 21600);
+    return { token, user };
   },
 
+  logout: (req) => withLock_(() => {
+    deleteWhere_(SESSIONS, r => r.id === String(req.token));
+    CacheService.getScriptCache().remove('s:' + req.token);
+    return true;
+  }),
+
+  // every trip the signed-in person belongs to
+  myTrips: (req) => rows_(TRIPS).filter(r => (r.obj.memberIds || []).indexOf(req.me) >= 0).map(r => r.obj),
+
+  // trips this device knows about
+  getTrips: (req) => {
+    const want = new Set((req.ids || []).map(String));
+    return rows_(TRIPS).filter(r => want.has(r.id) && isMember_(r.obj, req.me)).map(r => r.obj);
+  },
+
+  // members get the whole trip; anyone else holding the code sees only what the invite page shows
   getTrip: (req) => {
     const t = find_(TRIPS, String(req.id));
     if (!t) return { trip: null, items: [] };
+    if (!isMember_(t.obj, req.me)) {
+      const o = t.obj;
+      return { trip: { id: o.id, name: o.name, startDate: o.startDate, days: o.days, destination: o.destination, ownerId: o.ownerId,
+        members: o.ownerId && o.members ? { [o.ownerId]: o.members[o.ownerId] } : {}, memberIds: [] }, items: [], preview: true };
+    }
     const items = rows_(ITEMS).filter(r => r.tripId === t.id).map(r => r.obj);
     return { trip: t.obj, items };
   },
@@ -67,6 +103,14 @@ const ACTIONS = {
     if (!/^[A-Z0-9]{6}$/.test(trip.id || '')) throw new Error('bad_trip_id');
     const old = find_(TRIPS, trip.id);
     if (old && req.create) throw new Error('trip_exists');
+    if (old && !isMember_(old.obj, req.me)) throw new Error('not_member');
+    if (!old) {
+      trip.ownerId = req.me;
+      trip.memberIds = [req.me];
+      trip.members = { [req.me]: req.name };
+    } else {
+      delete trip.ownerId; delete trip.memberIds; delete trip.members;   // membership changes only through join and leave
+    }
     upsert_(TRIPS, trip.id, '', old ? deepMerge_(old.obj, trip) : trip);
     return find_(TRIPS, trip.id).obj;
   }),
@@ -94,6 +138,8 @@ const ACTIONS = {
 
   deleteTrip: (req) => withLock_(() => {
     const id = String(req.id);
+    const t = find_(TRIPS, id);
+    if (t && t.obj.ownerId && t.obj.ownerId !== req.me) throw new Error('not_owner');
     deleteWhere_(ITEMS, r => r.tripId === id);
     deleteWhere_(TRIPS, r => r.id === id);
     return true;
@@ -102,6 +148,7 @@ const ACTIONS = {
   // items are created with ids made on the phone, so a retry never duplicates
   saveItems: (req) => withLock_(() => {
     const tripId = String(req.tripId);
+    mustBeMember_(tripId, req.me);
     (req.items || []).forEach(it => {
       it = clean_(it);
       if (!it.id) throw new Error('item_without_id');
@@ -112,6 +159,8 @@ const ACTIONS = {
   }),
 
   deleteItem: (req) => withLock_(() => {
+    const it = find_(ITEMS, String(req.id));
+    if (it) mustBeMember_(it.tripId, req.me);
     deleteWhere_(ITEMS, r => r.id === String(req.id));
     return true;
   }),
@@ -126,6 +175,52 @@ const ACTIONS = {
 
   readBooking: (req) => readBooking_(req)
 };
+
+/* ---------------- sign-in ---------------- */
+
+function verifyGoogle_(idToken) {
+  const clientId = PropertiesService.getScriptProperties().getProperty('GOOGLE_CLIENT_ID');
+  if (!clientId) throw new Error('missing_GOOGLE_CLIENT_ID');
+  const r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String(idToken || '')), { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('bad_login');
+  const g = JSON.parse(r.getContentText());
+  if (g.aud !== clientId || !/accounts\.google\.com$/.test(g.iss || '') || Number(g.exp) * 1000 < Date.now()) throw new Error('bad_login');
+  return g;
+}
+
+function auth_(token) {
+  token = String(token || '');
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('auth_required');
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('s:' + token);
+  if (hit) return JSON.parse(hit);
+  const row = find_(SESSIONS, token);
+  if (!row) throw new Error('auth_required');
+  cache.put('s:' + token, JSON.stringify(row.obj), 21600);
+  return row.obj;
+}
+
+function isMember_(trip, uid) { return (trip.memberIds || []).indexOf(uid) >= 0; }
+function mustBeMember_(tripId, uid) {
+  const t = find_(TRIPS, String(tripId));
+  if (!t || !isMember_(t.obj, uid)) throw new Error('not_member');
+}
+
+// swap a phone's old anonymous id for the account in every trip it belongs to
+function claim_(oldId, user) {
+  rows_(TRIPS).forEach(r => {
+    const t = r.obj;
+    const ids = t.memberIds || [];
+    if (ids.indexOf(oldId) < 0 && t.ownerId !== oldId) return;
+    t.memberIds = Array.from(new Set(ids.map(m => m === oldId ? user.uid : m)));
+    if (t.ownerId === oldId) t.ownerId = user.uid;
+    const members = Object.assign({}, t.members || {});
+    delete members[oldId];
+    members[user.uid] = user.name;
+    t.members = members;
+    upsert_(TRIPS, t.id, '', t);
+  });
+}
 
 /* ---------------- sheet storage ---------------- */
 
