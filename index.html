@@ -645,9 +645,7 @@ function vNew(){
   return `<main class="screen">
     <div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ทริปใหม่</h1></div>
     <form class="stack" data-form="new" style="gap:18px">
-      ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="nt-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
       <label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="newTrip:name"></label>
-      <label class="fld">ไปที่ไหน<input id="nt-dest" maxlength="60" placeholder="เมือง หรือ ประเทศ" value="${esc(n.destination)}" data-bind="newTrip:destination"></label>
       <button class="btn primary" type="submit">ตกลง</button>
     </form>
   </main>`;
@@ -1307,9 +1305,8 @@ document.addEventListener("submit", async e => {
   if(f === "new"){
     const n = S.newTrip;
     if(!n.name.trim()){ toast("ใส่ชื่อทริปก่อนนะ"); return; }
-    if(!saveMyName()) return;
     try{
-      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:"", days:0, autoDates:true,
+      const id = await store.createTrip({name:n.name.trim(), destination:"", startDate:"", days:0, autoDates:true,
         ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
       S.newTrip = {name:"", destination:""};
       openTrip(id, "invite");
@@ -1398,7 +1395,7 @@ document.addEventListener("click", async e => {
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-25g";
+const BUILD = "2026-10-25h";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
