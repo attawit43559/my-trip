@@ -352,19 +352,30 @@ const today = () => toStr(new Date());
 const dShort = s => { if(!validD(s)) return "ไม่ระบุวัน"; const d = parseD(s); return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
 const dLong = s => { const d = parseD(s); return `${DOW_FULL[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
 function rangeLabel(t){
-  if(!validD(t.startDate)) return `${t.days||1} วัน`;
+  if(!validD(t.startDate)) return "ยังไม่มีวันที่";
   const a = parseD(t.startDate), b = parseD(addDays(t.startDate,(t.days||1)-1));
   const left = a.getMonth()===b.getMonth() ? `${a.getDate()}` : `${a.getDate()} ${MON[a.getMonth()]}`;
   return `${left}–${b.getDate()} ${MON[b.getMonth()]} ${b.getFullYear()} · ${t.days||1} วัน`;
 }
 const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/86400000);
-const tripDates = t => Array.from({length: Math.max(1, t.days||1)}, (_,i) => addDays(t.startDate, i));
+const tripDates = t => !t || !validD(t.startDate) ? [] : Array.from({length: Math.max(1, t.days||1)}, (_,i) => addDays(t.startDate, i));
+/* trips made without dates take their span from the flights and stays in them */
+function spanOf(items){
+  const ds = [];
+  for(const i of items){
+    if(i.type === "flight" && validD(i.date)){ ds.push(i.date); const a = arrDateOf(i); if(validD(a)) ds.push(a); }
+    if(i.type === "stay"){ if(validD(i.date)) ds.push(i.date); if(validD(i.endDate)) ds.push(i.endDate); }
+  }
+  if(!ds.length) return {startDate:"", days:0};
+  ds.sort();
+  return {startDate:ds[0], days:daysBetween(ds[0], ds[ds.length-1]) + 1};
+}
 
 /* ---------- state ---------- */
 const S = {
   view:"loading", me:null, myName:"", trips:[], tripsReady:false,
   tripId:null, trip:null, items:[], day:0,
-  newTrip:{ name:"", destination:"", startDate:addDays(today(),14), days:4, adults:2, kids:0 },
+  newTrip:{ name:"", destination:"", adults:2, kids:0 },
   upload:null, review:null, sheet:null, toast:"", joinCode:"", joinTrip:null, joinMissing:false
 };
 let unsubTrips=null, unsubTrip=null, unsubItems=null;
@@ -454,15 +465,18 @@ const store = {
     const it = {id:rid(), tripId, ...data};
     (C.items[tripId] ||= {})[it.id] = it; emit();
     queue("saveItems", {tripId, items:[it]});
+    syncDates(tripId);
   },
   async updateItem(tripId, itemId, patch){
     const cur = (C.items[tripId] || {})[itemId]; if(!cur) return;
     C.items[tripId][itemId] = deepMerge(cur, patch); emit();
     queue("saveItems", {tripId, items:[{id:itemId, ...patch}]});
+    syncDates(tripId);
   },
   async deleteItem(tripId, itemId){
     if(C.items[tripId]) delete C.items[tripId][itemId]; emit();
     queue("deleteItem", {id:itemId});
+    syncDates(tripId);
   },
   async uploadFile(file){
     const p = await prepFile(file);
@@ -470,6 +484,11 @@ const store = {
     return r.id;
   }
 };
+function syncDates(tripId){
+  const t = C.trips[tripId]; if(!t || !t.autoDates) return;
+  const sp = spanOf(itemList(tripId));
+  if(sp.startDate !== (t.startDate||"") || sp.days !== (t.days||0)) store.updateTrip(tripId, sp);
+}
 async function refreshTrips(){
   if(!CONNECTED || !C.myTrips.length){ S.tripsReady = true; return; }
   try {
@@ -562,12 +581,13 @@ function swipeWrap(t, inner, cls){
 function vHome(){
   const t0 = today();
   const endOf = t => validD(t.startDate) ? addDays(t.startDate,(t.days||1)-1) : t0;
-  const up = S.trips.filter(t => endOf(t) >= t0).sort((a,b) => a.startDate < b.startDate ? -1 : 1);
+  const key = t => validD(t.startDate) ? t.startDate : "9999";
+  const up = S.trips.filter(t => endOf(t) >= t0).sort((a,b) => key(a) < key(b) ? -1 : 1);
   const past = S.trips.filter(t => endOf(t) < t0).sort((a,b) => a.startDate < b.startDate ? 1 : -1);
   const next = up[0], rest = [...up.slice(1), ...past];
   const card = t => {
-    const left = daysBetween(t0, t.startDate);
-    const chip = left > 0 ? `อีก ${left} วัน` : (endOf(t) >= t0 ? "กำลังเที่ยว" : "จบทริปแล้ว");
+    const left = validD(t.startDate) ? daysBetween(t0, t.startDate) : 0;
+    const chip = !validD(t.startDate) ? "รอเที่ยวบิน" : left > 0 ? `อีก ${left} วัน` : (endOf(t) >= t0 ? "กำลังเที่ยว" : "จบทริปแล้ว");
     return swipeWrap(t, `<button class="hero" data-act="open" data-id="${esc(t.id)}">
       <div class="cover t-${tone(t.id)}">${MOUNTAINS.replace('class="art"','class="art" style="position:absolute;right:16px;bottom:0;left:auto;width:180px"')}<span class="chip">${chip}</span></div>
       <div class="body"><div class="sec-h"><span><span class="name">${esc(t.name)}</span><br><span class="muted">${esc(rangeLabel(t))}</span></span>${ic("chev",24)}</div>
@@ -613,16 +633,13 @@ function stepRow(label, sub, key, min, max){
 }
 function vNew(){
   const n = S.newTrip;
-  const end = validD(n.startDate) ? dShort(addDays(n.startDate, n.days-1)) : "-";
   return `<main class="screen">
     <div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ทริปใหม่</h1></div>
     <form class="stack" data-form="new" style="gap:18px">
       ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="nt-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
       <label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="newTrip:name"></label>
       <label class="fld">ไปที่ไหน<input id="nt-dest" maxlength="60" placeholder="เมือง หรือ ประเทศ" value="${esc(n.destination)}" data-bind="newTrip:destination"></label>
-      <label class="fld">วันออกเดินทาง<input id="nt-start" type="date" required value="${esc(n.startDate)}" data-bind="newTrip:startDate" data-rerender="1"></label>
       <div class="stepper-card">
-        ${stepRow("จำนวนวัน", "กลับ " + end, "days", 1, 30)}
         ${stepRow("ผู้ใหญ่", "", "adults", 1, 30)}
         ${stepRow("เด็ก", "รวมทั้งหมด " + (n.adults + n.kids) + " คน", "kids", 0, 30)}
       </div>
@@ -759,9 +776,9 @@ function vTrip(){
   const dates = tripDates(t);
   if(S.day >= dates.length) S.day = 0;
   const d = dates[S.day];
-  const entries = dayEntries(d);
+  const entries = d ? dayEntries(d) : [];
   const inRange = new Set(dates);
-  const loose = S.items.filter(it => !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate)));
+  const loose = dates.length ? S.items.filter(it => !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   return `<main class="screen">
@@ -777,10 +794,11 @@ function vTrip(){
     ${catCard()}
     <section class="stack" style="gap:14px">
       <div class="sec-h"><h2>แผนรายวัน</h2></div>
+      ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}</p>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
-      <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>
+      <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>`}
     </section>
     ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
@@ -964,7 +982,8 @@ function vSheet(){
       ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div></div>` : ""}
       <label class="fld">${isMove?"จากไหนไปไหน":"ชื่อสถานที่"}<input id="sh-title" ${isMove?"":"required"} maxlength="80" placeholder="${isMove?"เช่น สนามบิน → ที่พัก":"เช่น วัดพระธาตุดอยสุเทพ"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
       <div class="grid2">
-        <label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>
+        ${dates.length ? `<label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>`
+          : `<label class="fld">วัน<input id="sh-date" type="date" value="${esc(s.date||"")}" data-bind="sheet:date"></label>`}
         <label class="fld">เวลา<input id="sh-time" type="time" value="${esc(s.time)}" data-bind="sheet:time"></label>
       </div>
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="${isMove?"เช่น ประมาณ 30 นาที":"เช่น เด็กๆ ชอบ, ใช้เวลา 2 ชม."}" value="${esc(s.note)}" data-bind="sheet:note"></label>
@@ -1029,7 +1048,7 @@ function mergeFlights(list){
   });
   return {out, map};
 }
-const emptyStay = (t) => ({name:"", address:"", checkInDate:t ? t.startDate : "", checkInTime:"14:00", checkOutDate:t ? addDays(t.startDate, Math.max(1,(t.days||1)-1)) : "", checkOutTime:"12:00", rooms:"", guests:"", bookingRef:""});
+const emptyStay = (t) => ({name:"", address:"", checkInDate:t && validD(t.startDate) ? t.startDate : "", checkInTime:"14:00", checkOutDate:t && validD(t.startDate) ? addDays(t.startDate, Math.max(1,(t.days||1)-1)) : "", checkOutTime:"12:00", rooms:"", guests:"", bookingRef:""});
 function buildReview(kind, res){
   res = res || {};
   const unc = new Set(Array.isArray(res.uncertain) ? res.uncertain.map(String) : []);
@@ -1162,7 +1181,7 @@ async function saveReview(auto){
     for(const d of docs) await store.addItem(t.id, d);
     for(const u of updates) await store.updateItem(t.id, u.id, u.patch);
     S.saving = false; S.review = null; S.upload = null;
-    const first = [...docs, ...updates.map(u => u.patch)].map(d => d.date).filter(Boolean).sort()[0]; const idx = tripDates(t).indexOf(first); if(idx >= 0) S.day = idx;
+    const first = [...docs, ...updates.map(u => u.patch)].map(d => d.date).filter(Boolean).sort()[0]; const idx = tripDates(S.trip || t).indexOf(first); if(idx >= 0) S.day = idx;
     const nF = docs.filter(d => d.type === "flight").length, nS = docs.length - nF;
     go("trip");
     toast(["บันทึกแล้ว", nF ? `${nF} เที่ยวบิน` : "", nS ? `${nS} ที่พัก` : "", updates.length ? `รวมกับเที่ยวบินเดิม ${updates.length}` : ""].filter(Boolean).join(" "));
@@ -1282,12 +1301,12 @@ document.addEventListener("submit", async e => {
   }
   if(f === "new"){
     const n = S.newTrip;
-    if(!n.name.trim() || !validD(n.startDate)){ toast("ใส่ชื่อทริปและวันออกเดินทางก่อนนะ"); return; }
+    if(!n.name.trim()){ toast("ใส่ชื่อทริปก่อนนะ"); return; }
     if(!saveMyName()) return;
     try{
-      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:n.startDate, days:n.days, adults:n.adults, kids:n.kids,
+      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:"", days:0, autoDates:true, adults:n.adults, kids:n.kids,
         ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
-      S.newTrip = {name:"", destination:"", startDate:addDays(today(),14), days:4, adults:2, kids:0};
+      S.newTrip = {name:"", destination:"", adults:2, kids:0};
       openTrip(id, "invite");
     } catch(err){ fail(err); }
   }
