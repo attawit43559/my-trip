@@ -1403,6 +1403,8 @@ document.addEventListener("click", async e => {
   setInterval(refresh, 60000);
   flush();
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
+  // drop the invite part of the address straight away, so a refresh, bookmark or home-screen icon opens the trip list
+  if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
   if(m) startJoin(m[1]); else go("home");
 })();
 })();
