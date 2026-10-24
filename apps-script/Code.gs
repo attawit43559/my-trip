@@ -7,7 +7,7 @@
  * Script properties (Project Settings → Script properties):
  *   AI_PROVIDER     gemini (default) | claude | openai
  *   GEMINI_API_KEY  key from Google AI Studio            (for gemini)
- *   GEMINI_MODEL    optional, default gemini-flash-latest
+ *   GEMINI_MODEL    optional, default gemini-3.5-flash
  *   CLAUDE_API_KEY  key from Anthropic Console           (for claude)
  *   CLAUDE_MODEL    optional, default claude-haiku-5-5
  *   OPENAI_API_KEY  key from platform.openai.com          (for openai)
@@ -240,14 +240,23 @@ function bookingPrompt_(req) {
 function callGemini_(props, prompt, files) {
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
-  const model = props.getProperty('GEMINI_MODEL') || 'gemini-flash-latest';
+  // the "latest" aliases can stall for minutes on the free tier, so name fast models and fall back to a lighter one
+  const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
   const parts = [{ text: prompt }].concat(files.map(f => ({ inline_data: { mime_type: f.mime, data: f.data } })));
-  const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
-    headers: { 'x-goog-api-key': key },
-    payload: { contents: [{ role: 'user', parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } }
-  });
-  const c = res.candidates && res.candidates[0];
-  return ((c && c.content && c.content.parts) || []).map(p => p.text || '').join('');
+  let lastErr;
+  for (const model of models.filter((m, i) => models.indexOf(m) === i)) {
+    try {
+      const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+        headers: { 'x-goog-api-key': key },
+        payload: { contents: [{ role: 'user', parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' } } }
+      });
+      const c = res.candidates && res.candidates[0];
+      const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || '').join('');
+      if (text) return text;
+      lastErr = new Error('ai_empty');
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
 }
 
 function callClaude_(props, prompt, files) {
