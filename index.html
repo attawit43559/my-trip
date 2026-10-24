@@ -375,7 +375,7 @@ function spanOf(items){
 const S = {
   view:"loading", me:null, myName:"", trips:[], tripsReady:false,
   tripId:null, trip:null, items:[], day:0,
-  newTrip:{ name:"", destination:"", adults:2, kids:0 },
+  newTrip:{ name:"", destination:"" },
   upload:null, review:null, sheet:null, toast:"", joinCode:"", joinTrip:null, joinMissing:false
 };
 let unsubTrips=null, unsubTrip=null, unsubItems=null;
@@ -639,10 +639,6 @@ function vNew(){
       ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="nt-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
       <label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="newTrip:name"></label>
       <label class="fld">ไปที่ไหน<input id="nt-dest" maxlength="60" placeholder="เมือง หรือ ประเทศ" value="${esc(n.destination)}" data-bind="newTrip:destination"></label>
-      <div class="stepper-card">
-        ${stepRow("ผู้ใหญ่", "", "adults", 1, 30)}
-        ${stepRow("เด็ก", "รวมทั้งหมด " + (n.adults + n.kids) + " คน", "kids", 0, 30)}
-      </div>
       <button class="btn primary" type="submit">ตกลง</button>
     </form>
   </main>`;
@@ -663,7 +659,7 @@ function vInvite(){
       </div>
     </section>
     <section class="stack">
-      <div class="sec-h"><h2>ผู้ร่วมทริป</h2><span class="muted small">เข้าร่วมแล้ว ${ids.length}/${(t.adults||0)+(t.kids||0)} คน</span></div>
+      <div class="sec-h"><h2>ผู้ร่วมทริป</h2><span class="muted small">${ids.length} คน</span></div>
       <ul class="members">${ids.map(id => `<li><span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(nameOf(id).slice(0,1))}</span><span class="grow" style="font-weight:500">${esc(nameOf(id))}</span><span class="muted small">${id===t.ownerId?"ผู้สร้างทริป":"เข้าร่วมแล้ว"}</span></li>`).join("")}</ul>
     </section>
     <button class="btn primary" data-act="trip">ไปที่ทริป ${ic("chev")}</button>
@@ -1304,9 +1300,9 @@ document.addEventListener("submit", async e => {
     if(!n.name.trim()){ toast("ใส่ชื่อทริปก่อนนะ"); return; }
     if(!saveMyName()) return;
     try{
-      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:"", days:0, autoDates:true, adults:n.adults, kids:n.kids,
+      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:"", days:0, autoDates:true,
         ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
-      S.newTrip = {name:"", destination:"", adults:2, kids:0};
+      S.newTrip = {name:"", destination:""};
       openTrip(id, "invite");
     } catch(err){ fail(err); }
   }
@@ -1392,16 +1388,30 @@ document.addEventListener("click", async e => {
 });
 
 /* ---------- boot ---------- */
+/* phones keep an old copy of the page; reload once when a newer one is online */
+const BUILD = "2026-10-24c";
+async function checkUpdate(){
+  if(location.protocol !== "https:") return;
+  try {
+    const html = await (await fetch(location.pathname + "?v=" + Date.now(), {cache:"no-store"})).text();
+    const live = (html.match(/const BUILD = "([^"]+)"/) || [])[1];
+    if(live && live !== BUILD && sessionStorage.getItem("mytrip-reloaded") !== live && !busyForm() && !(S.upload && S.upload.status === "reading")){
+      sessionStorage.setItem("mytrip-reloaded", live);
+      location.reload();
+    }
+  } catch(_){}
+}
 (() => {
   let me = null; try { me = JSON.parse(localStorage.getItem("mytrip-me")); } catch(_){}
   if(!me || !me.id){ me = {id:"p-" + rid(), name:""}; try { localStorage.setItem("mytrip-me", JSON.stringify(me)); } catch(_){} }
   S.me = me.id; S.myName = me.name || ""; S.savedName = !!me.name;
   unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
-  const refresh = () => { flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
+  const refresh = () => { checkUpdate(); flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
   document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
   window.addEventListener("online", flush);
   setInterval(refresh, 60000);
   flush();
+  checkUpdate();
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
   // drop the invite part of the address straight away, so a refresh, bookmark or home-screen icon opens the trip list
   if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
