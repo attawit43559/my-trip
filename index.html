@@ -1,0 +1,1392 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F3F5FA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Trip">
+<title>My Trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred phone column; each screen is a stack of white cards on a soft grey ground, one yellow accent for primary actions */
+:root{
+  --bg:#F3F5FA; --surface:#FFFFFF; --tile:#EFF1F7; --ink:#1D1B2E; --muted:#636278; --line:#E7E9F1;
+  --accent:#FFC21A; --accent-soft:#FFF1BF; --accent-line:#F0B000; --warn-bg:#FFF4CC; --on-accent:#1D1B2E; --danger:#E5334B;
+  --flight:#1559C9; --flight-soft:#E3EEFF; --flight-mid:#2F80FF;
+  --stay:#0E7A45; --stay-soft:#DDF7E8; --stay-mid:#14B866;
+  --place:#C0154A; --place-soft:#FFE3EC; --place-mid:#FF5C8A;
+  --move:#8A5A00; --move-soft:#FFF1BF; --move-mid:#FFC21A;
+  --display:'Mitr','Prompt','Noto Sans Thai',system-ui,sans-serif;
+  --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13131C; --surface:#1E1E2A; --tile:#2A2A38; --ink:#F4F4FA; --muted:#ABABBF; --line:#323243;
+  --accent:#FFC21A; --accent-soft:#3D3214; --accent-line:#A07A10; --warn-bg:#3A2F10; --on-accent:#1D1B2E; --danger:#FF6B7F;
+  --flight:#9CC2FF; --flight-soft:#1C2B4A; --flight-mid:#3D8BFF;
+  --stay:#7FE3AA; --stay-soft:#163828; --stay-mid:#1DC46F;
+  --place:#FF9DB7; --place-soft:#43202D; --place-mid:#FF5C8A;
+  --move:#FFD465; --move-soft:#3D3214; --move-mid:#FFC21A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13131C; --surface:#1E1E2A; --tile:#2A2A38; --ink:#F4F4FA; --muted:#ABABBF; --line:#323243;
+  --accent:#FFC21A; --accent-soft:#3D3214; --accent-line:#A07A10; --warn-bg:#3A2F10; --on-accent:#1D1B2E; --danger:#FF6B7F;
+  --flight:#9CC2FF; --flight-soft:#1C2B4A; --flight-mid:#3D8BFF;
+  --stay:#7FE3AA; --stay-soft:#163828; --stay-mid:#1DC46F;
+  --place:#FF9DB7; --place-soft:#43202D; --place-mid:#FF5C8A;
+  --move:#FFD465; --move-soft:#3D3214; --move-mid:#FFC21A; color-scheme:dark}
+html,body{min-height:100%}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent-line);outline-offset:2px}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance;line-height:1.25}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.screen{max-width:520px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.top{display:flex;align-items:center;gap:12px;min-height:44px}
+.top h1{font-size:22px;flex:1;min-width:0}
+.round{width:44px;height:44px;border-radius:999px;border:0;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.pill-btn{height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:500;font-size:14px}
+.btn{height:54px;border-radius:999px;border:0;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--display);font-weight:500;font-size:17px;width:100%}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.dark{background:var(--ink);color:var(--bg)}
+.btn.ghost{background:var(--surface)}
+.btn:disabled{opacity:.5;cursor:default}
+.link-btn{border:0;background:none;text-decoration:underline;font-weight:500;font-size:14px;min-height:44px;padding:0 8px;align-self:center}
+.card{background:var(--surface);border-radius:24px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.sec-h h2{font-size:18px;font-weight:500}
+.create{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 20px 20px 22px;border-radius:28px;border:0;background:var(--accent);color:var(--on-accent);text-align:left;width:100%}
+.create b{display:block;font-family:var(--display);font-weight:600;font-size:21px}
+.create .dot{width:52px;height:52px;border-radius:999px;background:var(--on-accent);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.hero{display:block;width:100%;padding:0;border:0;text-align:left;background:var(--surface);border-radius:28px;overflow:hidden}
+.hero .cover{position:relative;height:130px;background:var(--accent-soft)}
+.hero .cover svg{position:absolute;inset:0;width:100%;height:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--surface);font-size:13px;font-weight:600}
+.hero .chip{position:absolute;left:14px;top:14px}
+.hero .body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.hero .name{font-family:var(--display);font-weight:600;font-size:20px}
+.list-row{display:flex;align-items:center;gap:14px;padding:12px;border-radius:22px;background:var(--surface);border:0;width:100%;text-align:left}
+.thumb{width:48px;height:48px;border-radius:16px;background:var(--tile);display:flex;align-items:center;justify-content:center;flex:none}
+.grow{flex:1;min-width:0}
+.t-name{font-family:var(--display);font-weight:500;font-size:16px;overflow-wrap:anywhere}
+.avatars{display:flex}
+.av{width:30px;height:30px;border-radius:999px;background:var(--tile);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.av+.av{margin-left:-8px}
+.av.me{background:var(--accent);color:var(--on-accent)}
+.join-row{display:flex;gap:8px}
+.join-row input{flex:1;min-width:0;height:50px;border-radius:16px;border:0;background:var(--surface);padding:0 16px;font-size:16px;letter-spacing:.12em;text-transform:uppercase}
+.join-row input::placeholder{letter-spacing:0;text-transform:none;color:var(--muted)}
+.join-row button{height:50px;border-radius:16px;border:0;background:var(--ink);color:var(--bg);padding:0 18px;font-weight:500;flex:none}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:28px 20px}
+.empty svg.art{width:150px;height:90px}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500;min-width:0}
+.fld input,.fld select{height:52px;border-radius:16px;border:0;background:var(--surface);padding:0 16px;font-size:16px;font-weight:400;width:100%;min-width:0}
+.card .fld input,.card .fld select,.sheet .fld input,.sheet .fld select{background:var(--tile)}
+.fld.sm{font-size:12px;font-weight:400;color:var(--muted)}
+.fld.sm input{height:46px;border-radius:14px;padding:0 12px;font-size:15px;color:var(--ink)}
+.fld.warn input{background:var(--warn-bg);box-shadow:inset 0 0 0 2px var(--accent-line)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid2 .full{grid-column:1/-1}
+.stepper-card{background:var(--surface);border-radius:24px;padding:4px 16px}
+.step-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
+.step-row+.step-row{border-top:1px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:44px;height:44px;border-radius:999px;border:0;background:var(--tile);display:flex;align-items:center;justify-content:center}
+.stepper output{width:28px;text-align:center;font-family:var(--display);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
+.note{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.trip-head{background:var(--accent-soft);border-radius:28px;padding:16px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
+.trip-head .row{display:flex;justify-content:space-between;align-items:center;position:relative}
+.trip-head h1{font-size:26px;position:relative}
+.trip-head .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative}
+.trip-head svg.art{position:absolute;right:0;bottom:0;width:180px;height:110px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:24px;border:0;background:var(--surface);text-align:left}
+.tile .thumb{width:44px;height:44px;border-radius:14px}
+.tile b{font-family:var(--display);font-weight:500;font-size:17px;display:block}
+.tabs-wrap{overflow-x:auto;margin-inline:-4px;padding:2px 4px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(58px,1fr);gap:8px}
+.tab{height:58px;border-radius:18px;border:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.tab span{font-size:12px}
+.tab b{font-family:var(--display);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.day-list{background:var(--surface);border-radius:24px;padding:4px 16px;margin:0;list-style:none}
+.day-list li+li{border-top:1px solid var(--line)}
+.entry{display:flex;align-items:center;gap:12px;min-height:72px;width:100%;border:0;background:none;text-align:left;padding:8px 0}
+.entry .time{width:48px;flex:none;font-family:var(--display);font-weight:500;font-variant-numeric:tabular-nums}
+.entry .thumb{width:40px;height:40px;border-radius:12px}
+.entry .ttl{font-weight:500;overflow-wrap:anywhere}
+.add-dash{height:54px;border-radius:20px;border:2px dashed var(--line);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;width:100%}
+.drop{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px 26px;border-radius:28px;border:2px dashed var(--accent-line);background:var(--accent-soft);text-align:center;cursor:pointer}
+.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+#paste-text{border:0;border-radius:16px;background:var(--surface);padding:12px 14px;font:inherit;font-size:15px;font-weight:400;resize:vertical;min-height:130px;width:100%}
+.f-card .hd b{display:flex;align-items:center;gap:8px}
+.home-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.home-top h1{font-size:24px}
+.new-btn{height:44px;padding:0 16px 0 12px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:500;font-size:15px;flex:none}
+.eyebrow{font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.tlist{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:20px;overflow:hidden}
+.trow{position:relative;overflow:hidden}
+.tlist .trow+.trow .trow-slide{border-top:1px solid var(--line)}
+.trow.big{border-radius:28px}
+.trow.small{border-radius:22px}
+.trow.big .trow-actions,.trow.small .trow-actions{width:96px}
+.trow.big.open .trow-slide,.trow.small.open .trow-slide{transform:translateX(-88px)}
+.trow-actions{position:absolute;top:0;right:0;bottom:0;width:88px;display:flex}
+.swipe-del{flex:1;border:0;background:var(--danger);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600}
+.trow-slide{position:relative;background:var(--surface);transition:transform .22s ease;touch-action:pan-y;will-change:transform}
+.trow.dragging .trow-slide{transition:none}
+.trow.open .trow-slide,.trow:has(.swipe-del:focus-visible) .trow-slide{transform:translateX(-88px)}
+@media (prefers-reduced-motion: reduce){.trow-slide{transition:none}}
+.trow-main{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;background:none;text-align:left;min-height:64px;color:var(--muted)}
+.trow-main .grow{color:var(--ink)}
+.trow-main .t-name{font-size:15px}
+.badge{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;flex:none}
+.badge b{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;display:flex}
+.badge span{font-size:10px}
+.badge.past{background:var(--tile)}
+.badge.now{background:var(--accent)}
+.badge.now span,.badge.now b{color:var(--on-accent)}
+.more{width:44px;height:44px;border-radius:999px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none}
+.menu{display:flex;flex-direction:column;background:var(--tile);border-radius:18px;padding:4px 14px}
+.menu button{display:flex;align-items:center;gap:12px;min-height:52px;border:0;background:none;text-align:left;font-weight:500}
+.menu button+button{border-top:1px solid var(--line)}
+.menu .danger{color:var(--danger)}
+.cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:3px;border-radius:14px;background:var(--tile)}
+.seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 2px}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg em{position:absolute;top:3px;right:6px;font-style:normal;font-size:10px;font-weight:600;min-width:16px;height:16px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;padding:0 4px}
+.cat-list{list-style:none;margin:0;padding:0 4px}
+.cat-list li+li{border-top:1px solid var(--line)}
+.cat-row{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 0;border:0;background:none;text-align:left;color:var(--muted)}
+.cat-row .grow{color:var(--ink)}
+.cat-row .ttl{font-weight:500;font-size:14px}
+.cat-add{align-self:flex-start;min-height:40px;padding:0 12px;border-radius:999px;border:0;background:var(--accent-soft);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.drop.compact{flex-direction:row;justify-content:center;gap:10px;padding:16px;border-radius:20px}
+.drop.compact b{font-size:16px}
+.file-chip{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border-radius:14px;background:var(--surface);font-size:14px;min-height:44px}
+.file-chip .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-x{width:36px;height:36px;border-radius:999px;border:0;background:var(--tile);display:flex;align-items:center;justify-content:center;flex:none}
+.files{gap:6px}
+#paste-text{min-height:84px}
+.ed-area{border:0;border-radius:14px;background:var(--tile);padding:10px 12px;font:inherit;font-size:15px;color:var(--ink);resize:vertical;width:100%}
+.links{display:flex;flex-direction:column;background:var(--tile);border-radius:18px;padding:2px 14px}
+.lnk{position:relative;display:flex;align-items:center;gap:12px;min-height:50px;border:0;background:none;text-align:left;color:var(--ink);text-decoration:none;font-weight:500;font-size:15px;width:100%;padding:0}
+.lnk+.lnk{border-top:1px solid var(--line)}
+.lnk .ic:last-child{color:var(--muted)}
+.lnk.attach{color:var(--muted)}
+.src{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--body);font-size:14px;line-height:1.6;background:var(--tile);border-radius:16px;padding:14px;margin:0;max-height:60vh;overflow-y:auto}
+.moon{display:inline-flex;width:32px;height:32px;border-radius:999px;background:var(--accent-soft);align-items:center;justify-content:center}
+.t-flight{--deep:var(--flight);--soft:var(--flight-soft);--mid:var(--flight-mid);--on:#FFFFFF}
+.t-stay{--deep:var(--stay);--soft:var(--stay-soft);--mid:var(--stay-mid);--on:#FFFFFF}
+.t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
+.t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#1D1B2E}
+.thumb.tc{background:var(--mid);color:var(--on)}
+.moon[class*="t-"]{background:var(--mid);color:var(--on)}
+.hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
+.seg button .ic{color:var(--deep)}
+.seg button[aria-selected="true"]{background:var(--soft);color:var(--deep);box-shadow:none}
+.seg em{background:var(--mid);color:var(--on)}
+.cat-add[class*="t-"]{background:var(--soft);color:var(--deep)}
+.dot-sm{width:10px;height:10px;border-radius:999px;background:var(--mid);flex:none}
+.drop-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;font-size:0}
+.drop:focus-within{outline:3px solid var(--accent-line);outline-offset:2px}
+.drop .dot{width:60px;height:60px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center}
+.drop b{font-family:var(--display);font-weight:500;font-size:19px}
+.reading{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:36px 20px}
+.spinner{width:44px;height:44px;border-radius:999px;border:4px solid var(--tile);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spinner{animation-duration:3s}}
+.file-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:20px;background:var(--surface)}
+.ok-dot{width:32px;height:32px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex:none}
+.err{padding:14px 16px;border-radius:18px;background:var(--warn-bg);font-size:14px}
+.f-card{display:flex;flex-direction:column;gap:12px}
+.f-card .hd{display:flex;align-items:center;justify-content:space-between}
+.f-card .hd b{font-family:var(--display);font-weight:500;font-size:17px}
+.x-btn{border:0;background:none;color:var(--muted);font-size:14px;min-height:44px;padding:0 4px}
+.link-box{display:flex;align-items:center;gap:10px;min-height:54px;padding:6px 6px 6px 16px;border-radius:18px;background:var(--tile)}
+.link-box input{flex:1;min-width:0;border:0;background:none;font-size:15px;padding:0}
+.link-box button{height:42px;padding:0 16px;border-radius:14px;border:0;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;flex:none}
+.code{font-family:var(--display);font-size:30px;font-weight:600;letter-spacing:.18em;font-variant-numeric:tabular-nums}
+.members{list-style:none;margin:0;padding:4px 16px;background:var(--surface);border-radius:24px}
+.members li{display:flex;align-items:center;gap:12px;min-height:60px}
+.members li+li{border-top:1px solid var(--line)}
+.members .av{width:38px;height:38px;border:0}
+.scrim{position:fixed;inset:0;background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:520px;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding-top:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.sheet .hd{display:flex;align-items:center;gap:12px}
+.sheet .hd h2{flex:1;font-size:20px}
+.sheet .round{background:var(--tile)}
+.kv{display:flex;justify-content:space-between;gap:16px;font-size:14px;padding:6px 0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{text-align:right;font-weight:500;overflow-wrap:anywhere}
+.danger-btn{border:0;background:none;color:var(--danger);font-weight:500;min-height:44px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--tile);font-size:14px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.load{padding:80px 20px;text-align:center}
+/* compact phone sizing */
+html,body{overflow-x:hidden}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{font-size:14px}
+input,select,textarea{font-size:16px!important}
+.screen{padding-block:12px 28px;gap:14px}
+.top{gap:10px;min-height:40px}
+.top h1{font-size:19px}
+.round{width:40px;height:40px}
+.pill-btn{height:40px;padding:0 14px;font-size:13px}
+.btn{height:48px;font-size:16px}
+.card{padding:14px;border-radius:20px}
+.stack{gap:10px}
+.sec-h h2{font-size:16px}
+.home-top h1{font-size:22px}
+.new-btn{height:40px;font-size:14px}
+.hero{border-radius:22px}
+.trow.big{border-radius:22px}
+.trow.small{border-radius:18px}
+.hero .cover{height:92px}
+.hero .body{padding:12px 14px 14px;gap:8px}
+.hero .name{font-size:17px}
+.list-row{padding:10px;gap:12px;border-radius:18px}
+.thumb{width:40px;height:40px;border-radius:13px}
+.t-name{font-size:15px}
+.av{width:26px;height:26px;font-size:12px}
+.join-row input,.join-row button{height:44px;border-radius:14px}
+.trip-head{padding:12px 14px 14px;gap:10px;border-radius:22px}
+.trip-head h1{font-size:21px}
+.trip-head svg.art{width:140px;height:86px}
+.fld input,.fld select{height:46px;border-radius:14px}
+.fld.sm input{height:42px}
+.step-row{min-height:56px}
+.stepper button{width:40px;height:40px}
+.stepper output{font-size:18px}
+.tabs{display:grid;gap:4px}
+.tab{height:46px;border-radius:12px;padding:0}
+.tab span{font-size:10px}
+.tab b{font-size:16px}
+.day-list{padding:2px 12px;border-radius:20px}
+.entry{min-height:50px;padding:6px 0;gap:10px}
+.entry .time{width:42px;font-size:13px}
+.entry .thumb{width:30px;height:30px;border-radius:10px}
+.entry .thumb svg{width:16px;height:16px}
+.entry .ttl{font-size:14px}
+.moon{width:28px;height:28px}
+.moon svg{width:16px;height:16px}
+.add-dash{height:44px;border-radius:16px}
+.cat-card{border-radius:20px}
+.cat-row{min-height:46px}
+.drop.compact{padding:12px}
+.sheet{gap:12px;padding-top:16px;border-radius:24px 24px 0 0}
+.sheet .hd h2{font-size:18px}
+.lnk{min-height:46px;font-size:14px}
+.kv{font-size:13px;padding:5px 0}
+.code{font-size:24px}
+.members li{min-height:52px}
+.link-box{min-height:48px}
+.cal{display:flex;flex-direction:column;gap:4px}
+.cal-head{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:11px;color:var(--muted)}
+.cal .tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-flow:row;grid-auto-columns:auto;gap:4px}
+.cal .tab{height:44px;flex-direction:column}
+.cal .tab span{font-size:9px;line-height:1}
+.cal .tab.out{background:transparent;color:var(--muted);opacity:.45}
+</style>
+</head>
+<body>
+
+<div id="app"><div class="load muted">กำลังโหลด…</div></div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- constants ---------- */
+/* Paste the Web app URL from Apps Script (Deploy → Manage deployments) between the quotes */
+const API_URL = "https://script.google.com/macros/s/AKfycbxz_Fsoh5MNxKnVakLEBxrh2YuLTh9cvZO-JGtnQBQAdji0PA5REFOD-YhtbJqd52g/exec";
+const DOW = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+const DOW_FULL = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+const MON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const MOVE_MODES = ["รถยนต์","รถเช่า","แท็กซี่","รถไฟ","รถบัส","เรือ","เดิน"];
+const IC = {
+  back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+  stay:'<path d="M3 19V6"/><path d="M3 15h18v4"/><path d="M21 15v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11.5" r="2"/>',
+  place:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  move:'<path d="M5 17h14v-5l-2-5H7l-2 5z"/><path d="M5 12h14"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/>',
+  leave:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
+  ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'
+};
+const TYPE = {
+  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}
+};
+const ic = (n, s=22) => `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${IC[n]||""}</svg>`;
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const MOUNTAINS = `<svg class="art" viewBox="0 0 180 110" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><circle cx="138" cy="32" r="16" style="fill:var(--accent)"/><path d="M14 110 L80 46 L146 110 Z" style="fill:var(--mid,var(--flight-mid))"/><path d="M66 60 L80 46 L94 60 L87 57 L80 63 L73 57 Z" style="fill:#FFFFFF"/><path d="M98 110 L146 66 L194 110 Z" style="fill:var(--deep,var(--flight))"/></svg>`;
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2,"0");
+const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y,m,d] = String(s).split("-").map(Number); return new Date(y, (m||1)-1, d||1); };
+const validD = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||""));
+const addDays = (s,n) => { const d = parseD(s); d.setDate(d.getDate()+n); return toStr(d); };
+const today = () => toStr(new Date());
+const dShort = s => { if(!validD(s)) return "ไม่ระบุวัน"; const d = parseD(s); return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
+const dLong = s => { const d = parseD(s); return `${DOW_FULL[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
+function rangeLabel(t){
+  if(!validD(t.startDate)) return `${t.days||1} วัน`;
+  const a = parseD(t.startDate), b = parseD(addDays(t.startDate,(t.days||1)-1));
+  const left = a.getMonth()===b.getMonth() ? `${a.getDate()}` : `${a.getDate()} ${MON[a.getMonth()]}`;
+  return `${left}–${b.getDate()} ${MON[b.getMonth()]} ${b.getFullYear()} · ${t.days||1} วัน`;
+}
+const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/86400000);
+const tripDates = t => Array.from({length: Math.max(1, t.days||1)}, (_,i) => addDays(t.startDate, i));
+
+/* ---------- state ---------- */
+const S = {
+  view:"loading", me:null, myName:"", trips:[], tripsReady:false,
+  tripId:null, trip:null, items:[], day:0,
+  newTrip:{ name:"", destination:"", startDate:addDays(today(),14), days:4, adults:2, kids:0 },
+  upload:null, review:null, sheet:null, toast:"", joinCode:"", joinTrip:null, joinMissing:false
+};
+let unsubTrips=null, unsubTrip=null, unsubItems=null;
+
+/* ---------- store: kept on this phone first, synced to the Google Sheet in the background ---------- */
+const CONNECTED = /^https:\/\/script\.google\.com\//.test(API_URL);
+const KEY = "mytrip-v1";
+const C = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(_) { return {}; } })();
+C.trips ||= {}; C.items ||= {}; C.myTrips ||= []; C.outbox ||= [];
+const subs = new Set();
+let saveT = null;
+function persist(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(C)); } catch(_){} }, 150); }
+function emit(){ persist(); subs.forEach(f => f()); }
+const sub = f => { subs.add(f); f(); return () => subs.delete(f); };
+const genId = () => { const a="ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s=""; for(let i=0;i<6;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; };
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+function deepMerge(a, b){
+  const out = {...(a||{})};
+  for(const k of Object.keys(b||{})){
+    const v = b[k];
+    out[k] = (v && typeof v === "object" && !Array.isArray(v) && out[k] && typeof out[k] === "object" && !Array.isArray(out[k])) ? deepMerge(out[k], v) : v;
+  }
+  return out;
+}
+async function api(action, body={}, signal){
+  if(!CONNECTED) throw {code:"not_connected"};
+  let res;
+  try {
+    res = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action, ...body}), signal});
+  } catch(e){ throw {code: e && e.name === "AbortError" ? "cancelled" : "offline"}; }
+  let j; try { j = await res.json(); } catch(_) { throw {code:"server_error"}; }
+  if(!j.ok) throw {code: String(j.error || "server_error").split(":")[0]};
+  return j.data;
+}
+/* writes wait in an outbox and are sent in order; a failed send is retried later */
+let flushing = false;
+function queue(action, body){ C.outbox.push({action, body}); persist(); flush(); }
+async function flush(){
+  if(flushing || !CONNECTED) return;
+  flushing = true;
+  try {
+    while(C.outbox.length){
+      const op = C.outbox[0];
+      try { await api(op.action, op.body); C.outbox.shift(); persist(); }
+      catch(e){
+        if(e.code === "offline" || e.code === "server_error"){ setTimeout(flush, 8000); break; }
+        C.outbox.shift(); persist();   // the server refused it; retrying cannot help
+      }
+    }
+  } finally { flushing = false; S.pending = C.outbox.length; }
+}
+const pendingIds = () => new Set(C.outbox.flatMap(o => o.action === "saveItems" ? (o.body.items||[]).map(i => i.id) : o.action === "deleteItem" ? [o.body.id] : []));
+const itemList = id => Object.values(C.items[id] || {});
+const store = {
+  watchMyTrips(cb){
+    if(C.myTrips.length) S.tripsReady = true;
+    const f = () => cb(C.myTrips.map(id => C.trips[id]).filter(Boolean));
+    refreshTrips();
+    return sub(f);
+  },
+  watchTrip(id, cb){ refreshTrip(id); return sub(() => cb(C.trips[id] || (S.tripLoading ? undefined : null))); },
+  watchItems(id, cb){ return sub(() => cb(itemList(id))); },
+  async fetchTrip(id){ const r = await api("getTrip", {id}); return r && r.trip; },
+  async createTrip(data){
+    let id = genId(); while(C.trips[id]) id = genId();
+    const trip = {id, ...data, members:{[S.me]: S.myName}};
+    C.trips[id] = trip; C.items[id] = {}; C.myTrips.unshift(id); emit();
+    queue("saveTrip", {trip, create:true});
+    return id;
+  },
+  async updateTrip(id, patch){ C.trips[id] = deepMerge(C.trips[id], patch); emit(); queue("saveTrip", {trip:{id, ...patch}}); },
+  async joinTrip(id){
+    const trip = await api("joinTrip", {id, me:S.me, name:S.myName});
+    if(!trip) throw {code:"not_found"};
+    C.trips[id] = trip; if(!C.myTrips.includes(id)) C.myTrips.unshift(id); emit();
+    return trip;
+  },
+  async leaveTrip(id){
+    C.myTrips = C.myTrips.filter(x => x !== id); delete C.trips[id]; delete C.items[id]; emit();
+    queue("leaveTrip", {id, me:S.me});
+  },
+  async deleteTrip(id){
+    C.myTrips = C.myTrips.filter(x => x !== id); delete C.trips[id]; delete C.items[id]; emit();
+    queue("deleteTrip", {id});
+  },
+  async addItem(tripId, data){
+    const it = {id:rid(), tripId, ...data};
+    (C.items[tripId] ||= {})[it.id] = it; emit();
+    queue("saveItems", {tripId, items:[it]});
+  },
+  async updateItem(tripId, itemId, patch){
+    const cur = (C.items[tripId] || {})[itemId]; if(!cur) return;
+    C.items[tripId][itemId] = deepMerge(cur, patch); emit();
+    queue("saveItems", {tripId, items:[{id:itemId, ...patch}]});
+  },
+  async deleteItem(tripId, itemId){
+    if(C.items[tripId]) delete C.items[tripId][itemId]; emit();
+    queue("deleteItem", {id:itemId});
+  },
+  async uploadFile(file){
+    const p = await prepFile(file);
+    const r = await api("uploadFile", {name:file.name || "booking", mime:p.mime, data:p.data});
+    return r.id;
+  }
+};
+async function refreshTrips(){
+  if(!CONNECTED || !C.myTrips.length){ S.tripsReady = true; return; }
+  try {
+    const list = await api("getTrips", {ids:C.myTrips});
+    const found = new Set(list.map(t => t.id));
+    const waiting = new Set(C.outbox.filter(o => o.action === "saveTrip").map(o => o.body.trip.id));
+    list.forEach(t => { if(!waiting.has(t.id)) C.trips[t.id] = t; });
+    // trips removed elsewhere, or that no longer include this phone, drop off the list
+    C.myTrips = C.myTrips.filter(id => waiting.has(id) || (found.has(id) && (C.trips[id].memberIds||[]).includes(S.me)));
+    S.tripsReady = true; emit();
+  } catch(_) { S.tripsReady = true; emit(); }
+}
+async function refreshTrip(id){
+  if(!CONNECTED) return;
+  if(!C.trips[id]) { S.tripLoading = true; }
+  try {
+    const r = await api("getTrip", {id});
+    S.tripLoading = false;
+    if(!r.trip){ if(!C.outbox.some(o => o.action === "saveTrip" && o.body.trip.id === id)){ delete C.trips[id]; } emit(); return; }
+    if(!C.outbox.some(o => o.action === "saveTrip" && o.body.trip.id === id)) C.trips[id] = r.trip;
+    const keep = pendingIds(), local = C.items[id] || {}, next = {};
+    r.items.forEach(it => { if(!keep.has(it.id)) next[it.id] = it; });
+    Object.values(local).forEach(it => { if(keep.has(it.id)) next[it.id] = it; });
+    C.items[id] = next; emit();
+  } catch(_) { S.tripLoading = false; emit(); }
+}
+function fail(e){ toast(e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : e && e.code === "not_connected" ? "ยังไม่ได้เชื่อม Google Sheet" : "เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+
+/* files go to the AI and to Drive as base64; photos are shrunk first */
+const fileToB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob); });
+async function shrinkImage(blob, maxSide){
+  const url = URL.createObjectURL(blob);
+  try{
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth*k); c.height = Math.round(img.naturalHeight*k);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, "image/jpeg", 0.88));
+  } finally { URL.revokeObjectURL(url); }
+}
+async function prepFile(f){
+  if(f.type === "application/pdf" || /\.pdf$/i.test(f.name || "")){
+    if(f.size > 15*1024*1024) throw {code:"too_big"};
+    return {mime:"application/pdf", data: await fileToB64(f)};
+  }
+  const small = await shrinkImage(f, 2000);
+  return {mime:"image/jpeg", data: await fileToB64(small)};
+}
+const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id) + "/view";
+
+/* ---------- helpers ---------- */
+function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
+const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move"].includes(S.sheet.kind) || !!S.sheet.edit));
+function softRender(){ if(!busyForm()) render(); }
+function setPath(obj, path, val){ const ks = path.split("."); let o = obj; for(let i=0;i<ks.length-1;i++) o = o[ks[i]]; o[ks[ks.length-1]] = val; }
+function nameOf(id){
+  if(id === S.me) return "ฉัน";
+  for(const t of Object.values(C.trips)){ const n = t && t.members && t.members[id]; if(n) return n; }
+  return "เพื่อนร่วมทริป";
+}
+function ensureProfiles(){}
+function avatars(ids, max=4){
+  const shown = ids.slice(0, max);
+  return `<span class="avatars" aria-hidden="true">${shown.map(id => `<span class="av ${id===S.me?"me":""}">${esc(nameOf(id).slice(0,1))}</span>`).join("")}</span>`;
+}
+const inviteLink = id => location.origin + location.pathname + "#join-" + id;
+
+/* ---------- navigation ---------- */
+function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; render(); window.scrollTo(0,0); }
+function openTrip(id, view="trip"){
+  if(S.tripId !== id){
+    unsubTrip && unsubTrip(); unsubItems && unsubItems();
+    S.tripId = id; S.trip = null; S.items = []; S.day = 0;
+    S.tripMissing = false;
+    unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
+    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
+  }
+  go(view);
+}
+
+/* ---------- views ---------- */
+/* each trip gets one of the four colours, picked from its id so it stays the same */
+function tone(id){ let n = 0; for(const c of String(id||"")) n += c.charCodeAt(0); return ["flight","stay","place","move"][n % 4]; }
+function swipeWrap(t, inner, cls){
+  const owner = t.ownerId === S.me;
+  return `<div class="trow ${cls}${S.swipeOpen === t.id ? " open" : ""}" data-row="${esc(t.id)}">
+    <div class="trow-actions"><button class="swipe-del" data-act="trip-ask" data-id="${esc(t.id)}" aria-label="${owner ? "ลบ" : "ออกจาก"}ทริป ${esc(t.name)}">${ic(owner ? "trash" : "leave",20)}<span>${owner ? "ลบ" : "ออก"}</span></button></div>
+    <div class="trow-slide">${inner}</div></div>`;
+}
+function vHome(){
+  const t0 = today();
+  const endOf = t => validD(t.startDate) ? addDays(t.startDate,(t.days||1)-1) : t0;
+  const up = S.trips.filter(t => endOf(t) >= t0).sort((a,b) => a.startDate < b.startDate ? -1 : 1);
+  const past = S.trips.filter(t => endOf(t) < t0).sort((a,b) => a.startDate < b.startDate ? 1 : -1);
+  const next = up[0], rest = [...up.slice(1), ...past];
+  const card = t => {
+    const left = daysBetween(t0, t.startDate);
+    const chip = left > 0 ? `อีก ${left} วัน` : (endOf(t) >= t0 ? "กำลังเที่ยว" : "จบทริปแล้ว");
+    return swipeWrap(t, `<button class="hero" data-act="open" data-id="${esc(t.id)}">
+      <div class="cover t-${tone(t.id)}">${MOUNTAINS.replace('class="art"','class="art" style="position:absolute;right:16px;bottom:0;left:auto;width:180px"')}<span class="chip">${chip}</span></div>
+      <div class="body"><div class="sec-h"><span><span class="name">${esc(t.name)}</span><br><span class="muted">${esc(rangeLabel(t))}</span></span>${ic("chev",24)}</div>
+      <div style="display:flex;align-items:center;gap:10px">${avatars(t.memberIds||[])}<span class="muted small">ผู้ร่วมทริป ${(t.memberIds||[]).length} คน</span></div></div></button>`, "big");
+  };
+  const row = t => swipeWrap(t, `<button class="list-row" data-act="open" data-id="${esc(t.id)}"><span class="thumb tc t-${tone(t.id)}">${ic("pin",24)}</span>
+    <span class="grow"><span class="t-name">${esc(t.name)}</span><br><span class="muted small">${esc(rangeLabel(t))}</span></span>${ic("chev")}</button>`, "small");
+  return `<main class="screen">
+    <header class="home-top"><h1>ทริปของฉัน</h1><button class="new-btn" data-act="new">${ic("plus",18)}สร้างทริป</button></header>
+    ${!S.tripsReady ? `<p class="muted">กำลังโหลดทริป…</p>` :
+      S.trips.length === 0 ? `<div class="card empty">${MOUNTAINS}
+        <p class="muted">ยังไม่มีทริป</p></div>` :
+      `${next ? `<section class="stack"><div class="sec-h"><h2>กำลังจะถึง</h2></div>${card(next)}</section>` : ""}
+       ${rest.length ? `<section class="stack" style="gap:10px"><div class="sec-h"><h2>ทริปอื่นๆ</h2></div>${rest.map(row).join("")}</section>` : ""}`}
+    <form class="join-row" data-form="join"><label for="join-code" class="sr">รหัสทริปจากเพื่อน</label><input id="join-code" name="code" maxlength="6" placeholder="รหัสทริปจากเพื่อน" autocomplete="off" value="${esc(S.joinCode)}" data-bind="root:joinCode"><button type="submit">เข้าร่วม</button></form>
+    ${!CONNECTED ? `<p class="note">${ic("info",20)}<span>ยังไม่ได้เชื่อม Google Sheet ข้อมูลอยู่ในเครื่องนี้เท่านั้น</span></p>` : ""}
+  </main>`;
+}
+function vTripMenu(s){
+  const t = S.trips.find(x => x.id === s.id); if(!t) return "";
+  const owner = t.ownerId === S.me;
+  const word = owner ? "ลบทริป" : "ออกจากทริป";
+  const warn = owner ? "แผน เที่ยวบิน และที่พักทั้งหมดในทริปนี้จะหายไป ทุกคนในทริปจะไม่เห็นอีก" : "ทริปนี้จะหายจากรายการของคุณ เพื่อนในทริปยังเห็นตามเดิม";
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(t.name)}" data-stop="1">
+    <div class="hd"><h2>${esc(t.name)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <p class="muted small" style="margin-top:-8px">${esc(rangeLabel(t))}</p>
+    ${s.confirm ? `<div class="err stack" style="gap:12px" role="alert"><span><b>${word}?</b> ${warn}</span>
+        <div class="grid2"><button class="pill-btn" style="justify-content:center" data-act="sheet-confirm-no" ${s.busy?"disabled":""}>ยกเลิก</button>
+        <button class="pill-btn" style="justify-content:center;background:var(--danger);color:var(--surface)" data-act="${owner?"trip-delete":"trip-leave"}" ${s.busy?"disabled":""}>${s.busy?"กำลังดำเนินการ…":word}</button></div></div>`
+      : `<div class="menu">
+        <button data-act="open" data-id="${esc(t.id)}">${ic("chev",20)}เปิดทริป</button>
+        <button data-act="menu-invite" data-id="${esc(t.id)}">${ic("users",20)}ชวนเพื่อน</button>
+        <button class="danger" data-act="sheet-confirm">${ic("close",20)}${word}</button></div>`}
+  </div></div>`;
+}
+
+function stepRow(label, sub, key, min, max){
+  const v = S.newTrip[key];
+  return `<div class="step-row"><span><span style="font-weight:500">${label}</span>${sub ? `<br><span class="muted small">${sub}</span>` : ""}</span>
+    <span class="stepper"><button type="button" aria-label="ลด${label}" data-act="step" data-k="${key}" data-d="-1" data-min="${min}" data-max="${max}">${ic("minus",20)}</button>
+    <output aria-live="polite">${v}</output>
+    <button type="button" aria-label="เพิ่ม${label}" data-act="step" data-k="${key}" data-d="1" data-min="${min}" data-max="${max}">${ic("plus",20)}</button></span></div>`;
+}
+function vNew(){
+  const n = S.newTrip;
+  const end = validD(n.startDate) ? dShort(addDays(n.startDate, n.days-1)) : "-";
+  return `<main class="screen">
+    <div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ทริปใหม่</h1></div>
+    <form class="stack" data-form="new" style="gap:18px">
+      ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="nt-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
+      <label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="newTrip:name"></label>
+      <label class="fld">ไปที่ไหน<input id="nt-dest" maxlength="60" placeholder="เมือง หรือ ประเทศ" value="${esc(n.destination)}" data-bind="newTrip:destination"></label>
+      <label class="fld">วันออกเดินทาง<input id="nt-start" type="date" required value="${esc(n.startDate)}" data-bind="newTrip:startDate" data-rerender="1"></label>
+      <div class="stepper-card">
+        ${stepRow("จำนวนวัน", "กลับ " + end, "days", 1, 30)}
+        ${stepRow("ผู้ใหญ่", "", "adults", 1, 30)}
+        ${stepRow("เด็ก", "รวมทั้งหมด " + (n.adults + n.kids) + " คน", "kids", 0, 30)}
+      </div>
+      <button class="btn primary" type="submit">ตกลง</button>
+    </form>
+  </main>`;
+}
+
+function vInvite(){
+  const t = S.trip; if(!t) return vLoadingTrip();
+  const link = inviteLink(t.id);
+  const ids = t.memberIds || [];
+  return `<main class="screen">
+    <div class="top"><button class="round" data-act="trip" aria-label="กลับไปที่ทริป">${ic("back")}</button><h1>ชวนผู้ร่วมทริป</h1></div>
+    <section class="card stack" style="gap:14px">
+      <h2 style="font-size:18px;font-weight:500">ลิงก์ชวนเพื่อน</h2>
+      ${link ? `<div class="link-box"><label for="inv-link" hidden>ลิงก์เข้าร่วม</label><input id="inv-link" readonly value="${esc(link)}"><button data-act="copy" data-text="${esc(link)}">คัดลอก</button></div>` : ""}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <span><span class="muted small">รหัสทริป</span><br><span class="code">${esc(t.id)}</span></span>
+        <button class="pill-btn" style="background:var(--tile)" data-act="copy" data-text="${esc(t.id)}">คัดลอกรหัส</button>
+      </div>
+    </section>
+    <section class="stack">
+      <div class="sec-h"><h2>ผู้ร่วมทริป</h2><span class="muted small">เข้าร่วมแล้ว ${ids.length}/${(t.adults||0)+(t.kids||0)} คน</span></div>
+      <ul class="members">${ids.map(id => `<li><span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(nameOf(id).slice(0,1))}</span><span class="grow" style="font-weight:500">${esc(nameOf(id))}</span><span class="muted small">${id===t.ownerId?"ผู้สร้างทริป":"เข้าร่วมแล้ว"}</span></li>`).join("")}</ul>
+    </section>
+    <button class="btn primary" data-act="trip">ไปที่ทริป ${ic("chev")}</button>
+  </main>`;
+}
+
+function vLoadingTrip(){
+  if(S.trip === null && S.tripId && S.tripMissing) return `<main class="screen"><div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ไม่พบทริป</h1></div><p class="muted">ทริปนี้อาจถูกลบไปแล้ว</p></main>`;
+  return `<div class="load muted">กำลังโหลดทริป…</div>`;
+}
+
+function dayEntries(dateStr){
+  const out = [];
+  for(const it of S.items){
+    if(it.type === "stay"){
+      if(it.date === dateStr) out.push({it, phase:"in", time:it.time, title:"เช็กอิน " + (it.title||"ที่พัก"), sub:""});
+      if(it.endDate === dateStr) out.push({it, phase:"out", time:it.endTime, title:"เช็กเอาต์ " + (it.title||"ที่พัก"), sub:""});
+    } else {
+      if(it.date === dateStr) out.push({it, phase:"", time:it.time, title:it.title, sub:subOf(it)});
+      if(it.type === "flight"){
+        const d = it.data || {}, ad = arrDateOf(it);
+        if(ad && ad !== it.date && ad === dateStr)
+          out.push({it, phase:"arr", time:d.arrTime, title:`ถึง ${d.toCity || d.to || "ปลายทาง"}`, sub:[s_(d.flightNo), `ออก ${it.time||"-"} (${dShort(it.date)})`].filter(Boolean).join(" · ")});
+      }
+    }
+  }
+  out.sort((a,b) => (a.time||"99") < (b.time||"99") ? -1 : 1);
+  /* where everyone sleeps tonight: any stay whose nights cover this date */
+  for(const it of S.items){
+    if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate)
+      out.push({it, phase:"night", night:true, time:"", title:"นอนที่ " + (it.title||"ที่พัก"), sub:""});
+    if(it.type === "flight" && validD(it.date)){
+      const ad = arrDateOf(it);
+      if(validD(ad) && it.date <= dateStr && dateStr < ad)
+        out.push({it, phase:"night", night:true, time:"", title:"นอนบนเครื่องบิน", sub:s_((it.data||{}).flightNo)});
+    }
+  }
+  return out;
+}
+/* flights show number and arrival only; the airline name is in the detail sheet */
+function arrDateOf(it){
+  const d = it.data || {};
+  if(validD(d.arrDate)) return d.arrDate;
+  if(!validD(it.date)) return "";
+  return (d.arrTime && it.time && d.arrTime < it.time) ? addDays(it.date, 1) : it.date;
+}
+function subOf(it){
+  if(it.type !== "flight") return it.sub || "";
+  const d = it.data || {};
+  const ad = arrDateOf(it), shift = validD(ad) && validD(it.date) ? daysBetween(it.date, ad) : 0;
+  const arr = d.arrTime ? `ถึง ${d.arrTime}${shift > 0 ? ` (${dShort(ad)})` : ""}` : "";
+  return [s_(d.flightNo), arr].filter(Boolean).join(" · ");
+}
+function entryHtml(e){
+  return `<li><button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
+    <span class="thumb tc t-${e.it.type}">${ic(e.it.type,20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}</span></button></li>`;
+}
+function catCard(){
+  const tab = S.catTab || "";
+  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["place","สถานที่"],["move","เดินทาง"]];
+  const list = S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
+  const row = it => {
+    const when = it.type === "stay"
+      ? `${dShort(it.date)} – ${dShort(it.endDate)}`
+      : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
+    return `<li><button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(it.title)}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button></li>`;
+  };
+  /* nights covered by a hotel or by an overnight flight */
+  const covered = new Set(), onPlane = new Set();
+  const tripNights = tripDates(S.trip).slice(0, -1);
+  for(const i of S.items){
+    if(i.type === "stay" && validD(i.date) && validD(i.endDate)) for(let d = i.date; d < i.endDate; d = addDays(d,1)) covered.add(d);
+    if(i.type === "flight" && validD(i.date)){ const ad = arrDateOf(i); if(validD(ad)) for(let d = i.date; d < ad; d = addDays(d,1)) onPlane.add(d); }
+  }
+  const nHotel = tripNights.filter(d => covered.has(d)).length;
+  const nPlane = tripNights.filter(d => !covered.has(d) && onPlane.has(d)).length;
+  const missing = tripNights.filter(d => !covered.has(d) && !onPlane.has(d));
+  const add = (tab === "flight" || tab === "stay")
+    ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
+    : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
+  const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง"}[tab];
+  return `<section class="cat-card">
+    <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
+      const n = S.items.filter(i => i.type === k).length;
+      return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
+    }).join("")}</div>
+    ${!tab ? "" : list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}
+    ${tab === "stay" && list.length ? `<p class="muted small" style="padding:0 4px">${missing.length ? `ที่พัก ${nHotel}${nPlane ? ` · บนเครื่อง ${nPlane}` : ""} จาก ${tripNights.length} คืน · ยังขาด ${missing.map(dShort).join(", ")}` : `ครบ ${tripNights.length} คืน${nPlane ? ` (บนเครื่อง ${nPlane})` : ""}`}</p>` : ""}
+    ${tab ? add : ""}
+  </section>`;
+}
+/* trip days laid out as a Sunday-first calendar, 7 per row */
+function calendar(dates){
+  const first = dates[0], last = dates[dates.length-1];
+  const lead = parseD(first).getDay();
+  const before = Array.from({length:lead}, (_,k) => addDays(first, k - lead));
+  const trail = (7 - (lead + dates.length) % 7) % 7;
+  const after = Array.from({length:trail}, (_,k) => addDays(last, k + 1));
+  const out = x => `<span class="tab out" aria-hidden="true"><b>${parseD(x).getDate()}</b></span>`;
+  return `<div class="cal">
+    <div class="cal-head" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div>
+    <div class="tabs" role="tablist" aria-label="เลือกวัน">
+      ${before.map(out).join("")}
+      ${dates.map((x,i) => `<button class="tab" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`).join("")}
+      ${after.map(out).join("")}
+    </div></div>`;
+}
+function vTrip(){
+  const t = S.trip; if(!t) return vLoadingTrip();
+  const dates = tripDates(t);
+  if(S.day >= dates.length) S.day = 0;
+  const d = dates[S.day];
+  const entries = dayEntries(d);
+  const inRange = new Set(dates);
+  const loose = S.items.filter(it => !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate)));
+  const count = k => S.items.filter(i => i.type === k).length;
+  const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
+  return `<main class="screen">
+    <section class="trip-head t-${tone(t.id)}">${MOUNTAINS}
+      <div class="row"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
+        <button class="pill-btn" data-act="invite">${ic("users",20)}ชวนเพื่อน</button></div>
+      <div style="display:flex;flex-direction:column;gap:6px;position:relative">
+        <h1>${esc(t.name)}</h1>
+        <div class="meta"><span>${esc(rangeLabel(t))}${t.destination?` · ${esc(t.destination)}`:""}</span></div>
+        <div class="meta">${avatars(t.memberIds||[])}<span class="small">${(t.memberIds||[]).length} คนในทริป</span></div>
+      </div>
+    </section>
+    ${catCard()}
+    <section class="stack" style="gap:14px">
+      <div class="sec-h"><h2>แผนรายวัน</h2></div>
+      ${calendar(dates)}
+      <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}</p>
+      ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
+      <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>
+    </section>
+    ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
+      <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
+  </main>`;
+}
+
+function vUpload(){
+  const u = S.upload, isF = u.kind === "flight";
+  const head = `<div class="top"><button class="round" data-act="trip" aria-label="กลับไปที่ทริป">${ic("back")}</button><h1>${isF?"เพิ่มเที่ยวบิน":"เพิ่มที่พัก"}</h1></div>`;
+  if(u.status === "reading"){
+    return `<main class="screen">${head}
+      <div class="card reading"><div class="spinner" role="status" aria-label="กำลังอ่าน"></div>
+        <p class="muted small" id="read-step" aria-live="polite">${esc(u.step||"")}</p>
+        <button class="link-btn" data-act="stop">หยุด</button></div></main>`;
+  }
+  const files = u.files || [];
+  return `<main class="screen" style="gap:14px">${head}
+    <div class="drop compact"><input type="file" id="file-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบไฟล์ใบจอง">
+      ${ic("upload",22)}<b>แนบไฟล์</b><span class="muted small">PDF · JPG · PNG</span></div>
+    ${files.length ? `<ul class="files">${files.map((f,i) => `<li class="file-chip">${ic("file",18)}<span class="grow">${esc(f.name || "ไฟล์")}</span>
+      <button class="chip-x" data-act="rm-file" data-i="${i}" aria-label="เอา ${esc(f.name||"ไฟล์")} ออก">${ic("close",16)}</button></li>`).join("")}</ul>` : ""}
+    <label for="paste-text" class="sr">ข้อความการจอง</label>
+    <textarea id="paste-text" rows="3" placeholder="หรือวางข้อความการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea>
+    ${u.status === "error" && u.err ? `<div class="err" role="alert">${esc(u.err)}</div>` : ""}
+    <button class="btn primary" data-act="read-all">ตกลง</button>
+    <button class="link-btn" data-act="manual">กรอกเอง</button>
+  </main>`;
+}
+
+function fld(label, path, val, type="text", cls=""){
+  const warn = S.review && S.review.uncertain && S.review.uncertain.has(path) ? " warn" : "";
+  const id = "rv-" + path.replace(/[^a-zA-Z0-9]/g, "-");
+  return `<label class="fld sm ${cls}${warn}" for="${id}">${label}<input id="${id}" type="${type}" value="${esc(val)}" data-bind="review:${path}"></label>`;
+}
+function vReview(){
+  const r = S.review;
+  const anyWarn = r.uncertain && r.uncertain.size > 0;
+  const found = [r.flights.length ? `${r.flights.length} เที่ยวบิน` : "", r.stays.length ? `${r.stays.length} ที่พัก` : ""].filter(Boolean).join(" · ");
+  const fileRow = r.fileName ? `<div class="file-row"><span class="thumb" style="width:44px;height:52px;border-radius:10px">${ic("file")}</span>
+    <span class="grow"><span style="font-weight:500;overflow-wrap:anywhere">${esc(r.fileName)}</span><br><span class="muted small">อ่านเสร็จแล้ว${found?` · พบ ${found}`:""}</span></span><span class="ok-dot">${ic("check",18)}</span></div>` : "";
+  const flights = r.flights.map((f,i) => `<section class="card f-card">
+      <div class="hd"><b>${ic("flight",20)} เที่ยวบินที่ ${i+1}</b><button type="button" class="x-btn" data-act="rm-flight" data-i="${i}">เอาออก</button></div>
+      <div class="grid2">
+        ${fld("สายการบิน",`flights.${i}.airline`,f.airline)}${fld("เลขเที่ยวบิน",`flights.${i}.flightNo`,f.flightNo)}
+        ${fld("วันที่บิน",`flights.${i}.date`,f.date,"date","full")}
+        ${fld("ออกจาก (รหัสสนามบิน)",`flights.${i}.from`,f.from)}${fld("เวลาออก",`flights.${i}.depTime`,f.depTime,"time")}
+        ${fld("ไปถึง (รหัสสนามบิน)",`flights.${i}.to`,f.to)}${fld("เวลาถึง",`flights.${i}.arrTime`,f.arrTime,"time")}
+        ${fld("วันที่ถึง",`flights.${i}.arrDate`,f.arrDate,"date","full")}
+        ${fld("เมืองต้นทาง",`flights.${i}.fromCity`,f.fromCity)}${fld("เมืองปลายทาง",`flights.${i}.toCity`,f.toCity)}
+        ${fld("ผู้โดยสาร",`flights.${i}.passengers`,f.passengers,"text","full")}${fld("รหัสการจอง",`flights.${i}.bookingRef`,f.bookingRef,"text","full")}
+      </div></section>`).join("");
+  const stays = r.stays.map((st,i) => `<section class="card f-card">
+      <div class="hd"><b>${ic("stay",20)} ที่พัก${r.stays.length>1?` ${i+1}`:""}</b><button type="button" class="x-btn" data-act="rm-stay" data-i="${i}">เอาออก</button></div>
+      <div class="grid2">
+        ${fld("ชื่อที่พัก",`stays.${i}.name`,st.name,"text","full")}${fld("ที่อยู่",`stays.${i}.address`,st.address,"text","full")}
+        ${fld("วันเช็กอิน",`stays.${i}.checkInDate`,st.checkInDate,"date")}${fld("เวลาเช็กอิน",`stays.${i}.checkInTime`,st.checkInTime,"time")}
+        ${fld("วันเช็กเอาต์",`stays.${i}.checkOutDate`,st.checkOutDate,"date")}${fld("เวลาเช็กเอาต์",`stays.${i}.checkOutTime`,st.checkOutTime,"time")}
+        ${fld("ห้องพัก",`stays.${i}.rooms`,st.rooms)}${fld("ผู้เข้าพัก",`stays.${i}.guests`,st.guests)}
+        ${fld("รหัสการจอง",`stays.${i}.bookingRef`,st.bookingRef,"text","full")}
+      </div></section>`).join("");
+  const extra = "";
+  return `<main class="screen">
+    <div class="top"><button class="round" data-act="cancel-review" aria-label="ยกเลิก">${ic("close")}</button><h1>ตรวจข้อมูล</h1></div>
+    ${fileRow}
+    <form class="stack" data-form="review" style="gap:14px">
+      ${flights}${extra}${stays}
+      <div class="grid2"><button type="button" class="add-dash" data-act="add-flight">${ic("plus",20)}เที่ยวบิน</button><button type="button" class="add-dash" data-act="add-stay">${ic("plus",20)}ที่พัก</button></div>
+      <button class="btn primary" type="submit" ${S.saving?"disabled":""}>${S.saving?"กำลังบันทึก…":"ตกลง"}</button>
+    </form>
+  </main>`;
+}
+
+function vJoin(){
+  const t = S.joinTrip;
+  if(S.joinMissing) return `<main class="screen"><div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ไม่พบทริป</h1></div>
+    <p class="muted">ไม่พบทริปจากลิงก์หรือรหัสนี้ ลองขอรหัสจากเพื่อนอีกครั้ง</p></main>`;
+  if(!t) return `<div class="load muted">กำลังหาทริป…</div>`;
+  return `<main class="screen">
+    <div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>คำชวนเข้าทริป</h1></div>
+    <section class="trip-head" style="padding:22px">${MOUNTAINS}
+      <div style="display:flex;flex-direction:column;gap:6px;position:relative"><p class="small">${esc(nameOf(t.ownerId))} ชวนคุณไปเที่ยว</p><h1>${esc(t.name)}</h1><p>${esc(rangeLabel(t))}${t.destination?` · ${esc(t.destination)}`:""}</p></div>
+    </section>
+    ${S.savedName ? "" : `<label class="fld">ชื่อของคุณ<input id="join-me" maxlength="40" placeholder="ชื่อที่เพื่อนในทริปจะเห็น" value="${esc(S.myName)}" data-bind="root:myName"></label>`}
+    <button class="btn primary" data-act="join-confirm">เข้าร่วมทริปนี้</button>
+  </main>`;
+}
+
+function efld(label, key, val, type="text", cls=""){
+  const id = "ed-" + key;
+  return `<label class="fld sm ${cls}" for="${id}">${label}<input id="${id}" type="${type}" value="${esc(val)}" data-bind="sheet:edit.${key}"></label>`;
+}
+function editFromItem(it){
+  const d = it.data || {};
+  if(it.type === "flight") return {airline:d.airline||"", flightNo:d.flightNo||"", date:it.date||"", from:d.from||"", depTime:it.time||"", to:d.to||"", arrTime:d.arrTime||"", arrDate:arrDateOf(it), fromCity:d.fromCity||"", toCity:d.toCity||"", passengers:d.passengers||"", bookingRef:d.bookingRef||""};
+  if(it.type === "stay") return {name:it.title||"", address:d.address||"", checkInDate:it.date||"", checkInTime:it.time||"", checkOutDate:it.endDate||"", checkOutTime:it.endTime||"", rooms:d.rooms||"", guests:d.guests||"", bookingRef:d.bookingRef||"", phone:d.phone||"", website:d.website||"", mapsUrl:d.mapsUrl||""};
+  return {title:it.title||"", date:it.date||"", time:it.time||"", note:it.sub||""};
+}
+function patchFromEdit(it, e){
+  if(it.type === "flight") return makeFlightDoc({...e, depTime:e.depTime});
+  if(it.type === "stay") return {date:e.checkInDate, time:e.checkInTime, endDate:e.checkOutDate, endTime:e.checkOutTime, title:s_(e.name) || "ที่พัก",
+    data:{...(it.data||{}), address:e.address, rooms:e.rooms, guests:e.guests, bookingRef:e.bookingRef, phone:s_(e.phone), website:cleanUrl(e.website), mapsUrl:cleanUrl(e.mapsUrl)}};
+  return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note)};
+}
+function vItemEdit(it, e){
+  let body;
+  if(it.type === "flight") body = `${efld("สายการบิน","airline",e.airline)}${efld("เลขเที่ยวบิน","flightNo",e.flightNo)}
+    ${efld("วันที่บิน","date",e.date,"date","full")}
+    ${efld("ออกจาก","from",e.from)}${efld("เวลาออก","depTime",e.depTime,"time")}
+    ${efld("ไปถึง","to",e.to)}${efld("เวลาถึง","arrTime",e.arrTime,"time")}
+    ${efld("วันที่ถึง","arrDate",e.arrDate,"date","full")}
+    ${efld("เมืองต้นทาง","fromCity",e.fromCity)}${efld("เมืองปลายทาง","toCity",e.toCity)}
+    <label class="fld sm full" for="ed-passengers">ผู้โดยสาร (คั่นด้วย ,)<textarea id="ed-passengers" rows="3" data-bind="sheet:edit.passengers" class="ed-area">${esc(e.passengers)}</textarea></label>
+    ${efld("รหัสการจอง","bookingRef",e.bookingRef,"text","full")}`;
+  else if(it.type === "stay") body = `${efld("ชื่อที่พัก","name",e.name,"text","full")}${efld("ที่อยู่","address",e.address,"text","full")}
+    ${efld("วันเช็กอิน","checkInDate",e.checkInDate,"date")}${efld("เวลาเช็กอิน","checkInTime",e.checkInTime,"time")}
+    ${efld("วันเช็กเอาต์","checkOutDate",e.checkOutDate,"date")}${efld("เวลาเช็กเอาต์","checkOutTime",e.checkOutTime,"time")}
+    ${efld("ห้องพัก","rooms",e.rooms)}${efld("ผู้เข้าพัก","guests",e.guests)}
+    ${efld("รหัสการจอง","bookingRef",e.bookingRef,"text","full")}
+    ${efld("โทร","phone",e.phone,"tel","full")}${efld("เว็บไซต์","website",e.website,"url","full")}
+    ${efld("ลิงก์ Google Maps","mapsUrl",e.mapsUrl,"url","full")}`;
+  else body = `${efld(it.type === "move" ? "การเดินทาง" : "ชื่อสถานที่","title",e.title,"text","full")}
+    ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
+    ${efld("โน้ต","note",e.note,"text","full")}`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไข ${esc(it.title)}" data-stop="1">
+    <div class="hd"><span class="thumb tc t-${it.type}">${ic(it.type)}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form class="stack" data-form="item-edit" style="gap:14px">
+      <div class="grid2">${body}</div>
+      <div class="grid2"><button type="button" class="btn ghost" style="background:var(--tile);height:50px;font-size:16px" data-act="item-edit-cancel">ยกเลิก</button>
+      <button type="submit" class="btn primary" style="height:50px;font-size:16px" ${S.saving?"disabled":""}>ตกลง</button></div>
+    </form>
+  </div></div>`;
+}
+function cleanUrl(v){ const x = s_(v); if(!x) return ""; const u = /^https?:\/\//i.test(x) ? x : (/^[\w-]+(\.[\w-]+)+/.test(x) ? "https://" + x : ""); try { return u ? new URL(u).href : ""; } catch(_){ return ""; } }
+function mapsLink(it){
+  const d = it.data || {};
+  if(d.mapsUrl) return d.mapsUrl;
+  const q = [it.type === "stay" ? it.title : (it.type === "place" ? it.title : ""), d.address].filter(Boolean).join(" ");
+  return q ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q) : "";
+}
+function itemLinks(it){
+  const d = it.data || {}, out = [];
+  const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
+  if(it.type === "stay" || it.type === "place"){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
+  if(d.website) out.push(lnk(d.website, "globe", "เว็บไซต์"));
+  const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
+  files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
+  if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
+  if(CONNECTED) out.push(`<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>`);
+  return out.length ? `<div class="links">${out.join("")}</div>` : "";
+}
+function vSheet(){
+  const s = S.sheet; if(!s) return "";
+  if(s.kind === "trip-menu") return vTripMenu(s);
+  const t = S.trip;
+  if(s.kind === "item"){
+    const it = S.items.find(i => i.id === s.id); if(!it) return "";
+    if(s.edit) return vItemEdit(it, s.edit);
+    if(s.showText) return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ข้อความใบจอง" data-stop="1">
+      <div class="hd"><button class="round" data-act="hide-source" aria-label="กลับ">${ic("back")}</button><h2>ข้อความใบจอง</h2></div>
+      <pre class="src">${esc(it.sourceText)}</pre></div></div>`;
+    const data = it.data || {};
+    let rows = [];
+    if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef]];
+    else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address],["โทร", data.phone],["ห้องพัก", data.rooms],["ผู้เข้าพัก", data.guests],["รหัสการจอง", data.bookingRef]];
+    else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
+    rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
+    return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
+      <div class="hd"><span class="thumb tc t-${it.type}">${ic(it.type)}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+      <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
+      ${itemLinks(it)}
+      <p class="muted small">เพิ่มโดย ${esc(nameOf(it.createdBy))}</p>
+      ${s.confirm ? `<div class="err" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>ลบรายการนี้ออกจากทริป?</span><span style="display:flex;gap:8px"><button class="pill-btn" data-act="sheet-confirm-no">ไม่ลบ</button><button class="pill-btn" style="background:var(--danger);color:var(--surface)" data-act="delete-item">ลบเลย</button></span></div>`
+        : `<div class="grid2"><button class="btn ghost" style="background:var(--tile);height:48px;font-size:15px" data-act="item-edit">แก้ไข</button><button class="btn ghost" style="background:var(--tile);height:48px;font-size:15px;color:var(--danger)" data-act="sheet-confirm">ลบ</button></div>`}
+    </div></div>`;
+  }
+  const isMove = s.kind === "move";
+  const dates = tripDates(t);
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}" data-stop="1">
+    <div class="hd"><span class="thumb tc t-${s.kind}">${ic(s.kind)}</span><h2>${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form class="stack" data-form="sheet" style="gap:14px">
+      ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div></div>` : ""}
+      <label class="fld">${isMove?"จากไหนไปไหน":"ชื่อสถานที่"}<input id="sh-title" ${isMove?"":"required"} maxlength="80" placeholder="${isMove?"เช่น สนามบิน → ที่พัก":"เช่น วัดพระธาตุดอยสุเทพ"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
+      <div class="grid2">
+        <label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>
+        <label class="fld">เวลา<input id="sh-time" type="time" value="${esc(s.time)}" data-bind="sheet:time"></label>
+      </div>
+      <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="${isMove?"เช่น ประมาณ 30 นาที":"เช่น เด็กๆ ชอบ, ใช้เวลา 2 ชม."}" value="${esc(s.note)}" data-bind="sheet:note"></label>
+      <button class="btn primary" type="submit">ตกลง</button>
+    </form>
+  </div></div>`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const views = {home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
+  const v = views[S.view];
+  const active = document.activeElement && document.activeElement.id;
+  document.getElementById("app").innerHTML = (v ? v() : `<div class="load muted">กำลังโหลด…</div>`)
+    + (["trip","home"].includes(S.view) ? vSheet() : "")
+    + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
+  if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
+  document.body.style.overflow = S.sheet ? "hidden" : "";
+}
+
+const s_ = v => (v === null || v === undefined) ? "" : String(v).trim();
+const cleanDate = v => validD(s_(v)) ? s_(v) : "";
+const cleanTime = v => { const m = s_(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? `${pad(Math.min(23,+m[1]))}:${m[2]}` : ""; };
+const emptyFlight = () => ({airline:"", flightNo:"", date:"", from:"", fromCity:"", depTime:"", to:"", toCity:"", arrTime:"", arrDate:"", passengers:"", bookingRef:""});
+/* same flight = same date + same flight number (or same route and departure time when there is no number) */
+const normFno = v => { const x = s_(v).toUpperCase().replace(/[\s-]/g, ""); const m = x.match(/^([A-Z0-9]{2})0*(\d{1,4}[A-Z]?)$/); return m ? m[1] + m[2] : x; };
+const flightKey = f => validD(f.date) ? f.date + "|" + (normFno(f.flightNo) || `${s_(f.from).toUpperCase()}-${s_(f.to).toUpperCase()}-${f.depTime || ""}`) : "";
+/* one name per line, without fare-type tags such as (ADT) or (CHD) */
+function paxList(v){
+  const seen = new Map();
+  s_(v).split(/[,;\n]+/).map(x => x
+      .replace(/\(\s*(ADT|ADULT|CHD|CHLD|CHILD|INF|INFT|INFANT|YTH|YOUTH|SRC|SNR)\s*\)/gi, "")
+      .replace(/\s+(ADT|CHD|CHLD|INF|INFT)$/i, "")
+      .replace(/\s{2,}/g, " ").trim())
+    .filter(Boolean).forEach(x => { const k = x.toLowerCase(); if(!seen.has(k)) seen.set(k, x); });
+  return [...seen.values()];
+}
+function makeFlightDoc(f){
+  return {type:"flight", date:f.date, time:f.depTime,
+    title:`บิน ${f.fromCity||f.from||"?"} → ${f.toCity||f.to||"?"}`,
+    sub:[s_(f.flightNo), f.arrTime ? `ถึง ${f.arrTime}` : ""].filter(Boolean).join(" · "),
+    data:{airline:f.airline, flightNo:f.flightNo, from:s_(f.from).toUpperCase(), to:s_(f.to).toUpperCase(), fromCity:f.fromCity, toCity:f.toCity, arrTime:f.arrTime, arrDate:validD(f.arrDate) ? f.arrDate : (f.arrTime && f.depTime && validD(f.date) && f.arrTime < f.depTime ? addDays(f.date, 1) : (validD(f.date) ? f.date : "")), passengers:f.passengers, bookingRef:f.bookingRef}};
+}
+function mergeText(...vals){
+  const seen = new Map();
+  vals.flatMap(v => s_(v).split(/[,;\n]+/)).map(x => x.trim()).filter(Boolean).forEach(x => { const k = x.toLowerCase(); if(!seen.has(k)) seen.set(k, x); });
+  return [...seen.values()].join(", ");
+}
+function mergeInto(g, f){
+  for(const k of Object.keys(f)){
+    if(k === "passengers" || k === "bookingRef") g[k] = mergeText(g[k], f[k]);
+    else if(!g[k] && f[k]) g[k] = f[k];
+  }
+  return g;
+}
+function mergeFlights(list){
+  const out = [], at = new Map(), map = [];
+  list.forEach((f, i) => {
+    const k = flightKey(f);
+    if(k && at.has(k)){ mergeInto(out[at.get(k)], f); map[i] = at.get(k); }
+    else { if(k) at.set(k, out.length); map[i] = out.length; out.push({...f}); }
+  });
+  return {out, map};
+}
+const emptyStay = (t) => ({name:"", address:"", checkInDate:t ? t.startDate : "", checkInTime:"14:00", checkOutDate:t ? addDays(t.startDate, Math.max(1,(t.days||1)-1)) : "", checkOutTime:"12:00", rooms:"", guests:"", bookingRef:""});
+function buildReview(kind, res){
+  res = res || {};
+  const unc = new Set(Array.isArray(res.uncertain) ? res.uncertain.map(String) : []);
+  const rawFlights = (Array.isArray(res.flights) ? res.flights : []).filter(f => f && typeof f === "object").map(f => ({
+    airline:s_(f.airline), flightNo:s_(f.flightNo), date:cleanDate(f.date), from:s_(f.from).toUpperCase(), fromCity:s_(f.fromCity),
+    depTime:cleanTime(f.depTime), to:s_(f.to).toUpperCase(), toCity:s_(f.toCity), arrTime:cleanTime(f.arrTime), arrDate:cleanDate(f.arrDate),
+    passengers:s_(f.passengers), bookingRef:s_(f.bookingRef)}));
+  const merged = mergeFlights(rawFlights);
+  const flights = merged.out;
+  flights.forEach(f => { if(!f.passengers) f.passengers = s_(res.passengers); if(!f.bookingRef) f.bookingRef = s_(res.bookingRef); });
+  [...unc].forEach(u => { const m = u.match(/^flights\.(\d+)\.(.+)$/); if(m){ unc.delete(u); const j = merged.map[+m[1]]; if(j !== undefined) unc.add(`flights.${j}.${m[2]}`); } });
+  const stays = (Array.isArray(res.stays) ? res.stays : (res.stay ? [res.stay] : [])).filter(st => st && typeof st === "object").map(st => ({
+    name:s_(st.name), address:s_(st.address), checkInDate:cleanDate(st.checkInDate), checkInTime:cleanTime(st.checkInTime),
+    checkOutDate:cleanDate(st.checkOutDate), checkOutTime:cleanTime(st.checkOutTime), rooms:s_(st.rooms), guests:s_(st.guests), bookingRef:s_(st.bookingRef),
+    phone:s_(st.phone), website:cleanUrl(st.website)}));
+  flights.forEach((f,i) => ["date","depTime"].forEach(k => { if(!f[k]) unc.add(`flights.${i}.${k}`); }));
+  stays.forEach((st,i) => ["checkInDate","checkOutDate"].forEach(k => { if(!st[k]) unc.add(`stays.${i}.${k}`); }));
+  // a date far outside the trip is worth a second look
+  const t = S.trip;
+  if(t && validD(t.startDate)){
+    const lo = addDays(t.startDate, -7), hi = addDays(t.startDate, (t.days||1) + 7);
+    flights.forEach((f,i) => { if(f.date && (f.date < lo || f.date > hi)) unc.add(`flights.${i}.date`); });
+    stays.forEach((st,i) => { if(st.checkInDate && (st.checkInDate < lo || st.checkInDate > hi)) unc.add(`stays.${i}.checkInDate`); });
+  }
+  return {kind, flights, stays, passengers:s_(res.passengers), bookingRef:s_(res.bookingRef), uncertain:unc};
+}
+function errCopy(code){
+  if(/^missing_/.test(code||"")) return "ยังไม่ได้ใส่ API key ใน Apps Script ลองกรอกเองไปก่อน";
+  if(/^ai_error/.test(code||"")) return "ตัวอ่านใบจองตอบกลับผิดพลาด ลองใหม่อีกครั้ง หรือกรอกเอง";
+  return ({
+    not_connected:"ยังไม่ได้เชื่อม Google Sheet เลยอ่านใบจองไม่ได้ ลองกรอกเองได้เลย",
+    offline:"ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง",
+    server_error:"เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง",
+    empty:"แนบไฟล์ หรือวางข้อความการจองก่อนนะ",
+    too_short:"ข้อความสั้นเกินไป วางรายละเอียดการจองทั้งหมดจากอีเมล",
+    too_big:"ไฟล์ PDF ใหญ่เกิน 15 MB ลองแคปหน้าจอแทน",
+    nothing:"ไม่เจอข้อมูลเที่ยวบินหรือที่พักในสิ่งที่ส่งมา ลองไฟล์อื่น หรือกรอกเอง",
+    unsupported:"รองรับไฟล์ PDF, JPG, JPEG และ PNG",
+    rate_limited:"ใช้งานถี่เกินไป รอสักครู่แล้วลองใหม่",
+    invalid_json:"อ่านใบจองไม่ออก ลองรูปที่ชัดขึ้น หรือกรอกเอง"
+  })[code] || "อ่านใบจองไม่สำเร็จ ลองใหม่อีกครั้ง หรือกรอกเอง";
+}
+
+/* ---------- reading everything the person sent ---------- */
+const isPdf = f => f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
+const isImg = f => /^image\/(jpe?g|png|webp|gif|heic|heif)$/i.test(f.type || "") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || "");
+function setStep(txt){ if(S.upload){ S.upload.step = txt; const el = document.getElementById("read-step"); if(el) el.textContent = txt; else render(); } }
+function addFiles(list){
+  if(!S.upload) return;
+  const files = S.upload.files || (S.upload.files = []);
+  let bad = 0;
+  for(const f of list){ if(isPdf(f) || isImg(f)){ if(files.length < 6) files.push(f); } else bad++; }
+  S.upload.status = bad ? "error" : "idle"; S.upload.err = bad ? errCopy("unsupported") : "";
+  render();
+}
+function autoSaveable(r){
+  if(r.uncertain.size) return false;
+  if(!r.flights.length && !r.stays.length) return false;
+  return r.flights.every(f => f.date && f.depTime && (f.from || f.to)) && r.stays.every(st => st.checkInDate && st.checkOutDate);
+}
+async function readAll(){
+  const u = S.upload; if(!u || u.status === "reading") return;
+  const files = u.files || [], pasted = s_(u.text);
+  if(!files.length && !pasted){ u.status = "error"; u.err = errCopy("empty"); render(); return; }
+  if(!files.length && pasted.replace(/\s/g,"").length < 30){ u.status = "error"; u.err = errCopy("too_short"); render(); return; }
+  u.status = "reading"; u.err = ""; u.step = "กำลังเตรียมไฟล์…"; u.ctl = new AbortController();
+  render();
+  const signal = u.ctl.signal;
+  try{
+    const prepared = [];
+    for(const f of files){ prepared.push(await prepFile(f)); if(signal.aborted) throw {code:"cancelled"}; }
+    // keep the booking files in Drive while the AI reads them
+    const uploads = prepared.map((p, i) => api("uploadFile", {name:files[i].name || "booking", mime:p.mime, data:p.data}).then(r => r.id).catch(() => null));
+    setStep("กำลังอ่านใบจอง…");
+    const t = S.trip;
+    const res = await api("readBooking", {kind:u.kind, trip:{name:t.name, destination:t.destination, startDate:t.startDate, days:t.days},
+      files:prepared, text:pasted}, signal);
+    const r = buildReview(u.kind, res);
+    if(!r.flights.length && !r.stays.length) throw {code:"nothing"};
+    r.fileName = files.length ? files.map(f => f.name).join(", ") : "ข้อความที่วาง";
+    setStep("กำลังเก็บใบจอง…");
+    r.fileIds = (await Promise.all(uploads)).filter(Boolean);
+    r.sourceText = pasted ? pasted.slice(0, 30000) : "";
+    S.review = r;
+    if(autoSaveable(r)) { await saveReview(true); return; }
+    u.status = "idle";
+    go("review");
+  } catch(e){
+    if(e && e.code === "cancelled"){ u.status = "idle"; }
+    else { u.status = "error"; u.err = errCopy(e && e.code); }
+    render();
+  }
+}
+
+/* ---------- saving ---------- */
+async function saveReview(auto){
+  const r = S.review, t = S.trip; if(!r || !t) return;
+  const base = {createdBy:S.me, createdAt:Date.now(), source:r.fileName ? "upload" : "manual"};
+  if(r.fileIds && r.fileIds.length) base.fileIds = r.fileIds;
+  if(r.sourceText) base.sourceText = r.sourceText;
+  const docs = [];
+  const flightDoc = makeFlightDoc;
+  const _unused = f => ({type:"flight", date:f.date, time:f.depTime,
+    title:`บิน ${f.fromCity||f.from||"?"} → ${f.toCity||f.to||"?"}`,
+    sub:[`${f.airline} ${f.flightNo}`.trim(), f.arrTime ? `ถึง ${f.arrTime}` : ""].filter(Boolean).join(" · "),
+    data:{airline:f.airline, flightNo:f.flightNo, from:f.from, to:f.to, fromCity:f.fromCity, toCity:f.toCity, arrTime:f.arrTime, passengers:f.passengers, bookingRef:f.bookingRef}});
+  const updates = [];
+  const fresh = mergeFlights(r.flights.filter(f => f.from || f.to || f.flightNo || f.date)).out;
+  for(const f of fresh){
+    const k = flightKey(f);
+    const old = k && S.items.find(i => i.type === "flight" && flightKey({...(i.data||{}), date:i.date, depTime:i.time}) === k);
+    if(old){
+      const prev = {...(old.data||{}), date:old.date, depTime:old.time};
+      const m = mergeInto(prev, f);
+      const patch = flightDoc(m);
+      const ids = [...new Set([...(old.fileIds||[]), ...(old.fileId ? [old.fileId] : []), ...(r.fileIds||[])])];
+      if(ids.length) patch.fileIds = ids;
+      if(r.sourceText && !old.sourceText) patch.sourceText = r.sourceText;
+      updates.push({id:old.id, patch});
+    } else docs.push({...base, ...flightDoc(f)});
+  }
+  for(const st of r.stays){
+    if(!st.name && !st.checkInDate) continue;
+    docs.push({...base, type:"stay", date:st.checkInDate, time:st.checkInTime, endDate:st.checkOutDate, endTime:st.checkOutTime,
+      title:st.name || "ที่พัก", sub:"", data:{address:st.address, phone:st.phone||"", website:st.website||"", rooms:st.rooms, guests:st.guests, bookingRef:st.bookingRef || r.bookingRef}});
+  }
+  if(!docs.length && !updates.length){ toast("ยังไม่มีข้อมูลให้บันทึก"); return; }
+  S.saving = true; if(!auto) render();
+  try{
+    for(const d of docs) await store.addItem(t.id, d);
+    for(const u of updates) await store.updateItem(t.id, u.id, u.patch);
+    S.saving = false; S.review = null; S.upload = null;
+    const first = [...docs, ...updates.map(u => u.patch)].map(d => d.date).filter(Boolean).sort()[0]; const idx = tripDates(t).indexOf(first); if(idx >= 0) S.day = idx;
+    const nF = docs.filter(d => d.type === "flight").length, nS = docs.length - nF;
+    go("trip");
+    toast(["บันทึกแล้ว", nF ? `${nF} เที่ยวบิน` : "", nS ? `${nS} ที่พัก` : "", updates.length ? `รวมกับเที่ยวบินเดิม ${updates.length}` : ""].filter(Boolean).join(" "));
+  } catch(e){ S.saving = false; if(S.upload) S.upload.status = "idle"; if(auto) go("review"); else render(); fail(e); }
+}
+
+/* ---------- join ---------- */
+async function startJoin(code){
+  code = String(code||"").trim().toUpperCase();
+  if(!/^[A-Z0-9]{6}$/.test(code)){ toast("รหัสทริปมี 6 ตัวอักษร"); return; }
+  S.joinTrip = null; S.joinMissing = false; go("join");
+  try{
+    const t = await store.fetchTrip(code);
+    if(!t){ S.joinMissing = true; render(); return; }
+    if((t.memberIds||[]).includes(S.me)){ C.trips[t.id] = t; if(!C.myTrips.includes(t.id)) C.myTrips.unshift(t.id); emit(); openTrip(t.id); return; }
+    S.joinTrip = t; render();
+  } catch(e){ S.joinMissing = true; S.joinErr = e && e.code; render(); }
+}
+async function confirmJoin(){
+  const t = S.joinTrip; if(!t) return;
+  if(!saveMyName()) return;
+  try{
+    await store.joinTrip(t.id);
+    S.joinCode = ""; try { history.replaceState(null, "", location.pathname); } catch(_){}
+    openTrip(t.id); toast("เข้าร่วมทริปแล้ว");
+  } catch(e){ fail(e); }
+}
+function saveMyName(){
+  S.myName = s_(S.myName).slice(0, 40);
+  if(!S.myName){ toast("ใส่ชื่อของคุณก่อนนะ"); return false; }
+  try { localStorage.setItem("mytrip-me", JSON.stringify({id:S.me, name:S.myName})); } catch(_){}
+  return true;
+}
+
+/* ---------- events ---------- */
+document.addEventListener("input", e => {
+  const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
+  const [root, path] = b.split(":");
+  if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
+  if(e.target.dataset.rerender) render();
+});
+document.addEventListener("change", e => {
+  if(e.target.id === "attach-in"){
+    const fl = Array.from(e.target.files || []); e.target.value = "";
+    const it = S.sheet && S.items.find(i => i.id === S.sheet.id);
+    if(fl.length && it && CONNECTED){
+      toast("กำลังแนบ…");
+      Promise.all(fl.map(f => store.uploadFile(f).catch(() => null))).then(async ids => {
+        ids = ids.filter(Boolean);
+        if(!ids.length){ toast("แนบไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+        const all = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : []), ...ids])];
+        try { await store.updateItem(S.trip.id, it.id, {fileIds: all}); toast("แนบใบจองแล้ว"); } catch(err){ fail(err); }
+      });
+    }
+  }
+  if(e.target.id === "file-in"){ const fl = Array.from(e.target.files || []); e.target.value = ""; if(fl.length) addFiles(fl); }
+});
+document.addEventListener("paste", e => {
+  if(S.view !== "upload" || !S.upload || S.upload.status === "reading") return;
+  const files = Array.from((e.clipboardData && e.clipboardData.files) || []);
+  const f = files.find(x => /^image\//.test(x.type) || x.type === "application/pdf");
+  if(f){ e.preventDefault(); addFiles([new File([f], f.name && f.name !== "image.png" ? f.name : "ภาพหน้าจอใบจอง.png", {type:f.type})]); }
+});
+document.addEventListener("dragover", e => { if(S.view === "upload") e.preventDefault(); });
+document.addEventListener("drop", e => {
+  if(S.view !== "upload" || !S.upload || S.upload.status === "reading") return;
+  e.preventDefault();
+  const fl = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if(fl.length) addFiles(fl);
+});
+/* swipe a trip row left to reveal delete */
+const SW = {row:null, x:0, y:0, base:0, dx:0, moved:false, suppress:false};
+document.addEventListener("pointerdown", e => {
+  const slide = e.target.closest(".trow-slide"); 
+  if(!slide){ if(S.swipeOpen && !e.target.closest(".swipe-del")){ S.swipeOpen = null; document.querySelectorAll(".trow.open").forEach(r => r.classList.remove("open")); } return; }
+  const row = slide.parentElement;
+  Object.assign(SW, {row, x:e.clientX, y:e.clientY, base: row.classList.contains("open") ? -88 : 0, dx:0, moved:false, active:true});
+});
+document.addEventListener("pointermove", e => {
+  if(!SW.active || !SW.row) return;
+  const dx = e.clientX - SW.x, dy = e.clientY - SW.y;
+  if(!SW.moved){
+    if(Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)){ SW.active = false; return; }
+    if(Math.abs(dx) < 8) return;
+    SW.moved = true; SW.row.classList.add("dragging");
+    document.querySelectorAll(".trow.open").forEach(r => { if(r !== SW.row) r.classList.remove("open"); });
+  }
+  SW.dx = dx;
+  const x = Math.max(-110, Math.min(0, SW.base + dx));
+  SW.row.querySelector(".trow-slide").style.transform = `translateX(${x}px)`;
+});
+function endSwipe(){
+  if(!SW.active || !SW.row) { SW.active = false; return; }
+  SW.active = false;
+  const row = SW.row, slide = row.querySelector(".trow-slide");
+  row.classList.remove("dragging"); slide.style.transform = "";
+  if(!SW.moved) return;
+  SW.suppress = true; setTimeout(() => SW.suppress = false, 350);
+  const open = SW.base + SW.dx < -44;
+  row.classList.toggle("open", open);
+  S.swipeOpen = open ? row.dataset.row : null;
+}
+document.addEventListener("pointerup", endSwipe);
+document.addEventListener("pointercancel", endSwipe);
+document.addEventListener("click", e => { if(SW.suppress && e.target.closest(".trow-slide")){ e.preventDefault(); e.stopImmediatePropagation(); SW.suppress = false; } }, true);
+document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S.sheet = null; render(); } });
+document.addEventListener("submit", async e => {
+  const f = e.target.dataset && e.target.dataset.form; if(!f) return;
+  e.preventDefault();
+  if(f === "join") return startJoin(S.joinCode);
+  if(f === "review") return saveReview(false);
+  if(f === "item-edit"){
+    const s = S.sheet, it = s && S.items.find(i => i.id === s.id); if(!it) return;
+    S.saving = true; render();
+    try { await store.updateItem(S.trip.id, it.id, patchFromEdit(it, s.edit)); S.saving = false; S.sheet = {kind:"item", id:it.id, confirm:false}; render(); toast("แก้ไขแล้ว"); }
+    catch(err){ S.saving = false; render(); fail(err); }
+    return;
+  }
+  if(f === "new"){
+    const n = S.newTrip;
+    if(!n.name.trim() || !validD(n.startDate)){ toast("ใส่ชื่อทริปและวันออกเดินทางก่อนนะ"); return; }
+    if(!saveMyName()) return;
+    try{
+      const id = await store.createTrip({name:n.name.trim(), destination:n.destination.trim(), startDate:n.startDate, days:n.days, adults:n.adults, kids:n.kids,
+        ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
+      S.newTrip = {name:"", destination:"", startDate:addDays(today(),14), days:4, adults:2, kids:0};
+      openTrip(id, "invite");
+    } catch(err){ fail(err); }
+  }
+  if(f === "sheet"){
+    const s = S.sheet, t = S.trip; if(!s || !t) return;
+    const isMove = s.kind === "move";
+    if(!isMove && !s.title.trim()){ toast("ใส่ชื่อสถานที่ก่อนนะ"); return; }
+    const title = isMove ? [s.mode, s.title.trim()].filter(Boolean).join(" · ") || "การเดินทาง" : s.title.trim();
+    try{
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      S.sheet = null; render(); toast("เพิ่มแล้ว");
+    } catch(err){ fail(err); }
+  }
+});
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]");
+  if(!el){ return; }
+  if(el.dataset.act === "close-sheet" && e.target.closest("[data-stop]") && !e.target.closest(".round")) return;
+  const a = el.dataset.act, t = S.trip;
+  switch(a){
+    case "home": go("home"); break;
+    case "new": go("new"); break;
+    case "open":
+      if(S.view === "home" && S.swipeOpen){ S.swipeOpen = null; render(); break; }
+      openTrip(el.dataset.id); break;
+    case "trip": if(S.view === "upload" && S.upload && S.upload.ctl) S.upload.ctl.abort(); go("trip"); break;
+    case "invite": go("invite"); break;
+    case "step": {
+      const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
+      S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
+    case "day": S.day = Number(el.dataset.i); render(); break;
+    case "cat": S.catTab = S.catTab === el.dataset.k ? "" : el.dataset.k; render(); break;
+    case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
+    case "manual":
+      S.review = {kind:S.upload.kind, flights:S.upload.kind==="flight" ? [emptyFlight()] : [], stays:S.upload.kind==="stay" ? [emptyStay(t)] : [], passengers:"", bookingRef:"", uncertain:new Set()};
+      go("review"); break;
+    case "stop": S.upload && S.upload.ctl && S.upload.ctl.abort(); break;
+    case "cancel-review": S.review = null; go(S.upload ? "upload" : "trip"); break;
+    case "add-flight": S.review.flights.push(emptyFlight()); render(); break;
+    case "add-stay": S.review.stays.push(emptyStay(t)); render(); break;
+    case "rm-stay": S.review.stays.splice(Number(el.dataset.i), 1); S.review.uncertain = new Set(); render(); break;
+    case "rm-file": S.upload.files.splice(Number(el.dataset.i), 1); render(); break;
+    case "read-all": readAll(); break;
+    case "rm-flight": S.review.flights.splice(Number(el.dataset.i), 1); S.review.uncertain = new Set(); render(); break;
+    case "sheet": {
+      const dates = tripDates(t);
+      S.sheet = {kind:el.dataset.k, title:"", date:dates[S.day] || dates[0], time:"", note:"", mode:el.dataset.k==="move" ? "รถยนต์" : ""};
+      render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
+    case "mode": S.sheet.mode = el.dataset.m; render(); break;
+    case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
+    case "close-sheet": S.sheet = null; render(); break;
+    case "sheet-confirm": S.sheet.confirm = true; render(); break;
+    case "item-edit": { const it = S.items.find(i => i.id === S.sheet.id); if(it){ S.sheet.edit = editFromItem(it); render(); } break; }
+    case "item-edit-cancel": S.sheet.edit = null; render(); break;
+    case "show-source": S.sheet.showText = true; render(); break;
+    case "hide-source": S.sheet.showText = false; render(); break;
+    case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
+    case "delete-item": {
+      const id = S.sheet.id; S.sheet = null;
+      try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
+      break; }
+    case "join-confirm": confirmJoin(); break;
+    case "trip-menu": S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:false}; render(); break;
+    case "trip-ask": S.swipeOpen = null; S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:true}; render(); break;
+    case "menu-invite": openTrip(el.dataset.id, "invite"); break;
+    case "trip-delete": case "trip-leave": {
+      const id = S.sheet.id, tr = S.trips.find(x => x.id === id);
+      S.sheet.busy = true; render();
+      try{
+        if(a === "trip-delete") await store.deleteTrip(id);
+        else await store.leaveTrip(id);
+        if(S.tripId === id){ unsubTrip && unsubTrip(); unsubItems && unsubItems(); S.tripId = null; S.trip = null; S.items = []; }
+        S.trips = S.trips.filter(x => x.id !== id);
+        S.sheet = null; render(); toast(a === "trip-delete" ? "ลบทริปแล้ว" : "ออกจากทริปแล้ว");
+      } catch(err){ if(S.sheet) S.sheet.busy = false; render(); fail(err); }
+      break; }
+    case "copy": {
+      const text = el.dataset.text;
+      try { await navigator.clipboard.writeText(text); toast("คัดลอกแล้ว"); }
+      catch(_){ const i = document.getElementById("inv-link"); if(i){ i.focus(); i.select(); } toast("กดค้างที่ข้อความเพื่อคัดลอก"); }
+      break; }
+  }
+});
+
+/* ---------- boot ---------- */
+(() => {
+  let me = null; try { me = JSON.parse(localStorage.getItem("mytrip-me")); } catch(_){}
+  if(!me || !me.id){ me = {id:"p-" + rid(), name:""}; try { localStorage.setItem("mytrip-me", JSON.stringify(me)); } catch(_){} }
+  S.me = me.id; S.myName = me.name || ""; S.savedName = !!me.name;
+  unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
+  const refresh = () => { flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
+  window.addEventListener("online", flush);
+  setInterval(refresh, 60000);
+  flush();
+  const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
+  if(m) startJoin(m[1]); else go("home");
+})();
+})();
+</script>
+</body>
+</html>
