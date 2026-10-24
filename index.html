@@ -193,7 +193,7 @@ p{margin:0}
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#1D1B2E}
 .thumb.tc{background:var(--mid);color:var(--on)}
-.moon[class*="t-"]{background:var(--mid);color:var(--on)}
+.moon[class*="t-"]{background:transparent;border:2px solid var(--mid);color:var(--deep);box-sizing:border-box}
 .hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
 .seg button .ic{color:var(--deep)}
 .seg button[aria-selected="true"]{background:var(--soft);color:var(--deep);box-shadow:none}
@@ -1389,7 +1389,7 @@ document.addEventListener("click", async e => {
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-24c";
+const BUILD = "2026-10-24d";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
