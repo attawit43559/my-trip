@@ -1004,6 +1004,7 @@ function cleanUrl(v){ const x = s_(v); if(!x) return ""; const u = /^https?:\/\/
 function mapsLink(it){
   const d = it.data || {};
   if(d.mapsUrl) return d.mapsUrl;
+  if(d.placeId) return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(it.title || "") + "&query_place_id=" + encodeURIComponent(d.placeId);
   const q = [it.type === "stay" ? it.title : (it.type === "place" ? it.title : ""), d.address].filter(Boolean).join(" ");
   return q ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q) : "";
 }
@@ -1300,8 +1301,9 @@ document.addEventListener("input", e => {
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
-/* place suggestions while typing, from OpenStreetMap (Photon): free and needs no key */
-let sugTimer = null, sugCtl = null;
+/* place suggestions while typing: Google Places when a key is set, else OpenStreetMap (Photon), which is free and keyless */
+const GMAPS_KEY = "";
+let sugTimer = null, sugCtl = null, sugSession = "";
 function closeSuggest(){ document.querySelectorAll(".sugg").forEach(x => x.remove()); }
 function suggestSoon(input){
   clearTimeout(sugTimer);
@@ -1312,18 +1314,35 @@ function suggestSoon(input){
 async function fetchSuggest(input, q){
   try{
     if(sugCtl) sugCtl.abort(); sugCtl = new AbortController();
+    let list;
+    if(GMAPS_KEY){
+      if(!sugSession) sugSession = (crypto.randomUUID ? crypto.randomUUID() : rid());
+      const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {method:"POST", signal:sugCtl.signal,
+        headers:{"Content-Type":"application/json", "X-Goog-Api-Key":GMAPS_KEY},
+        body:JSON.stringify({input:q, languageCode:"th", sessionToken:sugSession})});
+      const j = await r.json();
+      list = (j.suggestions || []).map(x => x.placePrediction).filter(Boolean).map(pp => ({
+        name:(pp.structuredFormat && pp.structuredFormat.mainText && pp.structuredFormat.mainText.text) || (pp.text && pp.text.text) || "",
+        area:(pp.structuredFormat && pp.structuredFormat.secondaryText && pp.structuredFormat.secondaryText.text) || "", placeId:pp.placeId})).slice(0, 6);
+    } else list = await photonList(q);
+    if(document.activeElement !== input || input.value.trim() !== q) return;
+    closeSuggest();
+    if(!list.length) return;
+    showSuggest(input, list);
+  } catch(_){}
+}
+async function photonList(q){
     const r = await fetch("https://photon.komoot.io/api/?limit=6&q=" + encodeURIComponent(q), {signal:sugCtl.signal});
     const j = await r.json();
-    if(document.activeElement !== input || input.value.trim() !== q) return;
     const seen = new Set();
-    const list = (j.features || []).map(f => {
+    return (j.features || []).map(f => {
       const p = f.properties || {}, c = (f.geometry || {}).coordinates || [];
       const name = p.name || [p.street, p.housenumber].filter(Boolean).join(" ");
       const area = [p.city || p.county, p.state, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && v !== name).join(", ");
       return {name, area, lat:c[1], lon:c[0]};
     }).filter(x => x.name && !seen.has(x.name + x.area) && seen.add(x.name + x.area));
-    closeSuggest();
-    if(!list.length) return;
+}
+function showSuggest(input, list){
     const ul = document.createElement("ul"); ul.className = "sugg"; ul.setAttribute("role", "listbox");
     ul.innerHTML = list.map((x, i) => `<li role="option" data-i="${i}">${ic("pin",18)}<span><b>${esc(x.name)}</b>${x.area ? `<br><span class="muted small">${esc(x.area)}</span>` : ""}</span></li>`).join("");
     ul.addEventListener("pointerdown", ev => {
@@ -1332,11 +1351,11 @@ async function fetchSuggest(input, q){
       const x = list[+li.dataset.i];
       input.value = x.name;
       input.dispatchEvent(new Event("input", {bubbles:true}));
-      if(S.sheet && input.id === "sh-title"){ S.sheet.address = x.area; S.sheet.lat = x.lat; S.sheet.lon = x.lon; }
+      if(S.sheet && input.id === "sh-title"){ S.sheet.address = x.area; S.sheet.lat = x.lat; S.sheet.lon = x.lon; S.sheet.placeId = x.placeId; }
+      sugSession = "";   // a pick ends the autocomplete session
       closeSuggest();
     });
     input.closest("label").after(ul);
-  } catch(_){}
 }
 document.addEventListener("focusout", e => { if(e.target.dataset && e.target.dataset.suggest !== undefined) setTimeout(closeSuggest, 150); });
 document.addEventListener("change", e => {
@@ -1435,7 +1454,7 @@ document.addEventListener("submit", async e => {
     const from = s_(s.from), to = s_(s.to);
     const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : (s.address || s.lat ? {data:{address:s.address||"", lat:s.lat, lon:s.lon}} : {})), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : (s.address || s.lat || s.placeId ? {data:{address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||""}} : {})), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -1568,7 +1587,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27o";
+const BUILD = "2026-10-27p";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
