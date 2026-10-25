@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#3A78C9"/><rect x="332" y="212" width="360" height="600" rx="180" fill="none" stroke="#FFFFFF" stroke-width="46"/><circle cx="566" cy="420" r="58" fill="#F2A516"/><path d="M392 640 Q 452 600 512 640 T 632 640" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="abg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3E7BD0"/><stop offset="1" stop-color="#2A5AA6"/></linearGradient>
+<linearGradient id="afr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4E9F2"/></linearGradient>
+<linearGradient id="asky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9E5E"/><stop offset="1" stop-color="#FFD08A"/></linearGradient>
+<radialGradient id="aglow"><stop offset="0" stop-color="#FFF3C4" stop-opacity=".9"/><stop offset="1" stop-color="#FFF3C4" stop-opacity="0"/></radialGradient>
+<filter id="ash" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#0A1A3A" flood-opacity=".35"/></filter>
+<clipPath id="acl"><rect x="350" y="220" width="324" height="584" rx="162"/></clipPath>
+</defs>
+<rect width="1024" height="1024" fill="url(#abg)"/>
+<rect x="292" y="162" width="440" height="700" rx="220" fill="url(#afr)" filter="url(#ash)"/>
+<rect x="350" y="220" width="324" height="584" rx="162" fill="url(#asky)"/>
+<g clip-path="url(#acl)">
+<circle cx="566" cy="400" r="150" fill="url(#aglow)"/>
+<circle cx="566" cy="400" r="54" fill="#FFF3C4"/>
+<path d="M320 680 Q 400 620 480 665 Q 560 610 640 655 Q 690 628 720 650 V820 H320 Z" fill="#FFFFFF" opacity=".95"/>
+</g>
+<rect x="350" y="220" width="324" height="584" rx="162" fill="none" stroke="#0A1A3A" stroke-opacity=".12" stroke-width="10"/>
+</svg>
