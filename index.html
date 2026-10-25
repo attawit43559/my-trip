@@ -168,17 +168,20 @@ p{margin:0}
 .trow.big .trow-actions,.trow.small .trow-actions{width:96px}
 .trow.big.open .trow-slide,.trow.small.open .trow-slide{transform:translateX(-88px)}
 .trow-actions{position:absolute;top:0;right:0;bottom:0;width:88px;display:flex}
-.erow{--w:152px}
-.erow .trow-actions{width:var(--w)}
+/* plan-row actions: two small soft round buttons, not full-height colour blocks */
+.erow{--w:108px}
+.erow .trow-actions{width:var(--w);align-items:center;justify-content:flex-end;gap:8px;padding-right:12px;background:var(--surface)}
+.sw-btn{width:40px;height:40px;border-radius:999px;border:0;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.sw-edit{background:var(--tile);color:var(--ink)}
+.sw-del{background:color-mix(in srgb,var(--danger) 12%,var(--surface));color:var(--danger)}
+.sw-yes{width:auto;padding:0 16px;background:color-mix(in srgb,var(--danger) 12%,var(--surface));color:var(--danger);font-size:14px;font-weight:600}
 .trow.erow.open .trow-slide{transform:translateX(calc(-1 * var(--w)))}
-.swipe-edit{flex:1;border:0;background:var(--ink);color:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600}
-.swipe-del.wide{flex:1}
 .day-list{overflow:hidden}
 .day-list .erow,.cat-list .erow{list-style:none}
 .dock-body .erow .trow-slide{background:var(--surface)}
 .day-list.day-list{padding:2px 0}
 .day-list li+li{border-top:0}
-.day-list li+li .trow-slide{border-top:1px solid var(--line)}
+.day-list li+li::before{content:"";position:absolute;top:0;left:16px;right:16px;height:1px;background:var(--line);z-index:1;pointer-events:none}
 .day-list .entry{padding-left:16px;padding-right:16px}
 .cat-list.cat-list{padding:0}
 .cat-list .cat-row{padding-left:4px;padding-right:4px}
@@ -857,10 +860,10 @@ function subOf(it){
 /* plan rows slide left to show edit and delete; tapping the row only shows details */
 function swipeItem(it, key, inner){
   const ask = S.delAsk === key;
-  return `<li class="trow erow${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="152">
+  return `<li class="trow erow${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="108">
     <div class="trow-actions">${ask
-      ? `<button class="swipe-del wide" data-act="entry-del-yes" data-id="${esc(it.id)}">${ic("trash",20)}<span>ยืนยันลบ</span></button>`
-      : `<button class="swipe-edit" data-act="entry-edit" data-id="${esc(it.id)}" aria-label="แก้ไข ${esc(it.title)}">${ic("edit",20)}<span>แก้ไข</span></button><button class="swipe-del" data-act="entry-del" data-id="${esc(it.id)}" data-key="${esc(key)}" aria-label="ลบ ${esc(it.title)}">${ic("trash",20)}<span>ลบ</span></button>`}</div>
+      ? `<button class="sw-btn sw-yes" data-act="entry-del-yes" data-id="${esc(it.id)}">ลบเลย</button>`
+      : `<button class="sw-btn sw-edit" data-act="entry-edit" data-id="${esc(it.id)}" aria-label="แก้ไข ${esc(it.title)}">${ic("edit",18)}</button><button class="sw-btn sw-del" data-act="entry-del" data-id="${esc(it.id)}" data-key="${esc(key)}" aria-label="ลบ ${esc(it.title)}">${ic("trash",18)}</button>`}</div>
     <div class="trow-slide">${inner}</div></li>`;
 }
 function entryHtml(e){
@@ -1808,7 +1811,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28f";
+const BUILD = "2026-10-28g";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
