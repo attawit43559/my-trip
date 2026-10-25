@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="My Trip: a plane with three even colour stripes behind it">
-<rect width="1024" height="1024" fill="#2F80FF"></rect><path d="M456 483 L223 717" stroke="#FF5C8A" stroke-width="38" stroke-linecap="round"></path>
-<path d="M498 526 L180 844" stroke="#FFC21A" stroke-width="38" stroke-linecap="round"></path>
-<path d="M541 568 L307 801" stroke="#14B866" stroke-width="38" stroke-linecap="round"></path>
-<g transform="translate(681 343) rotate(45) scale(23) translate(-11.5 -12)" fill="#FFFFFF"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"></path></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#3A78C9"/><rect x="332" y="212" width="360" height="600" rx="180" fill="none" stroke="#FFFFFF" stroke-width="46"/><circle cx="566" cy="420" r="58" fill="#F2A516"/><path d="M392 640 Q 452 600 512 640 T 632 640" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/></svg>
