@@ -558,7 +558,7 @@ async function refreshTrips(){
     const list = await api("myTrips");
     const waiting = new Set(C.outbox.filter(o => o.action === "saveTrip").map(o => o.body.trip.id));
     const gone = new Set(C.outbox.filter(o => o.action === "deleteTrip" || o.action === "leaveTrip").map(o => o.body.id));
-    list.forEach(t => { if(!waiting.has(t.id)) C.trips[t.id] = t; });
+    list.forEach(t => { if(!waiting.has(t.id)) C.trips[t.id] = t; else if(C.trips[t.id]) Object.assign(C.trips[t.id], {memberIds:t.memberIds, members:t.members, ownerId:t.ownerId}); });
     const ids = list.map(t => t.id).filter(id => !gone.has(id));
     C.myTrips = [...C.myTrips.filter(id => waiting.has(id) && !ids.includes(id)), ...ids];
     S.tripsReady = true; emit();
@@ -572,6 +572,7 @@ async function refreshTrip(id){
     S.tripLoading = false;
     if(!r.trip){ if(!C.outbox.some(o => o.action === "saveTrip" && o.body.trip.id === id)){ delete C.trips[id]; } emit(); return; }
     if(!C.outbox.some(o => o.action === "saveTrip" && o.body.trip.id === id)) C.trips[id] = r.trip;
+    else if(C.trips[id]){ const t = C.trips[id]; t.memberIds = r.trip.memberIds; t.members = r.trip.members; t.ownerId = r.trip.ownerId; }   // who's in the trip always comes from the server
     const keep = pendingIds(), local = C.items[id] || {}, next = {};
     r.items.forEach(it => { if(!keep.has(it.id)) next[it.id] = it; });
     Object.values(local).forEach(it => { if(keep.has(it.id)) next[it.id] = it; });
@@ -628,7 +629,7 @@ function openTrip(id, view="trip"){
     S.tripMissing = false;
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
     unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
-  }
+  } else refreshTrip(id);   // reopening the same trip still fetches who joined since
   go(view);
 }
 
@@ -1607,7 +1608,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27r";
+const BUILD = "2026-10-27s";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -1623,7 +1624,7 @@ async function checkUpdate(){
   let sess = null; try { sess = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(_){}
   setSession(sess && sess.token ? sess : null);
   unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
-  const refresh = () => { checkUpdate(); if(!S.token) return; flush(); if(S.view === "trip" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
+  const refresh = () => { checkUpdate(); if(!S.token) return; flush(); if(S.view !== "home" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
   document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
   window.addEventListener("online", flush);
   setInterval(refresh, 60000);
