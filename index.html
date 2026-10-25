@@ -168,6 +168,20 @@ p{margin:0}
 .trow.big .trow-actions,.trow.small .trow-actions{width:96px}
 .trow.big.open .trow-slide,.trow.small.open .trow-slide{transform:translateX(-88px)}
 .trow-actions{position:absolute;top:0;right:0;bottom:0;width:88px;display:flex}
+.erow{--w:152px}
+.erow .trow-actions{width:var(--w)}
+.trow.erow.open .trow-slide{transform:translateX(calc(-1 * var(--w)))}
+.swipe-edit{flex:1;border:0;background:var(--ink);color:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600}
+.swipe-del.wide{flex:1}
+.day-list{overflow:hidden}
+.day-list .erow,.cat-list .erow{list-style:none}
+.dock-body .erow .trow-slide{background:var(--surface)}
+.day-list.day-list{padding:2px 0}
+.day-list li+li{border-top:0}
+.day-list li+li .trow-slide{border-top:1px solid var(--line)}
+.day-list .entry{padding-left:16px;padding-right:16px}
+.cat-list.cat-list{padding:0}
+.cat-list .cat-row{padding-left:4px;padding-right:4px}
 .swipe-del{flex:1;border:0;background:var(--danger);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600}
 .trow-slide{position:relative;background:var(--surface);transition:transform .22s ease;touch-action:pan-y;will-change:transform}
 .trow.dragging .trow-slide{transition:none}
@@ -443,6 +457,7 @@ const IC = {
   globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  edit:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   idea:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/>',
   food:'<path d="M6 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 3v18"/><path d="M17 21V3c-2.2 0-3.5 2.5-3.5 6v4H17"/>',
   shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
@@ -839,9 +854,18 @@ function subOf(it){
   const arr = d.arrTime ? `ถึง ${d.arrTime}${shift > 0 ? ` (${dShort(ad)})` : ""}` : "";
   return [s_(d.flightNo), arr].filter(Boolean).join(" · ");
 }
+/* plan rows slide left to show edit and delete; tapping the row only shows details */
+function swipeItem(it, key, inner){
+  const ask = S.delAsk === key;
+  return `<li class="trow erow${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="152">
+    <div class="trow-actions">${ask
+      ? `<button class="swipe-del wide" data-act="entry-del-yes" data-id="${esc(it.id)}">${ic("trash",20)}<span>ยืนยันลบ</span></button>`
+      : `<button class="swipe-edit" data-act="entry-edit" data-id="${esc(it.id)}" aria-label="แก้ไข ${esc(it.title)}">${ic("edit",20)}<span>แก้ไข</span></button><button class="swipe-del" data-act="entry-del" data-id="${esc(it.id)}" data-key="${esc(key)}" aria-label="ลบ ${esc(it.title)}">${ic("trash",20)}<span>ลบ</span></button>`}</div>
+    <div class="trow-slide">${inner}</div></li>`;
+}
 function entryHtml(e){
-  return `<li><button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
-    <span class="thumb tc t-${e.it.type}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}</span></button></li>`;
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
+    <span class="thumb tc t-${e.it.type}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -853,12 +877,12 @@ function catCard(){
     if(it.type === "idea"){
       const p = plannedFrom(it.id), d = it.data || {};
       const meta = [d.kind, p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
-      return `<li><button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm t-idea" aria-hidden="true">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button></li>`;
+      return swipeItem(it, "c:" + it.id, `<button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm t-idea" aria-hidden="true">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button>`);
     }
     const when = it.type === "stay"
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
-    return `<li><button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(it.title)}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button></li>`;
+    return swipeItem(it, "c:" + it.id, `<button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(it.title)}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
   };
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
@@ -1161,8 +1185,6 @@ function vSheet(){
       ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
       <p class="muted small">เพิ่มโดย ${esc(nameOf(it.createdBy))}</p>
-      ${s.confirm ? `<div class="err" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>ลบรายการนี้ออกจากทริป?</span><span style="display:flex;gap:8px"><button class="pill-btn" data-act="sheet-confirm-no">ไม่ลบ</button><button class="pill-btn" style="background:var(--danger);color:var(--surface)" data-act="delete-item">ลบเลย</button></span></div>`
-        : `<div class="grid2"><button class="btn ghost" style="background:var(--tile);height:48px;font-size:15px" data-act="item-edit">แก้ไข</button><button class="btn ghost" style="background:var(--tile);height:48px;font-size:15px;color:var(--danger)" data-act="sheet-confirm">ลบ</button></div>`}
     </div></div>`;
   }
   const isMove = s.kind === "move";
@@ -1552,9 +1574,9 @@ document.addEventListener("drop", e => {
 const SW = {row:null, x:0, y:0, base:0, dx:0, moved:false, suppress:false};
 document.addEventListener("pointerdown", e => {
   const slide = e.target.closest(".trow-slide"); 
-  if(!slide){ if(S.swipeOpen && !e.target.closest(".swipe-del")){ S.swipeOpen = null; document.querySelectorAll(".trow.open").forEach(r => r.classList.remove("open")); } return; }
-  const row = slide.parentElement;
-  Object.assign(SW, {row, x:e.clientX, y:e.clientY, base: row.classList.contains("open") ? -88 : 0, dx:0, moved:false, active:true});
+  if(!slide){ if(S.swipeOpen && !e.target.closest(".trow-actions")){ S.swipeOpen = null; S.delAsk = null; document.querySelectorAll(".trow.open").forEach(r => r.classList.remove("open", "ask")); } return; }
+  const row = slide.parentElement, w = +row.dataset.w || 88;
+  Object.assign(SW, {row, w, x:e.clientX, y:e.clientY, base: row.classList.contains("open") ? -w : 0, dx:0, moved:false, active:true});
 });
 document.addEventListener("pointermove", e => {
   if(!SW.active || !SW.row) return;
@@ -1564,9 +1586,10 @@ document.addEventListener("pointermove", e => {
     if(Math.abs(dx) < 8) return;
     SW.moved = true; SW.row.classList.add("dragging");
     document.querySelectorAll(".trow.open").forEach(r => { if(r !== SW.row) r.classList.remove("open"); });
+    if(S.delAsk){ S.delAsk = null; document.querySelectorAll(".trow.ask").forEach(r => r.classList.remove("ask")); }
   }
   SW.dx = dx;
-  const x = Math.max(-110, Math.min(0, SW.base + dx));
+  const x = Math.max(-SW.w - 22, Math.min(0, SW.base + dx));
   SW.row.querySelector(".trow-slide").style.transform = `translateX(${x}px)`;
 });
 function endSwipe(){
@@ -1576,7 +1599,7 @@ function endSwipe(){
   row.classList.remove("dragging"); slide.style.transform = "";
   if(!SW.moved) return;
   SW.suppress = true; setTimeout(() => SW.suppress = false, 350);
-  const open = SW.base + SW.dx < -44;
+  const open = SW.base + SW.dx < -SW.w / 2;
   row.classList.toggle("open", open);
   S.swipeOpen = open ? row.dataset.row : null;
 }
@@ -1592,7 +1615,7 @@ document.addEventListener("submit", async e => {
   if(f === "item-edit"){
     const s = S.sheet, it = s && S.items.find(i => i.id === s.id); if(!it) return;
     S.saving = true; render();
-    try { await store.updateItem(S.trip.id, it.id, patchFromEdit(it, s.edit)); S.saving = false; S.sheet = {kind:"item", id:it.id, confirm:false}; render(); toast("แก้ไขแล้ว"); }
+    try { await store.updateItem(S.trip.id, it.id, patchFromEdit(it, s.edit)); S.saving = false; S.sheet = s.fromSwipe ? null : {kind:"item", id:it.id, confirm:false}; render(); toast("แก้ไขแล้ว"); }
     catch(err){ S.saving = false; render(); fail(err); }
     return;
   }
@@ -1687,7 +1710,16 @@ document.addEventListener("click", async e => {
     }
     case "sheet-confirm": S.sheet.confirm = true; render(); break;
     case "item-edit": { const it = S.items.find(i => i.id === S.sheet.id); if(it){ S.sheet.edit = editFromItem(it); render(); } break; }
-    case "item-edit-cancel": S.sheet.edit = null; render(); break;
+    case "item-edit-cancel": if(S.sheet.fromSwipe) S.sheet = null; else S.sheet.edit = null; render(); break;
+    case "entry-edit": {
+      const it = S.items.find(i => i.id === el.dataset.id); S.swipeOpen = null; S.delAsk = null;
+      if(it){ S.sheet = {kind:"item", id:it.id, edit:editFromItem(it), fromSwipe:true}; render(); }
+      break; }
+    case "entry-del": S.delAsk = el.dataset.key; S.swipeOpen = el.dataset.key; render(); break;
+    case "entry-del-yes": {
+      S.swipeOpen = null; S.delAsk = null;
+      try { await store.deleteItem(t.id, el.dataset.id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
+      break; }
     case "show-source": S.sheet.showText = true; render(); break;
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
@@ -1776,7 +1808,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28e";
+const BUILD = "2026-10-28f";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
