@@ -1303,7 +1303,7 @@ document.addEventListener("input", e => {
 });
 /* place suggestions while typing: Google Places when a key is set, else OpenStreetMap (Photon), which is free and keyless */
 const GMAPS_KEY = "";
-let sugTimer = null, sugCtl = null, sugSession = "";
+let sugTimer = null, sugCtl = null, sugSession = "", sugHold = 0, sugPicked = 0;
 function closeSuggest(){ document.querySelectorAll(".sugg").forEach(x => x.remove()); }
 function suggestSoon(input){
   clearTimeout(sugTimer);
@@ -1345,19 +1345,28 @@ async function photonList(q){
 function showSuggest(input, list){
     const ul = document.createElement("ul"); ul.className = "sugg"; ul.setAttribute("role", "listbox");
     ul.innerHTML = list.map((x, i) => `<li role="option" data-i="${i}">${ic("pin",18)}<span><b>${esc(x.name)}</b>${x.area ? `<br><span class="muted small">${esc(x.area)}</span>` : ""}</span></li>`).join("");
-    ul.addEventListener("pointerdown", ev => {
+    /* keep focus on the input while tapping, and pick on click: removing the list on pointerdown shrank the
+       bottom sheet, so the tap's click landed on the scrim behind it and closed the sheet */
+    const hold = ev => { ev.preventDefault(); sugHold = Date.now(); };
+    ul.addEventListener("pointerdown", hold); ul.addEventListener("mousedown", hold);
+    ul.addEventListener("touchstart", () => { sugHold = Date.now(); }, {passive:true});
+    ul.addEventListener("click", ev => {
       const li = ev.target.closest("li"); if(!li) return;
-      ev.preventDefault();
+      ev.preventDefault(); ev.stopPropagation();
       const x = list[+li.dataset.i];
       input.value = x.name;
       input.dispatchEvent(new Event("input", {bubbles:true}));
       if(S.sheet && input.id === "sh-title"){ S.sheet.address = x.area; S.sheet.lat = x.lat; S.sheet.lon = x.lon; S.sheet.placeId = x.placeId; }
       sugSession = "";   // a pick ends the autocomplete session
+      sugPicked = Date.now();
       closeSuggest();
     });
     input.closest("label").after(ul);
 }
-document.addEventListener("focusout", e => { if(e.target.dataset && e.target.dataset.suggest !== undefined) setTimeout(closeSuggest, 150); });
+document.addEventListener("focusout", e => {
+  if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
+  setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
+});
 document.addEventListener("change", e => {
   if(e.target.id === "attach-in"){
     const fl = Array.from(e.target.files || []); e.target.value = "";
@@ -1463,6 +1472,7 @@ document.addEventListener("click", async e => {
   const el = e.target.closest("[data-act]");
   if(!el){ return; }
   if(el.dataset.act === "close-sheet" && e.target.closest("[data-stop]") && !e.target.closest(".round")) return;
+  if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
   const a = el.dataset.act, t = S.trip;
   switch(a){
     case "home": go("home"); break;
@@ -1587,7 +1597,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27p";
+const BUILD = "2026-10-27q";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
