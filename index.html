@@ -143,6 +143,9 @@ p{margin:0}
 .entry .thumb{width:40px;height:40px;border-radius:12px}
 .entry .ttl{font-weight:500;overflow-wrap:anywhere}
 .add-dash{height:54px;border-radius:20px;border:2px dashed var(--line);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;width:100%}
+.add-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.add-row .add-dash{border-color:color-mix(in srgb,var(--mid) 45%,transparent);color:var(--deep);font-size:14px;gap:6px;padding:0 8px;white-space:nowrap}
+.add-row .add-dash .ic{color:var(--mid)}
 .drop{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px 26px;border-radius:28px;border:2px dashed var(--accent-line);background:var(--accent-soft);text-align:center;cursor:pointer}
 .files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 #paste-text{border:0;border-radius:16px;background:var(--surface);padding:12px 14px;font:inherit;font-size:15px;font-weight:400;resize:vertical;min-height:130px;width:100%}
@@ -913,7 +916,10 @@ function vTrip(){
       ${calendar(dates)}
       <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
-      <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>`}
+      <div class="add-row">
+        <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
+        <button class="add-dash t-move" data-act="sheet" data-k="move">${ic("move",20)}เพิ่มการเดินทาง</button>
+      </div>`}
     </section>
     ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
@@ -1764,7 +1770,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28c";
+const BUILD = "2026-10-28d";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
