@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F7F3EC">
+<meta name="theme-color" content="#FDFBF8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="My Trip">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6">
@@ -16,7 +16,7 @@
 <style>
 /* Layout: one centred phone column; each screen is a stack of white cards on a soft grey ground, one yellow accent for primary actions */
 :root{
-  --bg:#F7F3EC; --surface:#FFFFFF; --tile:#F1EBE1; --ink:#2B211C; --muted:#6E6259; --line:#EAE2D6;
+  --bg:#FDFBF8; --surface:#FFFFFF; --tile:#F4EFE8; --ink:#2B211C; --muted:#6E6259; --line:#EEE8DF; --lift:0 1px 3px rgba(43,33,28,.08);
   --accent:#F2A516; --accent-soft:#FDEFCF; --accent-line:#D88C00; --warn-bg:#FDF0D2; --on-accent:#2B211C; --danger:#C8372D;
   --flight:#1F4E8C; --flight-soft:#E1EBF8; --flight-mid:#3A78C9;
   --stay:#8A5A00; --stay-soft:#FDEFCF; --stay-mid:#F2A516;
@@ -26,20 +26,23 @@
   --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
+  --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
   --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
+  --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
   --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; color-scheme:dark}
 html,body{min-height:100%}
+/* white cards on a near-white page: a hairline shadow keeps them apart */
+.card,.cat-card,.day-list,.list-row,.hero,.stepper-card,.cal .tab:not(.out):not(.past),.screen>.top .round,.home-top .me-btn{box-shadow:var(--lift)}
+.screen .fld input,.screen .fld select,.join-row input{box-shadow:inset 0 0 0 1px var(--line)}
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
@@ -1485,7 +1488,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27d";
+const BUILD = "2026-10-27e";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
