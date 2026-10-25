@@ -317,6 +317,12 @@ input,select,textarea{font-size:16px!important}
 .cal .tab{height:44px;flex-direction:column}
 .cal .tab span{font-size:9px;line-height:1}
 .cal .tab.out{background:transparent;color:var(--muted);opacity:.45}
+/* days already behind us: faded, number struck through, a small tick in the corner */
+.cal .tab.past{position:relative;background:var(--tile);color:var(--muted)}
+.cal .tab.past b{text-decoration:line-through;text-decoration-thickness:1.5px}
+.cal .tab.past::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:4px;border-left:1.5px solid var(--stay);border-bottom:1.5px solid var(--stay);transform:rotate(-45deg)}
+.cal .tab.past[aria-selected="true"]{background:var(--muted);color:var(--bg)}
+.cal .tab.past[aria-selected="true"]::after{border-color:var(--bg)}
 </style>
 </head>
 <body>
@@ -747,16 +753,6 @@ function catCard(){
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
     return `<li><button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(it.title)}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button></li>`;
   };
-  /* nights covered by a hotel or by an overnight flight */
-  const covered = new Set(), onPlane = new Set();
-  const tripNights = tripDates(S.trip).slice(0, -1);
-  for(const i of S.items){
-    if(i.type === "stay" && validD(i.date) && validD(i.endDate)) for(let d = i.date; d < i.endDate; d = addDays(d,1)) covered.add(d);
-    if(i.type === "flight" && validD(i.date)){ const ad = arrDateOf(i); if(validD(ad)) for(let d = i.date; d < ad; d = addDays(d,1)) onPlane.add(d); }
-  }
-  const nHotel = tripNights.filter(d => covered.has(d)).length;
-  const nPlane = tripNights.filter(d => !covered.has(d) && onPlane.has(d)).length;
-  const missing = tripNights.filter(d => !covered.has(d) && !onPlane.has(d));
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
@@ -767,7 +763,6 @@ function catCard(){
       return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
     }).join("")}</div>
     ${!tab ? "" : list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}
-    ${tab === "stay" && list.length ? `<p class="muted small" style="padding:0 4px">${missing.length ? `ที่พัก ${nHotel}${nPlane ? ` · บนเครื่อง ${nPlane}` : ""} จาก ${tripNights.length} คืน · ยังขาด ${missing.map(dShort).join(", ")}` : `ครบ ${tripNights.length} คืน${nPlane ? ` (บนเครื่อง ${nPlane})` : ""}`}</p>` : ""}
     ${tab ? add : ""}
   </section>`;
 }
@@ -783,7 +778,7 @@ function calendar(dates){
     <div class="cal-head" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div>
     <div class="tabs" role="tablist" aria-label="เลือกวัน">
       ${before.map(out).join("")}
-      ${dates.map((x,i) => `<button class="tab" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`).join("")}
+      ${dates.map((x,i) => `<button class="tab${x < today() ? " past" : ""}" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}${x < today() ? " ผ่านไปแล้ว" : ""}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`).join("")}
       ${after.map(out).join("")}
     </div></div>`;
 }
@@ -812,7 +807,7 @@ function vTrip(){
       <div class="sec-h"><h2>แผนรายวัน</h2></div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
-      <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}</p>
+      <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>`}
     </section>
@@ -1469,7 +1464,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-26a";
+const BUILD = "2026-10-26b";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
