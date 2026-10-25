@@ -274,6 +274,13 @@ p{margin:0}
 .plan-box .fld input,.plan-box .fld select{background:var(--surface)}
 .plan-box .pill-btn{background:var(--surface);color:var(--deep)}
 .chips.t-idea button[aria-pressed="true"]{background:var(--soft);color:var(--deep);border-color:var(--mid)}
+/* wish-list kinds: sights teal, food orange, shopping pink */
+.k-sight{--deep:#1E6F68;--soft:#DCF0ED;--mid:#2E9C90;--on:#FFFFFF}
+.k-food{--deep:#B4470F;--soft:#FDE6D3;--mid:#EC7A2C;--on:#FFFFFF}
+.k-shop{--deep:#A8285F;--soft:#FBE0EC;--mid:#D9488A;--on:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-sight{--deep:#8FD8CE;--soft:#17302D}:root:not([data-theme="light"]) .k-food{--deep:#FFB98A;--soft:#3A2416}:root:not([data-theme="light"]) .k-shop{--deep:#F3A3C6;--soft:#3A1A28}}
+.chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
+.chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
 .t-idea{--deep:var(--idea);--soft:var(--idea-soft);--mid:var(--idea-mid);--on:#FFFFFF}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
@@ -434,6 +441,8 @@ function routeLink(it){
 /* wish-list memos (and places planned from them) show what kind of place they are */
 const IDEA_KINDS = ["ที่เที่ยว","ร้านอาหาร","ช้อปปิ้ง"];
 const IDEA_ICON = {"ที่เที่ยว":"pin","ร้านอาหาร":"food","ช้อปปิ้ง":"shop"};
+const IDEA_TONE = {"ที่เที่ยว":"k-sight","ร้านอาหาร":"k-food","ช้อปปิ้ง":"k-shop"};
+const kindTone = it => IDEA_TONE[(it.data||{}).kind] || "k-sight";
 const itemIcon = it => {
   const d = it.data || {};
   if(it.type === "move") return MODE_ICON[d.mode] || MODE_ICON[String(it.title||"").split(" · ")[0]] || "move";
@@ -681,7 +690,15 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
 const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move","idea"].includes(S.sheet.kind) || !!S.sheet.edit));
-function softRender(){ if(!busyForm()) render(); }
+/* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
+let panelScrollAt = 0;
+document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
+document.addEventListener("touchstart", e => { if(e.target.closest && e.target.closest(".dock-body")) panelScrollAt = Date.now(); }, {passive:true, capture:true});
+function softRender(){
+  if(busyForm()) return;
+  if(Date.now() - panelScrollAt < 1500){ clearTimeout(softRender.t); softRender.t = setTimeout(softRender, 1600); return; }
+  render();
+}
 function setPath(obj, path, val){ const ks = path.split("."); let o = obj; for(let i=0;i<ks.length-1;i++) o = o[ks[i]]; o[ks[ks.length-1]] = val; }
 function nameOf(id){
   if(id === S.me) return "ฉัน";
@@ -883,8 +900,8 @@ function catCard(){
   const row = it => {
     if(it.type === "idea"){
       const p = plannedFrom(it.id), d = it.data || {};
-      const meta = [d.kind, p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
-      return swipeItem(it, "c:" + it.id, `<button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm t-idea" aria-hidden="true">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button>`);
+      const meta = [p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
+      return swipeItem(it, "c:" + it.id, `<button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm ${kindTone(it)}" role="img" aria-label="${esc(d.kind || "ที่เที่ยว")}">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button>`);
     }
     const when = it.type === "stay"
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
@@ -1114,7 +1131,7 @@ function vItemEdit(it, e){
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
     ${efld("โน้ต","note",e.note,"text","full")}`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไข ${esc(it.title)}" data-stop="1">
-    <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="hd"><span class="thumb tc ${it.type === "idea" ? kindTone(it) : "t-" + it.type}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="item-edit" style="gap:14px">
       <div class="grid2">${body}</div>
       ${it.type !== "idea" ? editFiles(it) : ""}
@@ -1187,7 +1204,7 @@ function vSheet(){
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
-      <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+      <div class="hd"><span class="thumb tc ${it.type === "idea" ? kindTone(it) : "t-" + it.type}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
       ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
@@ -1197,9 +1214,9 @@ function vSheet(){
   const isMove = s.kind === "move";
   const dates = tripDates(t);
   if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="จดที่อยากไป" data-stop="1">
-    <div class="hd"><span class="thumb tc t-idea">${ic("idea")}</span><h2>จดที่อยากไป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="hd"><span class="thumb tc ${IDEA_TONE[s.ideaKind] || "k-sight"}">${ic(IDEA_ICON[s.ideaKind] || "pin")}</span><h2>จดที่อยากไป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
-      <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
+      <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
       <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="เช่น เพื่อนแนะนำ, ต้องจองก่อน" value="${esc(s.note)}" data-bind="sheet:note"></label>
       <button class="btn primary" type="submit">บันทึก</button>
@@ -1228,10 +1245,13 @@ function render(){
   const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
   const v = views[S.view];
   const active = document.activeElement && document.activeElement.id;
+  /* keep the scroll position of the bottom panel and of sheets when the screen is redrawn */
+  const keep = [".dock-body", ".sheet"].map(sel => { const el = document.querySelector(sel); return el ? [sel, el.scrollTop] : null; }).filter(Boolean);
   document.getElementById("app").innerHTML = (v ? v() : `<div class="load muted">กำลังโหลด…</div>`)
     + (["trip","home"].includes(S.view) ? vSheet() : "")
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
+  keep.forEach(([sel, y]) => { const el = document.querySelector(sel); if(el && y) el.scrollTop = y; });
   document.body.style.overflow = S.sheet ? "hidden" : "";
   if(S.view === "login") mountGoogleButton();
 }
@@ -1817,7 +1837,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28h";
+const BUILD = "2026-10-28i";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
