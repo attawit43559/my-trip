@@ -181,6 +181,22 @@ p{margin:0}
 .menu button+button{border-top:1px solid var(--line)}
 .menu .danger{color:var(--danger)}
 .cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
+/* trip info lives in a floating bar at the bottom: it slides away while scrolling down, comes back on the way up, and opens upward when a tab is tapped */
+.dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
+  background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:22px;padding:6px;
+  box-shadow:0 6px 24px rgba(43,33,28,.16),0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;transition:transform .28s ease,opacity .28s ease}
+.dock.hide{transform:translate(-50%,calc(100% + 24px));opacity:0;pointer-events:none}
+.dock .seg{background:transparent;padding:0}
+.dock.open{background:var(--surface)}
+.dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px);animation:dockUp .22s ease}
+.dock-hd{display:flex;align-items:center;gap:10px;padding:2px 2px 0 4px;color:var(--deep)}
+.dock-hd .round.sm{width:34px;height:34px;background:var(--tile);color:var(--muted)}
+.dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.dock-scrim{position:fixed;inset:0;z-index:15;background:rgba(20,19,26,.22);animation:fadeIn .2s ease}
+@keyframes dockUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dock,.dock-panel,.dock-scrim{transition:none;animation:none}}
+.screen.has-dock{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:3px;border-radius:14px;background:var(--tile)}
 .seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 1px;min-width:0}
 .seg button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
@@ -275,7 +291,7 @@ p{margin:0}
 .kv span:first-child{color:var(--muted)}
 .kv span:last-child{text-align:right;font-weight:500;overflow-wrap:anywhere}
 .danger-btn{border:0;background:none;color:var(--danger);font-weight:500;min-height:44px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--tile);font-size:14px;display:inline-flex;align-items:center;gap:6px}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -651,7 +667,7 @@ function avatars(ids, max=4){
 const inviteLink = id => location.origin + location.pathname + "?openExternalBrowser=1#join-" + id;
 
 /* ---------- navigation ---------- */
-function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; render(); window.scrollTo(0,0); }
+function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; S.dockHidden = false; render(); window.scrollTo(0,0); }
 function openTrip(id, view="trip"){
   if(S.tripId !== id){
     unsubTrip && unsubTrip(); unsubItems && unsubItems();
@@ -838,14 +854,17 @@ function catCard(){
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
   const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง", idea:"จดร้านอาหารหรือที่ที่อยากไปไว้ก่อน ยังไม่ต้องระบุวัน"}[tab];
-  return `<section class="cat-card">
+  return `<nav class="dock${S.dockHidden && !tab ? " hide" : ""}${tab ? " open" : ""}" aria-label="ข้อมูลทริป">
+    ${tab ? `<div class="dock-panel t-${tab}">
+      <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
+      <div class="dock-body">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
+      ${add}
+    </div>` : ""}
     <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
       const n = S.items.filter(i => i.type === k).length;
       return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
     }).join("")}</div>
-    ${!tab ? "" : list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}
-    ${tab ? add : ""}
-  </section>`;
+  </nav>${tab ? `<div class="dock-scrim" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
@@ -873,7 +892,7 @@ function vTrip(){
   const loose = dates.length ? S.items.filter(it => it.type !== "idea" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
-  return `<main class="screen">
+  return `<main class="screen has-dock">
     <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
@@ -887,13 +906,9 @@ function vTrip(){
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>`}
     </section>
-    <section class="stack" style="gap:14px">
-      <div class="sec-h"><h2>ข้อมูลทริป</h2></div>
-      ${catCard()}
-    </section>
     ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
-  </main>`;
+  </main>${catCard()}`;
 }
 
 function vUpload(){
@@ -1458,6 +1473,22 @@ function showSuggest(input, list){
     if(sh){ const lab = input.closest("label"); const top = lab.getBoundingClientRect().top - sh.getBoundingClientRect().top + sh.scrollTop - 8;
       if(ul.getBoundingClientRect().bottom > sh.getBoundingClientRect().bottom || lab.getBoundingClientRect().top < sh.getBoundingClientRect().top) sh.scrollTop = top; }
 }
+/* hide the bottom bar while scrolling down the plan, bring it back when scrolling up or at the bottom */
+(function(){
+  let lastY = window.scrollY, ticking = false;
+  window.addEventListener("scroll", () => {
+    if(ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const y = window.scrollY, dy = y - lastY;
+      if(S.view !== "trip" || S.catTab || Math.abs(dy) < 6){ if(Math.abs(dy) >= 6) lastY = y; return; }
+      const atEnd = window.innerHeight + y >= document.documentElement.scrollHeight - 40;
+      const hide = dy > 0 && y > 60 && !atEnd;
+      lastY = y;
+      if(hide !== !!S.dockHidden){ S.dockHidden = hide; const d = document.querySelector(".dock"); if(d) d.classList.toggle("hide", hide); }
+    });
+  }, {passive:true});
+})();
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
@@ -1595,7 +1626,8 @@ document.addEventListener("click", async e => {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
     case "day": S.day = Number(el.dataset.i); render(); break;
-    case "cat": S.catTab = S.catTab === el.dataset.k ? "" : el.dataset.k; render(); break;
+    case "cat": S.catTab = S.catTab === el.dataset.k ? "" : el.dataset.k; S.dockHidden = false; render(); break;
+    case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
     case "manual":
       S.review = {kind:S.upload.kind, flights:S.upload.kind==="flight" ? [emptyFlight()] : [], stays:S.upload.kind==="stay" ? [emptyStay(t)] : [], passengers:"", bookingRef:"", uncertain:new Set()};
@@ -1723,7 +1755,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27w";
+const BUILD = "2026-10-27x";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
