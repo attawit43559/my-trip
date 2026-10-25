@@ -353,7 +353,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxz_Fsoh5MNxKnVakLEBxrh
 const DOW = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
 const DOW_FULL = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
 const MON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-const MOVE_MODES = ["รถยนต์","รถเช่า","แท็กซี่","รถไฟ","รถบัส","เรือ","เดิน"];
+const MOVE_MODES = ["รถยนต์","รถไฟ","รถบัส","เรือ","เดิน"];
 const IC = {
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
@@ -1488,7 +1488,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27i";
+const BUILD = "2026-10-27j";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
