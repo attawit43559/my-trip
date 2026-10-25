@@ -110,6 +110,10 @@ p{margin:0}
 .fld input[type=date],.fld input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;line-height:normal;text-align:left;padding:0 12px}
 .fld input[type=date]::-webkit-date-and-time-value,.fld input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.3em}
 .fld input::-webkit-datetime-edit{padding:0}
+/* iOS pins the value of an appearance:none date/time box to the top; size it by padding around one fixed line so it sits centred like the other fields */
+.fld input[type=date],.fld input[type=time]{box-sizing:border-box;line-height:22px;padding-top:12px;padding-bottom:12px;overflow:hidden}
+.fld.sm input[type=date],.fld.sm input[type=time]{padding-top:10px;padding-bottom:10px}
+.fld input[type=date]::-webkit-date-and-time-value,.fld input[type=time]::-webkit-date-and-time-value{line-height:22px;min-height:22px}
 .stepper-card{background:var(--surface);border-radius:24px;padding:4px 16px}
 .step-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
 .step-row+.step-row{border-top:1px solid var(--line)}
@@ -1760,7 +1764,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28b";
+const BUILD = "2026-10-28c";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
