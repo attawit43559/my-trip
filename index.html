@@ -205,6 +205,10 @@ p{margin:0}
 .lnk .ic:last-child{color:var(--muted)}
 .lnk.attach{color:var(--muted)}
 .lnk-row{display:flex;align-items:center}
+.sugg{list-style:none;margin:-8px 0 0;padding:6px;background:var(--surface);border-radius:16px;box-shadow:0 6px 24px rgba(43,33,28,.14);display:flex;flex-direction:column}
+.sugg li{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;cursor:pointer;line-height:1.35}
+.sugg li .ic{color:var(--muted);margin-top:2px}
+.sugg li:active,.sugg li:hover{background:var(--tile)}
 .lnk-row .lnk{flex:1;min-width:0}
 .lnk-row+.lnk-row,.lnk+.lnk-row,.lnk-row+.lnk{border-top:1px solid var(--line)}
 .lnk-x{width:44px;height:44px;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
@@ -1046,9 +1050,9 @@ function vSheet(){
     <div class="hd"><span class="thumb tc t-${s.kind}">${ic(s.kind)}</span><h2>${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
       ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${ic(MODE_ICON[m],18)}${esc(m)}</button>`).join("")}</div></div>` : ""}
-      ${isMove ? `<label class="fld">จาก<input id="sh-from" maxlength="80" placeholder="เช่น สนามบินคันไซ" value="${esc(s.from||"")}" data-bind="sheet:from"></label>
-      <label class="fld">ไป<input id="sh-to" maxlength="80" placeholder="เช่น โรงแรมที่พัก" value="${esc(s.to||"")}" data-bind="sheet:to"></label>`
-        : `<label class="fld">ชื่อสถานที่<input id="sh-title" required maxlength="80" placeholder="เช่น วัดพระธาตุดอยสุเทพ" value="${esc(s.title)}" data-bind="sheet:title"></label>`}
+      ${isMove ? `<label class="fld">จาก<input id="sh-from" maxlength="80" data-suggest="1" autocomplete="off" placeholder="เช่น สนามบินคันไซ" value="${esc(s.from||"")}" data-bind="sheet:from"></label>
+      <label class="fld">ไป<input id="sh-to" maxlength="80" data-suggest="1" autocomplete="off" placeholder="เช่น โรงแรมที่พัก" value="${esc(s.to||"")}" data-bind="sheet:to"></label>`
+        : `<label class="fld">ชื่อสถานที่<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="เช่น วัดพระธาตุดอยสุเทพ" value="${esc(s.title)}" data-bind="sheet:title"></label>`}
       <div class="grid2">
         ${dates.length ? `<label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>`
           : `<label class="fld">วัน<input id="sh-date" type="date" value="${esc(s.date||"")}" data-bind="sheet:date"></label>`}
@@ -1292,7 +1296,47 @@ document.addEventListener("input", e => {
   const [root, path] = b.split(":");
   if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
   if(e.target.dataset.rerender) render();
+  if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
+/* place suggestions while typing, from OpenStreetMap (Photon): free and needs no key */
+let sugTimer = null, sugCtl = null;
+function closeSuggest(){ document.querySelectorAll(".sugg").forEach(x => x.remove()); }
+function suggestSoon(input){
+  clearTimeout(sugTimer);
+  const q = input.value.trim();
+  if(q.length < 2){ closeSuggest(); return; }
+  sugTimer = setTimeout(() => fetchSuggest(input, q), 280);
+}
+async function fetchSuggest(input, q){
+  try{
+    if(sugCtl) sugCtl.abort(); sugCtl = new AbortController();
+    const r = await fetch("https://photon.komoot.io/api/?limit=6&q=" + encodeURIComponent(q), {signal:sugCtl.signal});
+    const j = await r.json();
+    if(document.activeElement !== input || input.value.trim() !== q) return;
+    const seen = new Set();
+    const list = (j.features || []).map(f => {
+      const p = f.properties || {}, c = (f.geometry || {}).coordinates || [];
+      const name = p.name || [p.street, p.housenumber].filter(Boolean).join(" ");
+      const area = [p.city || p.county, p.state, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && v !== name).join(", ");
+      return {name, area, lat:c[1], lon:c[0]};
+    }).filter(x => x.name && !seen.has(x.name + x.area) && seen.add(x.name + x.area));
+    closeSuggest();
+    if(!list.length) return;
+    const ul = document.createElement("ul"); ul.className = "sugg"; ul.setAttribute("role", "listbox");
+    ul.innerHTML = list.map((x, i) => `<li role="option" data-i="${i}">${ic("pin",18)}<span><b>${esc(x.name)}</b>${x.area ? `<br><span class="muted small">${esc(x.area)}</span>` : ""}</span></li>`).join("");
+    ul.addEventListener("pointerdown", ev => {
+      const li = ev.target.closest("li"); if(!li) return;
+      ev.preventDefault();
+      const x = list[+li.dataset.i];
+      input.value = x.name;
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+      if(S.sheet && input.id === "sh-title"){ S.sheet.address = x.area; S.sheet.lat = x.lat; S.sheet.lon = x.lon; }
+      closeSuggest();
+    });
+    input.closest("label").after(ul);
+  } catch(_){}
+}
+document.addEventListener("focusout", e => { if(e.target.dataset && e.target.dataset.suggest !== undefined) setTimeout(closeSuggest, 150); });
 document.addEventListener("change", e => {
   if(e.target.id === "attach-in"){
     const fl = Array.from(e.target.files || []); e.target.value = "";
@@ -1386,7 +1430,7 @@ document.addEventListener("submit", async e => {
     const from = s_(s.from), to = s_(s.to);
     const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : {}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : (s.address || s.lat ? {data:{address:s.address||"", lat:s.lat, lon:s.lon}} : {})), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -1519,7 +1563,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27m";
+const BUILD = "2026-10-27n";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
