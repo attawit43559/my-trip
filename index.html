@@ -256,7 +256,7 @@ p{margin:0}
 .danger-btn{border:0;background:none;color:var(--danger);font-weight:500;min-height:44px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chips button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--tile);font-size:14px}
+.chips button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--tile);font-size:14px;display:inline-flex;align-items:center;gap:6px}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .load{padding:80px 20px;text-align:center}
 /* compact phone sizing */
@@ -354,12 +354,17 @@ const DOW = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
 const DOW_FULL = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
 const MON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MOVE_MODES = ["ขับรถ","ขนส่งสาธารณะ","เดิน"];
+const MODE_ICON = {"ขับรถ":"move","ขนส่งสาธารณะ":"bus","เดิน":"walk"};
+/* transport items show the icon of how you travel */
+const itemIcon = it => it.type !== "move" ? it.type : (MODE_ICON[(it.data||{}).mode] || MODE_ICON[String(it.title||"").split(" · ")[0]] || "move");
 const IC = {
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   stay:'<path d="M3 19V6"/><path d="M3 15h18v4"/><path d="M21 15v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11.5" r="2"/>',
   place:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  bus:'<rect x="5" y="3" width="14" height="15" rx="3"/><path d="M5 11h14M8 21v-3M16 21v-3"/><circle cx="8.5" cy="14.5" r=".6"/><circle cx="15.5" cy="14.5" r=".6"/>',
+  walk:'<circle cx="13" cy="4.5" r="1.8"/><path d="M10 21l2-6 2.5 2.5V21M9.5 11.5l2-3.5 3 1.5 2 3M12 8l-1 4.5 1 2.5"/>',
   move:'<path d="M5 17h14v-5l-2-5H7l-2 5z"/><path d="M5 12h14"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
@@ -756,7 +761,7 @@ function subOf(it){
 }
 function entryHtml(e){
   return `<li><button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
-    <span class="thumb tc t-${e.it.type}">${ic(e.it.type,20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}</span></button></li>`;
+    <span class="thumb tc t-${e.it.type}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}</span></button></li>`;
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -1004,7 +1009,7 @@ function vSheet(){
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
-      <div class="hd"><span class="thumb tc t-${it.type}">${ic(it.type)}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+      <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
       ${itemLinks(it)}
       <p class="muted small">เพิ่มโดย ${esc(nameOf(it.createdBy))}</p>
@@ -1017,7 +1022,7 @@ function vSheet(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}" data-stop="1">
     <div class="hd"><span class="thumb tc t-${s.kind}">${ic(s.kind)}</span><h2>${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
-      ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div></div>` : ""}
+      ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${ic(MODE_ICON[m],18)}${esc(m)}</button>`).join("")}</div></div>` : ""}
       <label class="fld">${isMove?"จากไหนไปไหน":"ชื่อสถานที่"}<input id="sh-title" ${isMove?"":"required"} maxlength="80" placeholder="${isMove?"เช่น สนามบิน → ที่พัก":"เช่น วัดพระธาตุดอยสุเทพ"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
       <div class="grid2">
         ${dates.length ? `<label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>`
@@ -1355,7 +1360,7 @@ document.addEventListener("submit", async e => {
     if(!isMove && !s.title.trim()){ toast("ใส่ชื่อสถานที่ก่อนนะ"); return; }
     const title = isMove ? [s.mode, s.title.trim()].filter(Boolean).join(" · ") || "การเดินทาง" : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode}} : {}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -1488,7 +1493,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27k";
+const BUILD = "2026-10-27l";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
