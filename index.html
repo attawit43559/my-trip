@@ -171,6 +171,7 @@ p{margin:0}
 /* plan-row actions: two small soft round buttons, not full-height colour blocks */
 .erow{--w:108px}
 .erow .trow-actions{width:var(--w);align-items:center;justify-content:flex-end;gap:8px;padding-right:12px;background:var(--surface)}
+.trow.big.erow .trow-actions,.trow.small.erow .trow-actions{background:transparent;padding-right:4px}
 .sw-btn{width:40px;height:40px;border-radius:999px;border:0;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .sw-edit{background:var(--tile);color:var(--ink)}
 .sw-del{background:color-mix(in srgb,var(--danger) 12%,var(--surface));color:var(--danger)}
@@ -712,8 +713,11 @@ function openTrip(id, view="trip"){
 function tone(id){ let n = 0; for(const c of String(id||"")) n += c.charCodeAt(0); return ["flight","stay","place","move"][n % 4]; }
 function swipeWrap(t, inner, cls){
   const owner = t.ownerId === S.me;
-  return `<div class="trow ${cls}${S.swipeOpen === t.id ? " open" : ""}" data-row="${esc(t.id)}">
-    <div class="trow-actions"><button class="swipe-del" data-act="trip-ask" data-id="${esc(t.id)}" aria-label="${owner ? "ลบ" : "ออกจาก"}ทริป ${esc(t.name)}">${ic(owner ? "trash" : "leave",20)}<span>${owner ? "ลบ" : "ออก"}</span></button></div>
+  const key = "t:" + t.id, ask = S.delAsk === key;
+  return `<div class="trow erow ${cls}${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="${ask ? 112 : 64}" style="--w:${ask ? 112 : 64}px">
+    <div class="trow-actions">${ask
+      ? `<button class="sw-btn sw-yes" data-act="${owner ? "trip-delete" : "trip-leave"}" data-id="${esc(t.id)}">${owner ? "ลบเลย" : "ออกเลย"}</button>`
+      : `<button class="sw-btn sw-del" data-act="trip-del-ask" data-key="${esc(key)}" aria-label="${owner ? "ลบ" : "ออกจาก"}ทริป ${esc(t.name)}">${ic(owner ? "trash" : "leave",18)}</button>`}</div>
     <div class="trow-slide">${inner}</div></div>`;
 }
 function vHome(){
@@ -1741,9 +1745,11 @@ document.addEventListener("click", async e => {
     case "trip-menu": S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:false}; render(); break;
     case "trip-ask": S.swipeOpen = null; S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:true}; render(); break;
     case "menu-invite": openTrip(el.dataset.id, "invite"); break;
+    case "trip-del-ask": S.delAsk = el.dataset.key; S.swipeOpen = el.dataset.key; render(); break;
     case "trip-delete": case "trip-leave": {
-      const id = S.sheet.id, tr = S.trips.find(x => x.id === id);
-      S.sheet.busy = true; render();
+      const id = (S.sheet && S.sheet.id) || el.dataset.id;
+      S.swipeOpen = null; S.delAsk = null;
+      if(S.sheet){ S.sheet.busy = true; render(); } else { el.disabled = true; }
       try{
         if(a === "trip-delete") await store.deleteTrip(id);
         else await store.leaveTrip(id);
@@ -1811,7 +1817,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28g";
+const BUILD = "2026-10-28h";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
