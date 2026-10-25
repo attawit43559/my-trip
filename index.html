@@ -484,6 +484,7 @@ async function flush(){
         if(e.code === "auth_required") break;   // kept until the person signs in again
         if(e.code === "offline" || e.code === "server_error"){ setTimeout(flush, 8000); break; }
         C.outbox.shift(); persist();   // the server refused it; retrying cannot help
+        toast("บันทึกไม่สำเร็จ (" + (e.code || "error") + ") ลองใหม่อีกครั้ง");
       }
     }
   } finally { flushing = false; S.pending = C.outbox.length; }
@@ -502,9 +503,9 @@ const store = {
   async fetchTrip(id){ const r = await api("getTrip", {id}); return r && r.trip; },
   async createTrip(data){
     let id = genId(); while(C.trips[id]) id = genId();
-    const trip = {id, ...data, members:{[S.me]: S.myName}};
-    C.trips[id] = trip; C.items[id] = {}; C.myTrips.unshift(id); emit();
-    queue("saveTrip", {trip, create:true});
+    // a new trip is saved on the server before anything else, so an invite link always points at a real trip
+    const saved = await api("saveTrip", {trip:{id, ...data}, create:true});
+    C.trips[id] = saved; C.items[id] = {}; C.myTrips.unshift(id); emit();
     return id;
   },
   async updateTrip(id, patch){ C.trips[id] = deepMerge(C.trips[id], patch); emit(); queue("saveTrip", {trip:{id, ...patch}}); },
@@ -616,7 +617,7 @@ function avatars(ids, max=4){
   const shown = ids.slice(0, max);
   return `<span class="avatars" aria-hidden="true">${shown.map(id => `<span class="av ${id===S.me?"me":""}">${esc(nameOf(id).slice(0,1))}</span>`).join("")}</span>`;
 }
-const inviteLink = id => location.origin + location.pathname + "#join-" + id;
+const inviteLink = id => location.origin + location.pathname + "?openExternalBrowser=1#join-" + id;
 
 /* ---------- navigation ---------- */
 function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; render(); window.scrollTo(0,0); }
@@ -917,6 +918,7 @@ function vLogin(){
     <img class="logo" src="icons/icon-512.png" alt="">
     <h1>My Trip</h1>
     <div id="gbtn"></div>
+    ${/\bLine\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent) ? `<p class="note" style="max-width:300px">Google ไม่ให้เข้าสู่ระบบในเบราว์เซอร์ของแอปแชต กดเมนู ⋯ แล้วเลือก "เปิดใน Safari" หรือ "เปิดในเบราว์เซอร์" ก่อนนะ</p>` : ""}
     ${S.loginErr ? `<p class="err" role="alert">${esc(S.loginErr)}</p>` : ""}
     ${S.loggingIn ? `<p class="muted small">กำลังเข้าสู่ระบบ…</p>` : ""}
   </main>`;
@@ -1416,12 +1418,15 @@ document.addEventListener("submit", async e => {
   if(f === "new"){
     const n = S.newTrip;
     if(!n.name.trim()){ toast("ใส่ชื่อทริปก่อนนะ"); return; }
+    if(S.creating) return;
+    S.creating = true; toast("กำลังสร้างทริป…");
     try{
       const id = await store.createTrip({name:n.name.trim(), destination:"", startDate:"", days:0, autoDates:true,
         ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
       S.newTrip = {name:"", destination:""};
       openTrip(id, "invite");
     } catch(err){ fail(err); }
+    finally{ S.creating = false; }
   }
   if(f === "sheet"){
     const s = S.sheet, t = S.trip; if(!s || !t) return;
@@ -1563,7 +1568,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27n";
+const BUILD = "2026-10-27o";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
