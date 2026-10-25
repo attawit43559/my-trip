@@ -287,7 +287,9 @@ input,select,textarea{font-size:16px!important}
 .trip-head h1{font-size:21px}
 .trip-head svg.art{width:140px;height:86px}
 /* trip page: one slim row instead of a big header card */
-.trip-bar{display:flex;align-items:center;gap:10px;min-height:44px}
+.trip-bar{display:flex;align-items:center;gap:10px;min-height:44px;position:relative;overflow:hidden;background:var(--soft);border-radius:22px;padding:10px}
+.trip-bar>*{position:relative}
+.trip-bar svg.art{position:absolute;right:66px;bottom:0;left:auto;width:120px;height:64px;overflow:visible}
 .trip-bar .tb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .trip-bar h1{font-size:19px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trip-bar .tb-invite{position:relative;flex:none}
@@ -803,7 +805,7 @@ function vTrip(){
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   return `<main class="screen">
-    <section class="trip-bar">
+    <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
@@ -1483,7 +1485,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27b";
+const BUILD = "2026-10-27c";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
