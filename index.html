@@ -993,7 +993,7 @@ function vSheet(){
     const data = it.data || {};
     let rows = [];
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef]];
-    else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) ? s_(data.guests).split(/\s*[,;\n]\s*/).filter(Boolean) : "–"],["รหัสการจอง", data.bookingRef]];
+    else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
@@ -1481,7 +1481,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-26e";
+const BUILD = "2026-10-26f";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
