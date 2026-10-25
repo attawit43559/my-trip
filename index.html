@@ -311,11 +311,11 @@ input,select,textarea{font-size:16px!important}
 .trip-head h1{font-size:21px}
 .trip-head svg.art{width:140px;height:86px}
 /* trip page: one slim row instead of a big header card */
-.trip-bar{display:flex;align-items:center;gap:10px;min-height:44px;position:relative;overflow:hidden;background:var(--soft);border-radius:22px;padding:10px}
+.trip-bar{display:flex;align-items:center;gap:12px;min-height:84px;position:relative;overflow:hidden;background:var(--soft);border-radius:26px;padding:14px 12px}
 .trip-bar>*{position:relative}
-.trip-bar svg.art{position:absolute;right:66px;bottom:0;left:auto;width:120px;height:64px;overflow:visible}
-.trip-bar .tb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
-.trip-bar h1{font-size:19px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip-bar svg.art{position:absolute;right:68px;bottom:0;left:auto;width:156px;height:84px;overflow:visible}
+.trip-bar .tb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3;gap:2px}
+.trip-bar h1{font-size:22px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trip-bar .tb-invite{position:relative;flex:none}
 .trip-bar .tb-invite em{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-style:normal;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .fld input,.fld select{height:46px;border-radius:14px}
@@ -1720,7 +1720,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27u";
+const BUILD = "2026-10-27v";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
