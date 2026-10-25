@@ -100,7 +100,7 @@ p{margin:0}
 .fld input,.fld select{height:52px;border-radius:16px;border:0;background:var(--surface);padding:0 16px;font-size:16px;font-weight:400;width:100%;min-width:0}
 .card .fld input,.card .fld select,.sheet .fld input,.sheet .fld select{background:var(--tile)}
 .fld.sm{font-size:12px;font-weight:400;color:var(--muted)}
-.fld.sm input{height:46px;border-radius:14px;padding:0 12px;font-size:15px;color:var(--ink)}
+.fld.sm input,.fld.sm select{height:46px;border-radius:14px;padding:0 12px;font-size:15px;color:var(--ink)}
 .fld.warn input{background:var(--warn-bg);box-shadow:inset 0 0 0 2px var(--accent-line)}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .grid2 .full{grid-column:1/-1}
@@ -355,6 +355,16 @@ const DOW_FULL = ["อาทิตย์","จันทร์","อังคา�
 const MON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MOVE_MODES = ["ขับรถ","ขนส่งสาธารณะ","เดิน"];
 const MODE_ICON = {"ขับรถ":"move","ขนส่งสาธารณะ":"bus","เดิน":"walk"};
+const moveTitle = (from, to) => from && to ? `${from} → ${to}` : (from || to ? `${from ? "จาก " + from : "ไป " + to}` : "การเดินทาง");
+const TRAVELMODE = {"ขับรถ":"driving","ขนส่งสาธารณะ":"transit","เดิน":"walking"};
+/* a Google Maps directions link; it opens the Maps app on phones */
+function routeLink(it){
+  const d = it.data || {};
+  if(it.type !== "move" || !s_(d.from) || !s_(d.to)) return "";
+  const q = new URLSearchParams({api:"1", origin:d.from, destination:d.to});
+  if(TRAVELMODE[d.mode]) q.set("travelmode", TRAVELMODE[d.mode]);
+  return "https://www.google.com/maps/dir/?" + q.toString();
+}
 /* transport items show the icon of how you travel */
 const itemIcon = it => it.type !== "move" ? it.type : (MODE_ICON[(it.data||{}).mode] || MODE_ICON[String(it.title||"").split(" · ")[0]] || "move");
 const IC = {
@@ -936,12 +946,19 @@ function editFromItem(it){
   const d = it.data || {};
   if(it.type === "flight") return {airline:d.airline||"", flightNo:d.flightNo||"", date:it.date||"", from:d.from||"", depTime:it.time||"", to:d.to||"", arrTime:d.arrTime||"", arrDate:arrDateOf(it), fromCity:d.fromCity||"", toCity:d.toCity||"", passengers:d.passengers||"", bookingRef:d.bookingRef||""};
   if(it.type === "stay") return {name:it.title||"", address:d.address||"", checkInDate:it.date||"", checkInTime:it.time||"", checkOutDate:it.endDate||"", checkOutTime:it.endTime||"", rooms:d.rooms||"", guests:d.guests||"", bookingRef:d.bookingRef||"", phone:d.phone||"", website:d.website||"", mapsUrl:d.mapsUrl||""};
+  if(it.type === "move"){
+    let from = d.from || "", to = d.to || "";
+    if(!from && !to){ const t = String(it.title||"").replace(/^[^·]*·\s*/, ""); const m = t.split(/\s*→\s*/); if(m.length === 2){ from = m[0]; to = m[1]; } else from = t; }
+    const mode = d.mode || (MOVE_MODES.includes(String(it.title||"").split(" · ")[0]) ? String(it.title).split(" · ")[0] : "ขับรถ");
+    return {mode, from, to, date:it.date||"", time:it.time||"", note:it.sub||""};
+  }
   return {title:it.title||"", date:it.date||"", time:it.time||"", note:it.sub||""};
 }
 function patchFromEdit(it, e){
   if(it.type === "flight") return makeFlightDoc({...e, depTime:e.depTime});
   if(it.type === "stay") return {date:e.checkInDate, time:e.checkInTime, endDate:e.checkOutDate, endTime:e.checkOutTime, title:s_(e.name) || "ที่พัก",
     data:{...(it.data||{}), address:e.address, rooms:e.rooms, guests:e.guests, bookingRef:e.bookingRef, phone:s_(e.phone), website:cleanUrl(e.website), mapsUrl:cleanUrl(e.mapsUrl)}};
+  if(it.type === "move") return {title:moveTitle(s_(e.from), s_(e.to)), date:e.date, time:e.time, sub:s_(e.note), data:{...(it.data||{}), mode:e.mode, from:s_(e.from), to:s_(e.to)}};
   return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note)};
 }
 function vItemEdit(it, e){
@@ -961,11 +978,15 @@ function vItemEdit(it, e){
     ${efld("รหัสการจอง","bookingRef",e.bookingRef,"text","full")}
     ${efld("โทร","phone",e.phone,"tel","full")}${efld("เว็บไซต์","website",e.website,"url","full")}
     ${efld("ลิงก์ Google Maps","mapsUrl",e.mapsUrl,"url","full")}`;
-  else body = `${efld(it.type === "move" ? "การเดินทาง" : "ชื่อสถานที่","title",e.title,"text","full")}
+  else if(it.type === "move") body = `<label class="fld sm full" for="ed-mode">เดินทางด้วย<select id="ed-mode" data-bind="sheet:edit.mode">${MOVE_MODES.map(m => `<option ${m===e.mode?"selected":""}>${esc(m)}</option>`).join("")}</select></label>
+    ${efld("จาก","from",e.from,"text","full")}${efld("ไป","to",e.to,"text","full")}
+    ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
+    ${efld("โน้ต","note",e.note,"text","full")}`;
+  else body = `${efld("ชื่อสถานที่","title",e.title,"text","full")}
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
     ${efld("โน้ต","note",e.note,"text","full")}`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไข ${esc(it.title)}" data-stop="1">
-    <div class="hd"><span class="thumb tc t-${it.type}">${ic(it.type)}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="item-edit" style="gap:14px">
       <div class="grid2">${body}</div>
       <div class="grid2"><button type="button" class="btn ghost" style="background:var(--tile);height:50px;font-size:16px" data-act="item-edit-cancel">ยกเลิก</button>
@@ -984,6 +1005,7 @@ function itemLinks(it){
   const d = it.data || {}, out = [];
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
   if(it.type === "stay" || it.type === "place"){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
+  const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "เส้นทางใน Google Maps"));
   if(d.website) out.push(lnk(d.website, "globe", "เว็บไซต์"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
   files.forEach((id, i) => out.push(`<div class="lnk-row">${lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))}<button class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออกจากรายการนี้">${ic("close",16)}</button></div>`));
@@ -1006,6 +1028,7 @@ function vSheet(){
     let rows = [];
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef]];
     else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef]];
+    else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
@@ -1023,7 +1046,9 @@ function vSheet(){
     <div class="hd"><span class="thumb tc t-${s.kind}">${ic(s.kind)}</span><h2>${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
       ${isMove ? `<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:500">เดินทางด้วย</span><div class="chips">${MOVE_MODES.map(m => `<button type="button" aria-pressed="${s.mode===m}" data-act="mode" data-m="${esc(m)}">${ic(MODE_ICON[m],18)}${esc(m)}</button>`).join("")}</div></div>` : ""}
-      <label class="fld">${isMove?"จากไหนไปไหน":"ชื่อสถานที่"}<input id="sh-title" ${isMove?"":"required"} maxlength="80" placeholder="${isMove?"เช่น สนามบิน → ที่พัก":"เช่น วัดพระธาตุดอยสุเทพ"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
+      ${isMove ? `<label class="fld">จาก<input id="sh-from" maxlength="80" placeholder="เช่น สนามบินคันไซ" value="${esc(s.from||"")}" data-bind="sheet:from"></label>
+      <label class="fld">ไป<input id="sh-to" maxlength="80" placeholder="เช่น โรงแรมที่พัก" value="${esc(s.to||"")}" data-bind="sheet:to"></label>`
+        : `<label class="fld">ชื่อสถานที่<input id="sh-title" required maxlength="80" placeholder="เช่น วัดพระธาตุดอยสุเทพ" value="${esc(s.title)}" data-bind="sheet:title"></label>`}
       <div class="grid2">
         ${dates.length ? `<label class="fld">วัน<select id="sh-date" data-bind="sheet:date">${dates.map((x,i) => `<option value="${x}" ${x===s.date?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>`
           : `<label class="fld">วัน<input id="sh-date" type="date" value="${esc(s.date||"")}" data-bind="sheet:date"></label>`}
@@ -1358,9 +1383,10 @@ document.addEventListener("submit", async e => {
     const s = S.sheet, t = S.trip; if(!s || !t) return;
     const isMove = s.kind === "move";
     if(!isMove && !s.title.trim()){ toast("ใส่ชื่อสถานที่ก่อนนะ"); return; }
-    const title = isMove ? [s.mode, s.title.trim()].filter(Boolean).join(" · ") || "การเดินทาง" : s.title.trim();
+    const from = s_(s.from), to = s_(s.to);
+    const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode}} : {}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : {}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -1397,7 +1423,7 @@ document.addEventListener("click", async e => {
     case "rm-flight": S.review.flights.splice(Number(el.dataset.i), 1); S.review.uncertain = new Set(); render(); break;
     case "sheet": {
       const dates = tripDates(t);
-      S.sheet = {kind:el.dataset.k, title:"", date:dates[S.day] || dates[0], time:"", note:"", mode:el.dataset.k==="move" ? "ขับรถ" : ""};
+      S.sheet = {kind:el.dataset.k, title:"", date:dates[S.day] || dates[0], time:"", note:"", mode:el.dataset.k==="move" ? "ขับรถ" : "", from:"", to:""};
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
@@ -1493,7 +1519,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27l";
+const BUILD = "2026-10-27m";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
