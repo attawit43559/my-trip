@@ -317,10 +317,12 @@ input,select,textarea{font-size:16px!important}
 .cal .tab{height:44px;flex-direction:column}
 .cal .tab span{font-size:9px;line-height:1}
 .cal .tab.out{background:transparent;color:var(--muted);opacity:.45}
-/* days already behind us: just quieter */
-.cal .tab.past{background:var(--tile);color:var(--muted)}
+/* days already behind us: quieter, with one small tick */
+.cal .tab.past{position:relative;background:var(--tile);color:var(--muted)}
 .cal .tab.past b{font-weight:400}
+.cal .tab.past::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:4px;border-left:1.5px solid var(--stay-mid);border-bottom:1.5px solid var(--stay-mid);transform:rotate(-45deg)}
 .cal .tab.past[aria-selected="true"]{background:var(--muted);color:var(--bg)}
+.cal .tab.past[aria-selected="true"]::after{border-color:var(--bg)}
 </style>
 </head>
 <body>
@@ -1462,7 +1464,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-26c";
+const BUILD = "2026-10-26d";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
