@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F3F5FA">
+<meta name="theme-color" content="#F7F3EC">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="My Trip">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6">
@@ -16,29 +16,29 @@
 <style>
 /* Layout: one centred phone column; each screen is a stack of white cards on a soft grey ground, one yellow accent for primary actions */
 :root{
-  --bg:#F3F5FA; --surface:#FFFFFF; --tile:#EFF1F7; --ink:#1D1B2E; --muted:#636278; --line:#E7E9F1;
-  --accent:#FFC21A; --accent-soft:#FFF1BF; --accent-line:#F0B000; --warn-bg:#FFF4CC; --on-accent:#1D1B2E; --danger:#E5334B;
-  --flight:#1559C9; --flight-soft:#E3EEFF; --flight-mid:#2F80FF;
-  --stay:#0E7A45; --stay-soft:#DDF7E8; --stay-mid:#14B866;
-  --place:#C0154A; --place-soft:#FFE3EC; --place-mid:#FF5C8A;
-  --move:#8A5A00; --move-soft:#FFF1BF; --move-mid:#FFC21A;
+  --bg:#F7F3EC; --surface:#FFFFFF; --tile:#F1EBE1; --ink:#2B211C; --muted:#6E6259; --line:#EAE2D6;
+  --accent:#F2A516; --accent-soft:#FDEFCF; --accent-line:#D88C00; --warn-bg:#FDF0D2; --on-accent:#2B211C; --danger:#C8372D;
+  --flight:#8E2766; --flight-soft:#F8E1EE; --flight-mid:#C9417F;
+  --stay:#3B6420; --stay-soft:#E7F0D8; --stay-mid:#5E9A2E;
+  --place:#1C5470; --place-soft:#DDEDF4; --place-mid:#2C7DA0;
+  --move:#A04A06; --move-soft:#FDE6D0; --move-mid:#EE8A2B;
   --display:'Mitr','Prompt','Noto Sans Thai',system-ui,sans-serif;
   --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#13131C; --surface:#1E1E2A; --tile:#2A2A38; --ink:#F4F4FA; --muted:#ABABBF; --line:#323243;
-  --accent:#FFC21A; --accent-soft:#3D3214; --accent-line:#A07A10; --warn-bg:#3A2F10; --on-accent:#1D1B2E; --danger:#FF6B7F;
-  --flight:#9CC2FF; --flight-soft:#1C2B4A; --flight-mid:#3D8BFF;
-  --stay:#7FE3AA; --stay-soft:#163828; --stay-mid:#1DC46F;
-  --place:#FF9DB7; --place-soft:#43202D; --place-mid:#FF5C8A;
-  --move:#FFD465; --move-soft:#3D3214; --move-mid:#FFC21A; color-scheme:dark}}
+  --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
+  --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
+  --flight:#F2A6CB; --flight-soft:#3D1F30; --flight-mid:#D2508C;
+  --stay:#B5D98C; --stay-soft:#22301A; --stay-mid:#6FAE38;
+  --place:#93C9E2; --place-soft:#16303D; --place-mid:#3A8FB5;
+  --move:#FFC08A; --move-soft:#3A2614; --move-mid:#EE8A2B; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#13131C; --surface:#1E1E2A; --tile:#2A2A38; --ink:#F4F4FA; --muted:#ABABBF; --line:#323243;
-  --accent:#FFC21A; --accent-soft:#3D3214; --accent-line:#A07A10; --warn-bg:#3A2F10; --on-accent:#1D1B2E; --danger:#FF6B7F;
-  --flight:#9CC2FF; --flight-soft:#1C2B4A; --flight-mid:#3D8BFF;
-  --stay:#7FE3AA; --stay-soft:#163828; --stay-mid:#1DC46F;
-  --place:#FF9DB7; --place-soft:#43202D; --place-mid:#FF5C8A;
-  --move:#FFD465; --move-soft:#3D3214; --move-mid:#FFC21A; color-scheme:dark}
+  --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
+  --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
+  --flight:#F2A6CB; --flight-soft:#3D1F30; --flight-mid:#D2508C;
+  --stay:#B5D98C; --stay-soft:#22301A; --stay-mid:#6FAE38;
+  --place:#93C9E2; --place-soft:#16303D; --place-mid:#3A8FB5;
+  --move:#FFC08A; --move-soft:#3A2614; --move-mid:#EE8A2B; color-scheme:dark}
 html,body{min-height:100%}
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -210,7 +210,7 @@ p{margin:0}
 .t-flight{--deep:var(--flight);--soft:var(--flight-soft);--mid:var(--flight-mid);--on:#FFFFFF}
 .t-stay{--deep:var(--stay);--soft:var(--stay-soft);--mid:var(--stay-mid);--on:#FFFFFF}
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
-.t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#1D1B2E}
+.t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#2B211C}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
 .hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
@@ -1481,7 +1481,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-26f";
+const BUILD = "2026-10-27a";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
