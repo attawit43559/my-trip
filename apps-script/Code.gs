@@ -136,6 +136,19 @@ const ACTIONS = {
     return trip;
   }),
 
+  // the trip's creator can take someone out of it (for a wrong join)
+  removeMember: (req) => withLock_(() => {
+    const t = find_(TRIPS, String(req.id));
+    if (!t) return null;
+    const trip = t.obj, uid = String(req.uid || '');
+    if (trip.ownerId !== req.me) throw new Error('not_owner');
+    if (!uid || uid === trip.ownerId) throw new Error('cannot_remove_owner');
+    trip.memberIds = (trip.memberIds || []).filter(m => m !== uid);
+    if (trip.members) delete trip.members[uid];
+    upsert_(TRIPS, trip.id, '', trip);
+    return trip;
+  }),
+
   deleteTrip: (req) => withLock_(() => {
     const id = String(req.id);
     const t = find_(TRIPS, id);

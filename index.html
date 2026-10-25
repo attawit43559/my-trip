@@ -249,6 +249,10 @@ p{margin:0}
 .members li{display:flex;align-items:center;gap:12px;min-height:60px}
 .members li+li{border-top:1px solid var(--line)}
 .members .av{width:38px;height:38px;border:0}
+.members .round.sm{width:36px;height:36px;background:var(--tile);color:var(--muted)}
+.members .rm-ask{gap:8px;flex-wrap:wrap;padding:8px 0}
+.members .rm-ask .pill-btn{height:38px;padding:0 14px;font-size:13px}
+.pill-btn.danger{background:var(--danger);color:#fff}
 .scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:520px;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding-top:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 .sheet .hd{display:flex;align-items:center;gap:12px}
@@ -722,12 +726,20 @@ function vInvite(){
     </section>
     <section class="stack">
       <div class="sec-h"><h2>ผู้ร่วมทริป</h2><span class="muted small">${ids.length} คน</span></div>
-      <ul class="members">${ids.map(id => `<li><span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(nameOf(id).slice(0,1))}</span><span class="grow" style="font-weight:500">${esc(nameOf(id))}</span><span class="muted small">${id===t.ownerId?"ผู้สร้างทริป":"เข้าร่วมแล้ว"}</span></li>`).join("")}</ul>
+      <ul class="members">${ids.map(id => memberRow(t, id)).join("")}</ul>
     </section>
     <button class="btn primary" data-act="trip">ไปที่ทริป ${ic("chev")}</button>
   </main>`;
 }
 
+function memberRow(t, id){
+  const owner = t.ownerId === S.me, canRemove = owner && id !== t.ownerId;
+  const av = `<span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(nameOf(id).slice(0,1))}</span>`;
+  if(canRemove && S.rmAsk === id) return `<li class="rm-ask">${av}<span class="grow">ลบ <b>${esc(nameOf(id))}</b> ออกจากทริป?</span>
+    <button class="pill-btn" style="background:var(--tile)" data-act="rm-cancel">ยกเลิก</button><button class="pill-btn danger" data-act="rm-member" data-id="${esc(id)}">ลบออก</button></li>`;
+  return `<li>${av}<span class="grow" style="font-weight:500">${esc(nameOf(id))}</span><span class="muted small">${id===t.ownerId?"ผู้สร้างทริป":"เข้าร่วมแล้ว"}</span>
+    ${canRemove ? `<button class="round sm" data-act="rm-ask" data-id="${esc(id)}" aria-label="ลบ ${esc(nameOf(id))} ออกจากทริป">${ic("close",16)}</button>` : ""}</li>`;
+}
 function vLoadingTrip(){
   if(S.trip === null && S.tripId && S.tripMissing) return `<main class="screen"><div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ไม่พบทริป</h1></div><p class="muted">ทริปนี้อาจถูกลบไปแล้ว</p></main>`;
   return `<div class="load muted">กำลังโหลดทริป…</div>`;
@@ -1517,6 +1529,17 @@ document.addEventListener("click", async e => {
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
     case "close-sheet": S.sheet = null; render(); break;
+    case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
+    case "rm-cancel": S.rmAsk = null; render(); break;
+    case "rm-member": {
+      const uid = el.dataset.id, tid = S.tripId; el.disabled = true;
+      try{
+        const trip = await api("removeMember", {id:tid, uid});
+        if(trip) C.trips[tid] = Object.assign(C.trips[tid] || {}, {memberIds:trip.memberIds, members:trip.members});
+        S.rmAsk = null; emit(); toast("ลบออกจากทริปแล้ว");
+      } catch(e){ el.disabled = false; fail(e); }
+      break;
+    }
     case "sheet-confirm": S.sheet.confirm = true; render(); break;
     case "item-edit": { const it = S.items.find(i => i.id === S.sheet.id); if(it){ S.sheet.edit = editFromItem(it); render(); } break; }
     case "item-edit-cancel": S.sheet.edit = null; render(); break;
@@ -1608,7 +1631,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27s";
+const BUILD = "2026-10-27t";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
