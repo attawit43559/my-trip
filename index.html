@@ -22,6 +22,7 @@
   --stay:#8A5A00; --stay-soft:#FDEFCF; --stay-mid:#F2A516;
   --place:#3B6420; --place-soft:#E7F0D8; --place-mid:#5E9A2E;
   --move:#A0321A; --move-soft:#FBE2DA; --move-mid:#E0583A;
+  --idea:#7A3D8C; --idea-soft:#F3E5F7; --idea-mid:#A65CC2;
   --display:'Mitr','Prompt','Noto Sans Thai',system-ui,sans-serif;
   --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
 }
@@ -31,14 +32,14 @@
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
-  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; color-scheme:dark}}
+  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; color-scheme:dark}}
 :root[data-theme="dark"]{
   --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
-  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; color-scheme:dark}
+  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; color-scheme:dark}
 html,body{min-height:100%}
 /* white cards on a near-white page: a hairline shadow keeps them apart */
 .card,.cat-card,.day-list,.list-row,.hero,.stepper-card,.cal .tab:not(.out):not(.past),.screen>.top .round,.home-top .me-btn{box-shadow:var(--lift)}
@@ -180,10 +181,12 @@ p{margin:0}
 .menu button+button{border-top:1px solid var(--line)}
 .menu .danger{color:var(--danger)}
 .cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
-.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:3px;border-radius:14px;background:var(--tile)}
-.seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 2px}
+.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:3px;border-radius:14px;background:var(--tile)}
+.seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 1px;min-width:0}
+.seg button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
+@media (max-width:360px){.seg button{font-size:11px}}
 .seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.seg em{position:absolute;top:3px;right:6px;font-style:normal;font-size:10px;font-weight:600;min-width:16px;height:16px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;padding:0 4px}
+.seg em{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;font-weight:600;min-width:16px;height:16px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;padding:0 4px}
 .cat-list{list-style:none;margin:0;padding:0 4px}
 .cat-list li+li{border-top:1px solid var(--line)}
 .cat-row{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 0;border:0;background:none;text-align:left;color:var(--muted)}
@@ -218,6 +221,16 @@ p{margin:0}
 .t-stay{--deep:var(--stay);--soft:var(--stay-soft);--mid:var(--stay-mid);--on:#2B211C}
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#FFFFFF}
+.thumb-sm{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}
+.cat-row.done .ttl{color:var(--muted)}
+.ok-mini{width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--idea-soft);color:var(--idea);flex:none}
+.plan-box{background:var(--soft);color:var(--deep);border-radius:18px;padding:14px;display:flex;align-items:center;gap:12px}
+.plan-box.stack{display:flex;flex-direction:column;align-items:stretch}
+.plan-box .fld{color:var(--ink)}
+.plan-box .fld input,.plan-box .fld select{background:var(--surface)}
+.plan-box .pill-btn{background:var(--surface);color:var(--deep)}
+.chips.t-idea button[aria-pressed="true"]{background:var(--soft);color:var(--deep);border-color:var(--mid)}
+.t-idea{--deep:var(--idea);--soft:var(--idea-soft);--mid:var(--idea-mid);--on:#FFFFFF}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
 .hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
@@ -374,7 +387,17 @@ function routeLink(it){
   return "https://www.google.com/maps/dir/?" + q.toString();
 }
 /* transport items show the icon of how you travel */
-const itemIcon = it => it.type !== "move" ? it.type : (MODE_ICON[(it.data||{}).mode] || MODE_ICON[String(it.title||"").split(" · ")[0]] || "move");
+/* wish-list memos (and places planned from them) show what kind of place they are */
+const IDEA_KINDS = ["ที่เที่ยว","ร้านอาหาร","ช้อปปิ้ง"];
+const IDEA_ICON = {"ที่เที่ยว":"pin","ร้านอาหาร":"food","ช้อปปิ้ง":"shop"};
+const itemIcon = it => {
+  const d = it.data || {};
+  if(it.type === "move") return MODE_ICON[d.mode] || MODE_ICON[String(it.title||"").split(" · ")[0]] || "move";
+  if((it.type === "idea" || it.type === "place") && IDEA_ICON[d.kind] && d.kind !== "ที่เที่ยว") return IDEA_ICON[d.kind];
+  return it.type === "idea" ? "pin" : it.type;
+};
+/* the day a memo was put into the plan, from the place made from it */
+const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
@@ -393,10 +416,13 @@ const IC = {
   ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
-  pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'
+  pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  idea:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/>',
+  food:'<path d="M6 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 3v18"/><path d="M17 21V3c-2.2 0-3.5 2.5-3.5 6v4H17"/>',
+  shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
 };
 const TYPE = {
-  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}
+  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}, idea:{label:"อยากไป"}
 };
 const ic = (n, s=22) => `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${IC[n]||""}</svg>`;
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -609,7 +635,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move","idea"].includes(S.sheet.kind) || !!S.sheet.edit));
 function softRender(){ if(!busyForm()) render(); }
 function setPath(obj, path, val){ const ks = path.split("."); let o = obj; for(let i=0;i<ks.length-1;i++) o = o[ks[i]]; o[ks[ks.length-1]] = val; }
 function nameOf(id){
@@ -793,9 +819,16 @@ function entryHtml(e){
 }
 function catCard(){
   const tab = S.catTab || "";
-  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["place","สถานที่"],["move","เดินทาง"]];
-  const list = S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
+  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["place","สถานที่"],["move","เดินทาง"],["idea","อยากไป"]];
+  const list = tab === "idea"
+    ? S.items.filter(i => i.type === "idea").sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
+    : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
   const row = it => {
+    if(it.type === "idea"){
+      const p = plannedFrom(it.id), d = it.data || {};
+      const meta = [d.kind, p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
+      return `<li><button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm t-idea" aria-hidden="true">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button></li>`;
+    }
     const when = it.type === "stay"
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
@@ -804,7 +837,7 @@ function catCard(){
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
-  const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง"}[tab];
+  const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง", idea:"จดร้านอาหารหรือที่ที่อยากไปไว้ก่อน ยังไม่ต้องระบุวัน"}[tab];
   return `<section class="cat-card">
     <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
       const n = S.items.filter(i => i.type === k).length;
@@ -837,7 +870,7 @@ function vTrip(){
   const d = dates[S.day];
   const entries = d ? dayEntries(d) : [];
   const inRange = new Set(dates);
-  const loose = dates.length ? S.items.filter(it => !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
+  const loose = dates.length ? S.items.filter(it => it.type !== "idea" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   return `<main class="screen">
@@ -971,6 +1004,7 @@ function editFromItem(it){
     const mode = d.mode || (MOVE_MODES.includes(String(it.title||"").split(" · ")[0]) ? String(it.title).split(" · ")[0] : "ขับรถ");
     return {mode, from, to, date:it.date||"", time:it.time||"", note:it.sub||""};
   }
+  if(it.type === "idea") return {title:it.title||"", kind:d.kind||"ที่เที่ยว", note:it.sub||""};
   return {title:it.title||"", date:it.date||"", time:it.time||"", note:it.sub||""};
 }
 function patchFromEdit(it, e){
@@ -978,6 +1012,7 @@ function patchFromEdit(it, e){
   if(it.type === "stay") return {date:e.checkInDate, time:e.checkInTime, endDate:e.checkOutDate, endTime:e.checkOutTime, title:s_(e.name) || "ที่พัก",
     data:{...(it.data||{}), address:e.address, rooms:e.rooms, guests:e.guests, bookingRef:e.bookingRef, phone:s_(e.phone), website:cleanUrl(e.website), mapsUrl:cleanUrl(e.mapsUrl)}};
   if(it.type === "move") return {title:moveTitle(s_(e.from), s_(e.to)), date:e.date, time:e.time, sub:s_(e.note), data:{...(it.data||{}), mode:e.mode, from:s_(e.from), to:s_(e.to)}};
+  if(it.type === "idea") return {title:s_(e.title) || it.title, sub:s_(e.note), data:{...(it.data||{}), kind:e.kind}};
   return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note)};
 }
 function vItemEdit(it, e){
@@ -1001,6 +1036,9 @@ function vItemEdit(it, e){
     ${efld("จาก","from",e.from,"text","full")}${efld("ไป","to",e.to,"text","full")}
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
     ${efld("โน้ต","note",e.note,"text","full")}`;
+  else if(it.type === "idea") body = `${efld("ชื่อ","title",e.title,"text","full")}
+    <label class="fld sm full" for="ed-kind">ประเภท<select id="ed-kind" data-bind="sheet:edit.kind">${IDEA_KINDS.map(k => `<option ${k===e.kind?"selected":""}>${esc(k)}</option>`).join("")}</select></label>
+    ${efld("โน้ต","note",e.note,"text","full")}`;
   else body = `${efld("ชื่อสถานที่","title",e.title,"text","full")}
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
     ${efld("โน้ต","note",e.note,"text","full")}`;
@@ -1018,20 +1056,46 @@ function mapsLink(it){
   const d = it.data || {};
   if(d.mapsUrl) return d.mapsUrl;
   if(d.placeId) return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(it.title || "") + "&query_place_id=" + encodeURIComponent(d.placeId);
-  const q = [it.type === "stay" ? it.title : (it.type === "place" ? it.title : ""), d.address].filter(Boolean).join(" ");
+  const q = [["stay","place","idea"].includes(it.type) ? it.title : "", d.address].filter(Boolean).join(" ");
   return q ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q) : "";
 }
 function itemLinks(it){
   const d = it.data || {}, out = [];
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
-  if(it.type === "stay" || it.type === "place"){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
+  if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "เส้นทางใน Google Maps"));
   if(d.website) out.push(lnk(d.website, "globe", "เว็บไซต์"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
   files.forEach((id, i) => out.push(`<div class="lnk-row">${lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))}<button class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออกจากรายการนี้">${ic("close",16)}</button></div>`));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
-  if(CONNECTED) out.push(`<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>`);
+  if(CONNECTED && it.type !== "idea") out.push(`<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>`);
   return out.length ? `<div class="links">${out.join("")}</div>` : "";
+}
+/* a memo goes into the daily plan as a place on the chosen day; the memo stays in the list, ticked */
+function planBox(it, s){
+  const p = plannedFrom(it.id), dates = tripDates(S.trip);
+  if(p) return `<div class="plan-box t-idea"><span class="grow"><b>อยู่ในแผนแล้ว</b><br><span class="small">${esc(dShort(p.date))}${p.time ? " · " + esc(p.time) : ""}</span></span>
+    <button class="pill-btn" data-act="plan-goto">ดูในแผน ${ic("chev",16)}</button></div>`;
+  if(s.planDate === undefined) s.planDate = dates[S.day] || dates[0] || "";
+  if(s.planTime === undefined) s.planTime = "";
+  return `<div class="plan-box t-idea stack" style="gap:10px"><b>เพิ่มลงแผนรายวัน</b>
+    <div class="grid2">
+      ${dates.length ? `<label class="fld sm">วัน<select id="pl-date" data-bind="sheet:planDate">${dates.map((x,i) => `<option value="${x}" ${x===s.planDate?"selected":""}>วัน ${i+1} · ${dShort(x)}</option>`).join("")}</select></label>`
+        : `<label class="fld sm">วัน<input id="pl-date" type="date" value="${esc(s.planDate)}" data-bind="sheet:planDate"></label>`}
+      <label class="fld sm">เวลา<input id="pl-time" type="time" value="${esc(s.planTime)}" data-bind="sheet:planTime"></label>
+    </div>
+    <button class="btn primary" style="height:48px;font-size:15px" data-act="plan-idea">${ic("plus",18)}เพิ่มลงแผน</button></div>`;
+}
+async function planIdea(){
+  const s = S.sheet, t = S.trip, it = s && S.items.find(i => i.id === s.id); if(!it || !t) return;
+  if(!validD(s.planDate)){ toast("เลือกวันก่อนนะ"); return; }
+  const d = it.data || {};
+  try{
+    await store.addItem(t.id, {type:"place", date:s.planDate, time:s.planTime||"", title:it.title, sub:it.sub||"",
+      data:{address:d.address||"", lat:d.lat, lon:d.lon, placeId:d.placeId||"", kind:d.kind||"", fromIdea:it.id}, createdBy:S.me, createdAt:Date.now(), source:"idea"});
+    const i = tripDates(t).indexOf(s.planDate); if(i >= 0) S.day = i;
+    S.sheet = null; render(); toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
+  } catch(err){ fail(err); }
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
@@ -1049,11 +1113,13 @@ function vSheet(){
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef]];
     else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef]];
     else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
+    else if(it.type === "idea") rows = [["ประเภท", data.kind],["ที่อยู่", data.address],["โน้ต", it.sub]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
       <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
+      ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
       <p class="muted small">เพิ่มโดย ${esc(nameOf(it.createdBy))}</p>
       ${s.confirm ? `<div class="err" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>ลบรายการนี้ออกจากทริป?</span><span style="display:flex;gap:8px"><button class="pill-btn" data-act="sheet-confirm-no">ไม่ลบ</button><button class="pill-btn" style="background:var(--danger);color:var(--surface)" data-act="delete-item">ลบเลย</button></span></div>`
@@ -1062,6 +1128,15 @@ function vSheet(){
   }
   const isMove = s.kind === "move";
   const dates = tripDates(t);
+  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="จดที่อยากไป" data-stop="1">
+    <div class="hd"><span class="thumb tc t-idea">${ic("idea")}</span><h2>จดที่อยากไป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form class="stack" data-form="sheet" style="gap:14px">
+      <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
+      <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
+      <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="เช่น เพื่อนแนะนำ, ต้องจองก่อน" value="${esc(s.note)}" data-bind="sheet:note"></label>
+      <button class="btn primary" type="submit">บันทึก</button>
+    </form>
+  </div></div>`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}" data-stop="1">
     <div class="hd"><span class="thumb tc t-${s.kind}">${ic(s.kind)}</span><h2>${isMove?"เพิ่มการเดินทาง":"เพิ่มสถานที่"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
@@ -1483,6 +1558,14 @@ document.addEventListener("submit", async e => {
     const s = S.sheet, t = S.trip; if(!s || !t) return;
     const isMove = s.kind === "move";
     if(!isMove && !s.title.trim()){ toast("ใส่ชื่อสถานที่ก่อนนะ"); return; }
+    if(s.kind === "idea"){
+      try{
+        await store.addItem(t.id, {type:"idea", date:"", time:"", title:s.title.trim(), sub:s.note.trim(),
+          data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
+        S.sheet = null; S.catTab = "idea"; render(); toast("จดไว้แล้ว");
+      } catch(err){ fail(err); }
+      return;
+    }
     const from = s_(s.from), to = s_(s.to);
     const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
@@ -1524,9 +1607,15 @@ document.addEventListener("click", async e => {
     case "rm-flight": S.review.flights.splice(Number(el.dataset.i), 1); S.review.uncertain = new Set(); render(); break;
     case "sheet": {
       const dates = tripDates(t);
-      S.sheet = {kind:el.dataset.k, title:"", date:dates[S.day] || dates[0], time:"", note:"", mode:el.dataset.k==="move" ? "ขับรถ" : "", from:"", to:""};
+      S.sheet = {kind:el.dataset.k, title:"", date:dates[S.day] || dates[0], time:"", note:"", mode:el.dataset.k==="move" ? "ขับรถ" : "", from:"", to:"", ideaKind:"ที่เที่ยว"};
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
+    case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
+    case "plan-idea": planIdea(); break;
+    case "plan-goto": {
+      const p = plannedFrom(S.sheet.id), i = p ? tripDates(t).indexOf(p.date) : -1;
+      S.sheet = null; if(i >= 0) S.day = i; render();
+      setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
     case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
     case "close-sheet": S.sheet = null; render(); break;
     case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
@@ -1631,7 +1720,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27t";
+const BUILD = "2026-10-27u";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
