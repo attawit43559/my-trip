@@ -183,16 +183,17 @@ p{margin:0}
 .cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
 /* trip info lives in a floating bar at the bottom: it slides away while scrolling down, comes back on the way up, and opens upward when a tab is tapped */
 .dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
-  background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:22px;padding:6px;
+  background:var(--surface);border-radius:22px;padding:6px;
   box-shadow:0 6px 24px rgba(43,33,28,.16),0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;transition:transform .28s ease,opacity .28s ease}
 .dock.hide{transform:translate(-50%,calc(100% + 24px));opacity:0;pointer-events:none}
 .dock .seg{background:transparent;padding:0}
-.dock.open{background:var(--surface)}
-.dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px);animation:dockUp .22s ease}
+.dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px)}
+.dock.anim .dock-panel{animation:dockUp .22s ease}
 .dock-hd{display:flex;align-items:center;gap:10px;padding:2px 2px 0 4px;color:var(--deep)}
 .dock-hd .round.sm{width:34px;height:34px;background:var(--tile);color:var(--muted)}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
-.dock-scrim{position:fixed;inset:0;z-index:15;background:rgba(20,19,26,.22);animation:fadeIn .2s ease}
+.dock-scrim{position:fixed;inset:0;z-index:15;background:rgba(20,19,26,.22)}
+.dock-scrim.anim{animation:fadeIn .2s ease}
 @keyframes dockUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.dock,.dock-panel,.dock-scrim{transition:none;animation:none}}
@@ -854,7 +855,9 @@ function catCard(){
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
   const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง", idea:"จดร้านอาหารหรือที่ที่อยากไปไว้ก่อน ยังไม่ต้องระบุวัน"}[tab];
-  return `<nav class="dock${S.dockHidden && !tab ? " hide" : ""}${tab ? " open" : ""}" aria-label="ข้อมูลทริป">
+  /* the open animation plays once, when a tab is tapped; later re-renders (sync, toasts) must not replay it */
+  const anim = S.dockAnim ? " anim" : ""; S.dockAnim = false;
+  return `<nav class="dock${S.dockHidden && !tab ? " hide" : ""}${tab ? " open" : ""}${anim}" aria-label="ข้อมูลทริป">
     ${tab ? `<div class="dock-panel t-${tab}">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
@@ -864,7 +867,7 @@ function catCard(){
       const n = S.items.filter(i => i.type === k).length;
       return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
     }).join("")}</div>
-  </nav>${tab ? `<div class="dock-scrim" data-act="cat-close"></div>` : ""}`;
+  </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
@@ -1626,7 +1629,7 @@ document.addEventListener("click", async e => {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
     case "day": S.day = Number(el.dataset.i); render(); break;
-    case "cat": S.catTab = S.catTab === el.dataset.k ? "" : el.dataset.k; S.dockHidden = false; render(); break;
+    case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
     case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
     case "manual":
@@ -1755,7 +1758,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27x";
+const BUILD = "2026-10-27y";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
