@@ -1048,6 +1048,13 @@ function patchFromEdit(it, e){
   if(it.type === "idea") return {title:s_(e.title) || it.title, sub:s_(e.note), data:{...(it.data||{}), kind:e.kind}};
   return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note)};
 }
+/* booking files are added and removed while editing; the detail view only opens them */
+function editFiles(it){
+  const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
+  const rows = files.map((id, i) => `<div class="lnk-row"><a class="lnk" href="${esc(fileUrl(id))}" target="_blank" rel="noopener">${ic("file",20)}<span class="grow">ใบจอง${files.length > 1 ? " " + (i+1) : ""}</span>${ic("ext",16)}</a><button type="button" class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออก">${ic("close",16)}</button></div>`).join("");
+  const add = CONNECTED ? `<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>` : "";
+  return rows || add ? `<div class="stack" style="gap:6px"><span class="muted small">ใบจอง</span><div class="links">${rows}${add}</div></div>` : "";
+}
 function vItemEdit(it, e){
   let body;
   if(it.type === "flight") body = `${efld("สายการบิน","airline",e.airline)}${efld("เลขเที่ยวบิน","flightNo",e.flightNo)}
@@ -1063,7 +1070,7 @@ function vItemEdit(it, e){
     ${efld("วันเช็กเอาต์","checkOutDate",e.checkOutDate,"date")}${efld("เวลาเช็กเอาต์","checkOutTime",e.checkOutTime,"time")}
     ${efld("ห้องพัก","rooms",e.rooms)}${efld("ผู้เข้าพัก","guests",e.guests)}
     ${efld("รหัสการจอง","bookingRef",e.bookingRef,"text","full")}
-    ${efld("โทร","phone",e.phone,"tel","full")}${efld("เว็บไซต์","website",e.website,"url","full")}
+    ${efld("โทร","phone",e.phone,"tel","full")}
     ${efld("ลิงก์ Google Maps","mapsUrl",e.mapsUrl,"url","full")}`;
   else if(it.type === "move") body = `<label class="fld sm full" for="ed-mode">เดินทางด้วย<select id="ed-mode" data-bind="sheet:edit.mode">${MOVE_MODES.map(m => `<option ${m===e.mode?"selected":""}>${esc(m)}</option>`).join("")}</select></label>
     ${efld("จาก","from",e.from,"text","full")}${efld("ไป","to",e.to,"text","full")}
@@ -1079,6 +1086,7 @@ function vItemEdit(it, e){
     <div class="hd"><span class="thumb tc t-${it.type}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="item-edit" style="gap:14px">
       <div class="grid2">${body}</div>
+      ${it.type !== "idea" ? editFiles(it) : ""}
       <div class="grid2"><button type="button" class="btn ghost" style="background:var(--tile);height:50px;font-size:16px" data-act="item-edit-cancel">ยกเลิก</button>
       <button type="submit" class="btn primary" style="height:50px;font-size:16px" ${S.saving?"disabled":""}>ตกลง</button></div>
     </form>
@@ -1097,11 +1105,9 @@ function itemLinks(it){
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
   if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "เส้นทางใน Google Maps"));
-  if(d.website) out.push(lnk(d.website, "globe", "เว็บไซต์"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
-  files.forEach((id, i) => out.push(`<div class="lnk-row">${lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))}<button class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออกจากรายการนี้">${ic("close",16)}</button></div>`));
+  files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
-  if(CONNECTED && it.type !== "idea") out.push(`<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>`);
   return out.length ? `<div class="links">${out.join("")}</div>` : "";
 }
 /* a memo goes into the daily plan as a place on the chosen day; the memo stays in the list, ticked */
@@ -1770,7 +1776,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28d";
+const BUILD = "2026-10-28e";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
