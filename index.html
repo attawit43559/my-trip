@@ -879,7 +879,6 @@ function vTrip(){
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
-    ${catCard()}
     <section class="stack" style="gap:14px">
       <div class="sec-h"><h2>แผนรายวัน</h2></div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
@@ -887,6 +886,10 @@ function vTrip(){
       <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <button class="add-dash" data-act="sheet" data-k="place">${ic("plus",20)}เพิ่มกิจกรรมในวันนี้</button>`}
+    </section>
+    <section class="stack" style="gap:14px">
+      <div class="sec-h"><h2>ข้อมูลทริป</h2></div>
+      ${catCard()}
     </section>
     ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
@@ -1720,7 +1723,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27v";
+const BUILD = "2026-10-27w";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
