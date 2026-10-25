@@ -201,6 +201,10 @@ p{margin:0}
 .lnk+.lnk{border-top:1px solid var(--line)}
 .lnk .ic:last-child{color:var(--muted)}
 .lnk.attach{color:var(--muted)}
+.lnk-row{display:flex;align-items:center}
+.lnk-row .lnk{flex:1;min-width:0}
+.lnk-row+.lnk-row,.lnk+.lnk-row,.lnk-row+.lnk{border-top:1px solid var(--line)}
+.lnk-x{width:44px;height:44px;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
 .src{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--body);font-size:14px;line-height:1.6;background:var(--tile);border-radius:16px;padding:14px;margin:0;max-height:60vh;overflow-y:auto}
 .moon{display:inline-flex;width:32px;height:32px;border-radius:999px;background:var(--accent-soft);align-items:center;justify-content:center}
 .t-flight{--deep:var(--flight);--soft:var(--flight-soft);--mid:var(--flight-mid);--on:#FFFFFF}
@@ -970,7 +974,7 @@ function itemLinks(it){
   if(it.type === "stay" || it.type === "place"){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "Google Maps")); }
   if(d.website) out.push(lnk(d.website, "globe", "เว็บไซต์"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
-  files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
+  files.forEach((id, i) => out.push(`<div class="lnk-row">${lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))}<button class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออกจากรายการนี้">${ic("close",16)}</button></div>`));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
   if(CONNECTED) out.push(`<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>`);
   return out.length ? `<div class="links">${out.join("")}</div>` : "";
@@ -989,7 +993,7 @@ function vSheet(){
     const data = it.data || {};
     let rows = [];
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef]];
-    else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address],["โทร", data.phone],["ห้องพัก", data.rooms],["ผู้เข้าพัก", data.guests],["รหัสการจอง", data.bookingRef]];
+    else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) ? s_(data.guests).split(/\s*[,;\n]\s*/).filter(Boolean) : "–"],["รหัสการจอง", data.bookingRef]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
@@ -1063,6 +1067,7 @@ function mergeText(...vals){
 function mergeInto(g, f){
   for(const k of Object.keys(f)){
     if(k === "passengers" || k === "bookingRef") g[k] = mergeText(g[k], f[k]);
+    else if(k === "files") g.files = [...new Set([...(g.files||[]), ...(f.files||[])])];
     else if(!g[k] && f[k]) g[k] = f[k];
   }
   return g;
@@ -1077,13 +1082,14 @@ function mergeFlights(list){
   return {out, map};
 }
 const emptyStay = (t) => ({name:"", address:"", checkInDate:t && validD(t.startDate) ? t.startDate : "", checkInTime:"14:00", checkOutDate:t && validD(t.startDate) ? addDays(t.startDate, Math.max(1,(t.days||1)-1)) : "", checkOutTime:"12:00", rooms:"", guests:"", bookingRef:""});
+const fileIdx = v => Array.isArray(v) ? [...new Set(v.map(Number).filter(n => Number.isInteger(n) && n >= 0))] : [];
 function buildReview(kind, res){
   res = res || {};
   const unc = new Set(Array.isArray(res.uncertain) ? res.uncertain.map(String) : []);
   const rawFlights = (Array.isArray(res.flights) ? res.flights : []).filter(f => f && typeof f === "object").map(f => ({
     airline:s_(f.airline), flightNo:s_(f.flightNo), date:cleanDate(f.date), from:s_(f.from).toUpperCase(), fromCity:s_(f.fromCity),
     depTime:cleanTime(f.depTime), to:s_(f.to).toUpperCase(), toCity:s_(f.toCity), arrTime:cleanTime(f.arrTime), arrDate:cleanDate(f.arrDate),
-    passengers:s_(f.passengers), bookingRef:s_(f.bookingRef)}));
+    passengers:s_(f.passengers), bookingRef:s_(f.bookingRef), files:fileIdx(f.files)}));
   const merged = mergeFlights(rawFlights);
   const flights = merged.out;
   flights.forEach(f => { if(!f.passengers) f.passengers = s_(res.passengers); if(!f.bookingRef) f.bookingRef = s_(res.bookingRef); });
@@ -1091,7 +1097,7 @@ function buildReview(kind, res){
   const stays = (Array.isArray(res.stays) ? res.stays : (res.stay ? [res.stay] : [])).filter(st => st && typeof st === "object").map(st => ({
     name:s_(st.name), address:s_(st.address), checkInDate:cleanDate(st.checkInDate), checkInTime:cleanTime(st.checkInTime),
     checkOutDate:cleanDate(st.checkOutDate), checkOutTime:cleanTime(st.checkOutTime), rooms:s_(st.rooms), guests:s_(st.guests), bookingRef:s_(st.bookingRef),
-    phone:s_(st.phone), website:cleanUrl(st.website)}));
+    phone:s_(st.phone), website:cleanUrl(st.website), files:fileIdx(st.files)}));
   flights.forEach((f,i) => ["date","depTime"].forEach(k => { if(!f[k]) unc.add(`flights.${i}.${k}`); }));
   stays.forEach((st,i) => ["checkInDate","checkOutDate"].forEach(k => { if(!st[k]) unc.add(`stays.${i}.${k}`); }));
   // a date far outside the trip is worth a second look
@@ -1158,7 +1164,8 @@ async function readAll(){
     if(!r.flights.length && !r.stays.length) throw {code:"nothing"};
     r.fileName = files.length ? files.map(f => f.name).join(", ") : "ข้อความที่วาง";
     setStep("กำลังเก็บใบจอง…");
-    r.fileIds = (await Promise.all(uploads)).filter(Boolean);
+    r.fileSlots = await Promise.all(uploads);           // Drive id per attached file, in order (null if that upload failed)
+    r.fileIds = r.fileSlots.filter(Boolean);
     r.sourceText = pasted ? pasted.slice(0, 30000) : "";
     S.review = r;
     if(autoSaveable(r)) { await saveReview(true); return; }
@@ -1175,7 +1182,11 @@ async function readAll(){
 async function saveReview(auto){
   const r = S.review, t = S.trip; if(!r || !t) return;
   const base = {createdBy:S.me, createdAt:Date.now(), source:r.fileName ? "upload" : "manual"};
-  if(r.fileIds && r.fileIds.length) base.fileIds = r.fileIds;
+  // each flight or stay keeps only the files it was read from; if the reader did not say, it keeps them all
+  const idsFor = x => {
+    const own = (x.files||[]).map(i => (r.fileSlots||[])[i]).filter(Boolean);
+    return own.length ? own : (r.fileIds||[]);
+  };
   if(r.sourceText) base.sourceText = r.sourceText;
   const docs = [];
   const flightDoc = makeFlightDoc;
@@ -1192,15 +1203,16 @@ async function saveReview(auto){
       const prev = {...(old.data||{}), date:old.date, depTime:old.time};
       const m = mergeInto(prev, f);
       const patch = flightDoc(m);
-      const ids = [...new Set([...(old.fileIds||[]), ...(old.fileId ? [old.fileId] : []), ...(r.fileIds||[])])];
+      const ids = [...new Set([...(old.fileIds||[]), ...(old.fileId ? [old.fileId] : []), ...idsFor(f)])];
       if(ids.length) patch.fileIds = ids;
       if(r.sourceText && !old.sourceText) patch.sourceText = r.sourceText;
       updates.push({id:old.id, patch});
-    } else docs.push({...base, ...flightDoc(f)});
+    } else { const ids = idsFor(f); docs.push({...base, ...flightDoc(f), ...(ids.length ? {fileIds:ids} : {})}); }
   }
   for(const st of r.stays){
     if(!st.name && !st.checkInDate) continue;
-    docs.push({...base, type:"stay", date:st.checkInDate, time:st.checkInTime, endDate:st.checkOutDate, endTime:st.checkOutTime,
+    const sIds = idsFor(st);
+    docs.push({...base, ...(sIds.length ? {fileIds:sIds} : {}), type:"stay", date:st.checkInDate, time:st.checkInTime, endDate:st.checkOutDate, endTime:st.checkOutTime,
       title:st.name || "ที่พัก", sub:"", data:{address:st.address, phone:st.phone||"", website:st.website||"", rooms:st.rooms, guests:st.guests, bookingRef:st.bookingRef || r.bookingRef}});
   }
   if(!docs.length && !updates.length){ toast("ยังไม่มีข้อมูลให้บันทึก"); return; }
@@ -1390,6 +1402,11 @@ document.addEventListener("click", async e => {
       break; }
     case "join-confirm": confirmJoin(); break;
     case "account": S.sheet = {kind:"account"}; render(); break;
+    case "detach": {
+      const it = S.sheet && S.items.find(i => i.id === S.sheet.id); if(!it) break;
+      const keep = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])].filter(x => x !== el.dataset.file);
+      store.updateItem(S.trip.id, it.id, {fileIds:keep, fileId:""}); toast("เอาใบจองออกแล้ว"); break;
+    }
     case "logout": logout(); break;
     case "trip-menu": S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:false}; render(); break;
     case "trip-ask": S.swipeOpen = null; S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:true}; render(); break;
@@ -1464,7 +1481,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-26d";
+const BUILD = "2026-10-26e";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
