@@ -205,7 +205,7 @@ p{margin:0}
 .lnk .ic:last-child{color:var(--muted)}
 .lnk.attach{color:var(--muted)}
 .lnk-row{display:flex;align-items:center}
-.sugg{list-style:none;margin:-8px 0 0;padding:6px;background:var(--surface);border-radius:16px;box-shadow:0 6px 24px rgba(43,33,28,.14);display:flex;flex-direction:column}
+.sugg{list-style:none;margin:-8px 0 0;padding:6px;max-height:min(232px,34vh);overflow-y:auto;flex-shrink:0;background:var(--surface);border-radius:16px;box-shadow:0 6px 24px rgba(43,33,28,.14);display:flex;flex-direction:column}
 .sugg li{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;cursor:pointer;line-height:1.35}
 .sugg li .ic{color:var(--muted);margin-top:2px}
 .sugg li:active,.sugg li:hover{background:var(--tile)}
@@ -249,7 +249,7 @@ p{margin:0}
 .members li{display:flex;align-items:center;gap:12px;min-height:60px}
 .members li+li{border-top:1px solid var(--line)}
 .members .av{width:38px;height:38px;border:0}
-.scrim{position:fixed;inset:0;background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:520px;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding-top:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 .sheet .hd{display:flex;align-items:center;gap:12px}
 .sheet .hd h2{flex:1;font-size:20px}
@@ -1362,7 +1362,17 @@ function showSuggest(input, list){
       closeSuggest();
     });
     input.closest("label").after(ul);
+    /* keep the field and its list in view inside the sheet instead of letting the sheet grow off the top of the screen */
+    const sh = input.closest(".sheet");
+    if(sh){ const lab = input.closest("label"); const top = lab.getBoundingClientRect().top - sh.getBoundingClientRect().top + sh.scrollTop - 8;
+      if(ul.getBoundingClientRect().bottom > sh.getBoundingClientRect().bottom || lab.getBoundingClientRect().top < sh.getBoundingClientRect().top) sh.scrollTop = top; }
 }
+/* iPhone: when the keyboard opens, fit sheets to the visible area above it */
+(function(){
+  const vv = window.visualViewport; if(!vv) return;
+  const fit = () => { const r = document.documentElement.style; r.setProperty("--vvh", vv.height + "px"); r.setProperty("--vvt", vv.offsetTop + "px"); };
+  vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit); fit();
+})();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
@@ -1597,7 +1607,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27q";
+const BUILD = "2026-10-27r";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
