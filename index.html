@@ -192,8 +192,9 @@ p{margin:0}
 .dock-hd{display:flex;align-items:center;gap:10px;padding:2px 2px 0 4px;color:var(--deep)}
 .dock-hd .round.sm{width:34px;height:34px;background:var(--tile);color:var(--muted)}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
-.dock-scrim{position:fixed;inset:0;z-index:15;background:rgba(20,19,26,.22)}
-.dock-scrim.anim{animation:fadeIn .2s ease}
+/* clear, not dimmed: iPhone tints the status bar from the page a beat late, so a dark layer here made the top flash */
+.dock-scrim{position:fixed;inset:0;z-index:15;background:transparent}
+.dock.open{box-shadow:0 -4px 40px rgba(43,33,28,.22),0 0 0 1px var(--line)}
 @keyframes dockUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.dock,.dock-panel,.dock-scrim{transition:none;animation:none}}
@@ -1758,7 +1759,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-27y";
+const BUILD = "2026-10-27z";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
