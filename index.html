@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#FFFDF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="My Trip">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=11">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=11">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=12">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=12">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
@@ -2290,12 +2290,12 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29r";
+const BUILD = "2026-10-29s";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
     const html = await (await fetch(location.pathname + "?v=" + Date.now(), {cache:"no-store"})).text();
-    const live = (html.match(/const BUILD = "([^"]+)"/) || [])[1];
+    const live = (html.match(/const BUILD = "2026-10-29s"]+)"/) || [])[1];
     if(live && live !== BUILD && sessionStorage.getItem("mytrip-reloaded") !== live && !busyForm() && !(S.upload && S.upload.status === "reading")){
       sessionStorage.setItem("mytrip-reloaded", live);
       location.reload();
