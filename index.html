@@ -208,9 +208,12 @@ p{margin:0}
 .menu .danger{color:var(--danger)}
 .cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
 /* trip info lives in a floating bar at the bottom: it slides away while scrolling down, comes back on the way up, and opens upward when a tab is tapped */
-.dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
+.dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
   background:var(--surface);border-radius:22px;padding:6px;
   box-shadow:0 6px 24px rgba(43,33,28,.16),0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;transition:transform .28s ease,opacity .28s ease}
+/* while typing, the tab row steps aside so the panel gets the room */
+html.kb .dock.open .seg{display:none}
+html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock.hide{transform:translate(-50%,calc(100% + 24px));opacity:0;pointer-events:none}
 .dock .seg{background:transparent;padding:0}
 .dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px)}
@@ -1781,6 +1784,11 @@ document.addEventListener("touchmove", e => {
   const box = e.target.closest && e.target.closest(".dock-body, .sheet");
   if(!box || box.scrollHeight <= box.clientHeight) e.preventDefault();
 }, {passive:false});
+/* a field inside the bottom panel scrolls into view once the keyboard is up */
+document.addEventListener("focusin", e => {
+  if(!e.target.closest || !e.target.closest(".dock-body") || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  setTimeout(() => e.target.scrollIntoView({block:"center", behavior:"smooth"}), 350);
+});
 /* hide the bottom bar while scrolling down the plan, bring it back when scrolling up or at the bottom */
 (function(){
   let lastY = window.scrollY, ticking = false;
@@ -1800,7 +1808,13 @@ document.addEventListener("touchmove", e => {
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
-  const fit = () => { const r = document.documentElement.style; r.setProperty("--vvh", vv.height + "px"); r.setProperty("--vvt", vv.offsetTop + "px"); };
+  const fit = () => {
+    const r = document.documentElement.style; r.setProperty("--vvh", vv.height + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
+    // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
+    const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    r.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
+    document.documentElement.classList.toggle("kb", kb > 60);
+  };
   vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit); fit();
 })();
 document.addEventListener("focusout", e => {
@@ -2094,7 +2108,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29i";
+const BUILD = "2026-10-29j";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
