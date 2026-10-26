@@ -520,7 +520,7 @@ function planPrompt_(trip, items, dates, prefs, reject) {
     'TRIP>>>',
     'Rules:',
     '- Keep every booking and already-planned item exactly as is; plan around them and never repeat them.',
-    '- Hotel check-in, check-out and nights already show in the app: never add a hotel itself as a "place" stop. Travel legs to or from a hotel are fine.',
+    '- Hotel check-in, check-out and nights, and flight departures and arrivals, already show in the app: never add a hotel or an airport itself as a "place" stop just for being there. Travel legs to or from a hotel or airport are fine. Only when there is a useful tip about the hotel or airport itself (drop bags early, collect luggage, pre-register) add one "place" titled exactly with that hotel or airport name, the tip in "note"; the app turns it into a note on that stay or flight.',
     '- Arrival day: start activities no earlier than about 2 hours after the flight lands. Departure day: be heading to the airport about 3 hours before an international flight.',
     '- Each day stays near that night\'s hotel; group nearby places; respect usual opening hours; avoid back-tracking. On check-in days include going to the hotel; on check-out days start from it.',
     '- Add a travel leg (type "move") between stops when getting there takes more than a short walk, using the main way to get around unless walking is clearly better. Put the rough duration in its note.',
@@ -578,6 +578,35 @@ function cleanPlan_(raw, dates, items) {
       }
       const k = key(x.title); if (seenPlace[k]) return false; seenPlace[k] = true; return true;
     });
+    // a stop at the hotel on check-in/out day, or at the airport around a flight, becomes a note on that stay or flight
+    const attach = {};
+    const note = (it, field, label, text) => {
+      const a = attach[it.id + field] = attach[it.id + field] || { id: it.id, field, label, note: '' };
+      text = t(text); if (text && a.note.indexOf(text) < 0) a.note = (a.note ? a.note + ' · ' : '') + text;
+    };
+    const hotelWord = /เช็[คก]\s*อิน|เช็[คก]\s*เอา|check.?(in|out)|ฝากกระเป๋า|รับกระเป๋า|โรงแรม|ที่พัก|hotel|ryokan|เรียวกัง/i;
+    d.items = d.items.filter(x => {
+      if (x.type !== 'place' || x.ideaId) return true;
+      const k = key(x.title);
+      for (const st of items.filter(i => i.type === 'stay')) {
+        const onIn = st.date === d.date, onOut = st.endDate === d.date;
+        if (!onIn && !onOut) continue;
+        const sk = key(st.title), same = sk.length >= 4 && k.length >= 4 && (k.indexOf(sk) >= 0 || sk.indexOf(k) >= 0);
+        if (same || (x.kind !== 'ร้านอาหาร' && hotelWord.test(x.title))) {
+          const out = onOut && (!onIn || /out|เอา/i.test(x.title + ' ' + x.note));
+          note(st, out ? 'outNote' : 'inNote', (out ? 'เช็กเอาต์ ' : 'เช็กอิน ') + st.title, x.note);
+          return false;
+        }
+      }
+      for (const f of items.filter(i => i.type === 'flight')) {
+        const fd = f.data || {}, arr = fd.arrDate || f.date;
+        const to = key(fd.to), from = key(fd.from), airport = /airport|สนามบิน/i.test(x.title);
+        if (d.date === arr && ((to.length === 3 && k.indexOf(to) >= 0) || (airport && !(from.length === 3 && k.indexOf(from) >= 0)))) { note(f, 'arrNote', 'ถึง ' + (fd.toCity || fd.to || 'ปลายทาง'), x.note); return false; }
+        if (d.date === f.date && from.length === 3 && k.indexOf(from) >= 0) { note(f, 'note', f.title, x.note); return false; }
+      }
+      return true;
+    });
+    d.attach = Object.keys(attach).map(k => attach[k]).filter(a => a.note);
   });
   return { days, tips: ((raw && raw.tips) || []).map(t).filter(Boolean).slice(0, 4).map(x => x.slice(0, 160)) };
 }
