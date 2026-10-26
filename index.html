@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#FDFBF8">
+<meta name="theme-color" content="#FFFDF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="My Trip">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=11">
@@ -16,14 +16,14 @@
 <style>
 /* Layout: one centred phone column; each screen is a stack of white cards on a soft grey ground, one yellow accent for primary actions */
 :root{
-  --bg:#FDFBF8; --surface:#FFFFFF; --tile:#F4EFE8; --ink:#2B211C; --muted:#6E6259; --line:#EEE8DF; --lift:0 1px 3px rgba(43,33,28,.08);
-  --accent:#F2A516; --accent-soft:#FDEFCF; --accent-line:#D88C00; --warn-bg:#FDF0D2; --on-accent:#2B211C; --danger:#C8372D;
-  --flight:#1F4E8C; --flight-soft:#E1EBF8; --flight-mid:#3A78C9;
-  --stay:#8A5A00; --stay-soft:#FDEFCF; --stay-mid:#F2A516;
-  --place:#3B6420; --place-soft:#E7F0D8; --place-mid:#5E9A2E;
-  --move:#A0321A; --move-soft:#FBE2DA; --move-mid:#E0583A;
-  --idea:#7A3D8C; --idea-soft:#F3E5F7; --idea-mid:#A65CC2;
-  --ai:#0B6577; --ai-soft:#DCF1F5; --ai-mid:#159AB2;
+  --bg:#FFFDF9; --surface:#FFFFFF; --tile:#F6F1EA; --ink:#2B211C; --muted:#6E6259; --line:#EFE9E0; --lift:0 1px 3px rgba(43,33,28,.08);
+  --accent:#FFB020; --accent-soft:#FFF1CC; --accent-line:#E39400; --warn-bg:#FFF1CC; --on-accent:#2B211C; --danger:#E0352B;
+  --flight:#1958BD; --flight-soft:#E3EEFF; --flight-mid:#2F80FF;
+  --stay:#8A5300; --stay-soft:#FFF1CC; --stay-mid:#FFB020;
+  --place:#2B7A1C; --place-soft:#E2F6D6; --place-mid:#3FB02A;
+  --move:#C23B1C; --move-soft:#FFE5DB; --move-mid:#FF6A3D;
+  --idea:#8A3DB3; --idea-soft:#F6E7FE; --idea-mid:#B65CE8;
+  --ai:#08788F; --ai-soft:#DDF6FB; --ai-mid:#10B4D0;
   --display:'Mitr','Prompt','Noto Sans Thai',system-ui,sans-serif;
   --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
 }
@@ -276,9 +276,9 @@ p{margin:0}
 .plan-box .pill-btn{background:var(--surface);color:var(--deep)}
 .chips.t-idea button[aria-pressed="true"]{background:var(--soft);color:var(--deep);border-color:var(--mid)}
 /* wish-list kinds: sights teal, food orange, shopping pink */
-.k-sight{--deep:#1E6F68;--soft:#DCF0ED;--mid:#2E9C90;--on:#FFFFFF}
-.k-food{--deep:#B4470F;--soft:#FDE6D3;--mid:#EC7A2C;--on:#FFFFFF}
-.k-shop{--deep:#A8285F;--soft:#FBE0EC;--mid:#D9488A;--on:#FFFFFF}
+.k-sight{--deep:#14806F;--soft:#D9F6EF;--mid:#1FB89E;--on:#FFFFFF}
+.k-food{--deep:#C2510F;--soft:#FFE8D4;--mid:#FF8A3D;--on:#FFFFFF}
+.k-shop{--deep:#B4246A;--soft:#FFE2EF;--mid:#F0559A;--on:#FFFFFF}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-sight{--deep:#8FD8CE;--soft:#17302D}:root:not([data-theme="light"]) .k-food{--deep:#FFB98A;--soft:#3A2416}:root:not([data-theme="light"]) .k-shop{--deep:#F3A3C6;--soft:#3A1A28}}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
@@ -1350,8 +1350,8 @@ function vAiPlan(s){
     <div class="ai-q ai-row-q"><b>เริ่มวัน</b><input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"><output class="ai-time">${hm(s.start)}</output></div>
     <div class="ai-q ai-row-q"><b>จังหวะ</b>${aiChips("pace", AI_PACE, s.pace)}</div>
     <div class="ai-q ai-row-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
-    <div class="ai-q ai-row-q ai-wrap"><b>แนวเที่ยว</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
-    ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
+    <div class="ai-q ai-row-q ai-wrap"><b>สไตล์</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะสม"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
     <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
   </form>`);
@@ -2094,7 +2094,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29h";
+const BUILD = "2026-10-29i";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
