@@ -397,7 +397,7 @@ function planPrompt_(trip, items, dates, prefs) {
     'Wish list (places the group wants to visit, not yet scheduled):',
     ideas.join('\n') || '- none',
     'Preferences from the person asking:',
-    `- travellers: ${s(p.adults) || '?'} adults, ${s(p.children) || 0} children${p.elders ? ', includes older people' : ''}`,
+    `- travellers: ${s(p.adults) || 0} adults, ${s(p.children) || 0} children, ${s(p.elders) || 0} older people`,
     `- pace: ${s(p.pace) || 'balanced'} · day starts around ${s(p.start) || '09:00'} · main way to get around: ${s(p.mode) || 'ขนส่งสาธารณะ'}`,
     `- interests: ${(p.interests || []).map(s).join(', ') || 'anything'}`,
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list item if at all possible' : 'use wish-list items where they fit well'}`,

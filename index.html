@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#FDFBF8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="My Trip">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=10">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=11">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=11">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
@@ -23,6 +23,7 @@
   --place:#3B6420; --place-soft:#E7F0D8; --place-mid:#5E9A2E;
   --move:#A0321A; --move-soft:#FBE2DA; --move-mid:#E0583A;
   --idea:#7A3D8C; --idea-soft:#F3E5F7; --idea-mid:#A65CC2;
+  --ai:#0B6577; --ai-soft:#DCF1F5; --ai-mid:#159AB2;
   --display:'Mitr','Prompt','Noto Sans Thai',system-ui,sans-serif;
   --body:'Prompt','Noto Sans Thai',system-ui,sans-serif;
 }
@@ -32,14 +33,14 @@
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
-  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; color-scheme:dark}}
+  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; --ai:#9EE0EC; --ai-soft:#15303A; --ai-mid:#22A7BF; color-scheme:dark}}
 :root[data-theme="dark"]{
   --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
   --flight:#A8C6F0; --flight-soft:#1B2A40; --flight-mid:#4A86D6;
   --stay:#FFD27A; --stay-soft:#3A2C12; --stay-mid:#F2A516;
   --place:#B5D98C; --place-soft:#22301A; --place-mid:#6FAE38;
-  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; color-scheme:dark}
+  --move:#FFAE96; --move-soft:#3D1F18; --move-mid:#E8664A; --idea:#E4B8F2; --idea-soft:#2F1E35; --idea-mid:#B46DD0; --ai:#9EE0EC; --ai-soft:#15303A; --ai-mid:#22A7BF; color-scheme:dark}
 html,body{min-height:100%}
 /* white cards on a near-white page: a hairline shadow keeps them apart */
 .card,.cat-card,.day-list,.list-row,.hero,.stepper-card,.cal .tab:not(.out):not(.past),.screen>.top .round,.home-top .me-btn{box-shadow:var(--lift)}
@@ -225,7 +226,7 @@ p{margin:0}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.dock,.dock-panel,.dock-scrim{transition:none;animation:none}}
 .screen.has-dock{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:3px;border-radius:14px;background:var(--tile)}
+.seg{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:3px;padding:3px;border-radius:14px;background:var(--tile)}
 .seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 1px;min-width:0}
 .seg button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
 @media (max-width:360px){.seg button{font-size:11px}}
@@ -281,31 +282,54 @@ p{margin:0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-sight{--deep:#8FD8CE;--soft:#17302D}:root:not([data-theme="light"]) .k-food{--deep:#FFB98A;--soft:#3A2416}:root:not([data-theme="light"]) .k-shop{--deep:#F3A3C6;--soft:#3A1A28}}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
-.ai-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--idea-soft);color:var(--idea);font-size:14px;font-weight:500}
-.ai-sheet{gap:14px}
-.ai-q{display:flex;flex-direction:column;gap:8px}
-.ai-q>b{font-size:15px;font-weight:500}
-.ai-q .chips button[aria-pressed="true"]{background:var(--idea-soft);color:var(--idea);box-shadow:inset 0 0 0 1.5px var(--idea-mid)}
-.ai-count{display:flex;align-items:center;gap:10px}
-.ai-count span{flex:1}
-.ai-count .round.sm{width:36px;height:36px;background:var(--tile)}
-.ai-count output{min-width:24px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.ai-sheet{gap:10px}
+.ai-form{display:flex;flex-direction:column;gap:12px}
+.ai-q{display:flex;flex-direction:column;gap:6px}
+.ai-q>b,.ai-qh b{font-size:14px;font-weight:500}
+.ai-qh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ai-q .chips{gap:6px}
+.ai-row-q{flex-direction:row;align-items:center;gap:8px}
+.ai-row-q>b{width:78px;flex:none}
+.ai-row-q .chips{flex:1;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.ai-row-q .chips button{white-space:nowrap;flex:none}
+.ai-q .chips button{min-height:34px;padding:0 12px;font-size:13px}
+.ai-q .chips button[aria-pressed="true"],.ai-all[aria-pressed="true"]{background:var(--ai-soft);color:var(--ai);box-shadow:inset 0 0 0 1.5px var(--ai-mid)}
+.ai-all{height:30px;padding:0 12px;border-radius:999px;border:0;background:var(--tile);font-size:13px}
+.ai-cal{display:flex;flex-direction:column;gap:4px}
+.ai-dow,.ai-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.ai-dow span{text-align:center;font-size:11px;color:var(--muted)}
+.aic{height:38px;border-radius:10px;border:0;background:var(--tile);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:var(--ink)}
+.aic b{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.aic i{font-style:normal;font-size:9px;margin-top:2px;opacity:.8}
+.aic.out{background:transparent}
+.aic[aria-pressed="true"]{background:var(--ai-mid);color:#fff}
+.ai-ns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ai-n{background:var(--tile);border-radius:14px;padding:6px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ai-n>span{font-size:12px;color:var(--muted)}
+.ai-n>div{display:flex;align-items:center;gap:4px}
+.ai-n button{width:28px;height:28px;border-radius:999px;border:0;background:var(--surface);display:inline-flex;align-items:center;justify-content:center}
+.ai-n output{min-width:22px;text-align:center;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.ai-time{font-weight:600;color:var(--ai);font-variant-numeric:tabular-nums}
+.ai-range{width:100%;accent-color:var(--ai-mid);height:28px;margin:0}
+.ai-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:-4px}
+.ai-go{height:48px;font-size:15px;gap:6px;margin-top:2px}
 .ai-wait{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 0 12px;text-align:center}
 .ai-day{display:flex;flex-direction:column;gap:6px}
 .ai-day-h{display:flex;flex-direction:column;gap:2px}
 .ai-list{list-style:none;margin:0;padding:4px 8px;background:var(--tile);border-radius:18px}
 .ai-list li+li{border-top:1px solid var(--line)}
-.ai-row{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 2px;border:0;background:none;text-align:left}
+.ai-row{width:100%;display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 2px;border:0;background:none;text-align:left}
 .ai-row .time{width:40px;flex:none;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
 .ai-row .ttl{font-weight:500;overflow-wrap:anywhere}
 .ai-row.off .grow,.ai-row.off .thumb-sm,.ai-row.off .time{opacity:.4}
 .ai-check{width:22px;height:22px;border-radius:7px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--line);background:var(--surface)}
-.ai-row[aria-pressed="true"] .ai-check{background:var(--idea-mid);border-color:var(--idea-mid);color:#fff}
+.ai-row[aria-pressed="true"] .ai-check{background:var(--ai-mid);border-color:var(--ai-mid);color:#fff}
 .ai-tag{font-size:11px;padding:1px 6px;border-radius:999px;background:var(--idea-soft);color:var(--idea);vertical-align:2px}
 .ai-tips{background:var(--accent-soft);border-radius:16px;padding:12px 14px}
 .ai-tips ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.5}
 .ai-foot{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1fr 1.4fr;gap:10px;background:var(--surface);padding:10px 0 4px;margin-top:4px}
 .ai-foot .btn{height:48px;font-size:15px}
+.t-ai{--deep:var(--ai);--soft:var(--ai-soft);--mid:var(--ai-mid);--on:#FFFFFF}
 .t-idea{--deep:var(--idea);--soft:var(--idea-soft);--mid:var(--idea-mid);--on:#FFFFFF}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
@@ -919,7 +943,7 @@ function entryHtml(e){
 }
 function catCard(){
   const tab = S.catTab || "";
-  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["place","สถานที่"],["move","เดินทาง"],["idea","อยากไป"]];
+  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["idea","อยากไป"]];
   const list = tab === "idea"
     ? S.items.filter(i => i.type === "idea").sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
     : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
@@ -949,7 +973,7 @@ function catCard(){
     <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
       const n = S.items.filter(i => i.type === k).length;
       return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
-    }).join("")}</div>
+    }).join("")}${tripDates(S.trip).length ? `<button class="t-ai" data-act="ai-open">${ic("spark",16)}<span>ช่วยวางแผน</span></button>` : ""}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -985,7 +1009,7 @@ function vTrip(){
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
     <section class="stack" style="gap:14px">
-      <div class="sec-h" style="align-items:center"><h2>แผนรายวัน</h2>${dates.length ? `<button class="ai-btn" data-act="ai-open">${ic("spark",16)}ช่วยวางแผน</button>` : ""}</div>
+      <div class="sec-h"><h2>แผนรายวัน</h2></div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
@@ -1219,17 +1243,17 @@ function aiDefaults(){
   const g = stay ? String(stay.data.guests) : "";
   const adults = +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length);
   const children = +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0;
-  return {kind:"ai", step:"ask", scope:"all", pace:"balanced", start:"09:00", mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:false, note:"", fromStay:!!stay};
+  return {kind:"ai", step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:""};
 }
 function aiChips(key, opts, cur){
   return `<div class="chips">${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
     return `<button type="button" aria-pressed="${cur === v}" data-act="ai-opt" data-k="${key}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
 }
 function vAiPlan(s){
-  const head = `<div class="hd"><span class="thumb tc t-idea">${ic("spark")}</span><h2>ช่วยวางแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
+  const head = `<div class="hd"><span class="thumb tc t-ai">${ic("spark")}</span><h2>ช่วยวางแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
   const wrap = inner => `<div class="scrim" data-act="close-sheet"><div class="sheet ai-sheet" role="dialog" aria-modal="true" aria-label="ช่วยวางแผน" data-stop="1">${head}${inner}</div></div>`;
   const dates = tripDates(S.trip);
-  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">กำลังจัดแผน${s.scope === "day" ? "ของ" + esc(dShort(dates[S.day])) : "ทั้งทริป"}…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">กำลังจัดแผน ${s.dates.length === dates.length ? "ทั้งทริป" : s.dates.length + " วัน"}…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
   if(s.step === "review"){
     const r = s.result || {days:[], tips:[]};
     const n = Object.values(s.picks || {}).filter(Boolean).length;
@@ -1254,32 +1278,42 @@ function vAiPlan(s){
       <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn primary" data-act="ai-add" ${n ? "" : "disabled"}>เพิ่ม ${n} รายการ</button></div>`);
   }
   const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
-  return wrap(`<form class="stack ai-form" data-form="ai" style="gap:16px">
+  const all = s.dates.length === dates.length;
+  const hm = m => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
+  const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="ai-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${s[k]}</output><button type="button" data-act="ai-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
+  return wrap(`<form class="ai-form" data-form="ai">
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
-    <div class="ai-q"><b>วางแผนวันไหน</b>${aiChips("scope", [["all","ทั้งทริป"],["day","เฉพาะ " + dShort(dates[S.day])]], s.scope)}</div>
-    <div class="ai-q"><b>ผู้เดินทาง</b>
-      <div class="ai-count"><span>ผู้ใหญ่</span><button type="button" class="round sm" data-act="ai-num" data-k="adults" data-d="-1" aria-label="ลดผู้ใหญ่">${ic("minus",16)}</button><output>${s.adults}</output><button type="button" class="round sm" data-act="ai-num" data-k="adults" data-d="1" aria-label="เพิ่มผู้ใหญ่">${ic("plus",16)}</button></div>
-      <div class="ai-count"><span>เด็ก</span><button type="button" class="round sm" data-act="ai-num" data-k="children" data-d="-1" aria-label="ลดเด็ก">${ic("minus",16)}</button><output>${s.children}</output><button type="button" class="round sm" data-act="ai-num" data-k="children" data-d="1" aria-label="เพิ่มเด็ก">${ic("plus",16)}</button></div>
-      <div class="chips"><button type="button" aria-pressed="${!!s.elders}" data-act="ai-opt" data-k="elders" data-v="${s.elders ? "" : "1"}">มีผู้สูงอายุ</button></div>
-      ${s.fromStay ? `<span class="muted small">ดึงจำนวนคนจากใบจองที่พัก</span>` : ""}</div>
-    <div class="ai-q"><b>จังหวะเที่ยว</b>${aiChips("pace", AI_PACE, s.pace)}</div>
-    <div class="ai-q"><b>เริ่มวันประมาณ</b>${aiChips("start", AI_START, s.start)}</div>
-    <div class="ai-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
-    <div class="ai-q"><b>สนใจอะไรบ้าง</b><span class="muted small">เลือกได้หลายอย่าง</span>
-      <div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
-    ${ideas ? `<div class="ai-q"><b>รายการอยากไป (${ideas})</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
-    <div class="ai-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านให้ด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
-    <label class="fld">อยากได้อะไรเพิ่ม (ไม่บังคับ)<input id="ai-note" maxlength="200" placeholder="เช่น อยากเห็นฟูจิ, ไม่ชอบที่คนเยอะ" value="${esc(s.note)}" data-bind="sheet:note"></label>
-    <button class="btn primary" type="submit">${ic("spark",18)}วางแผนเลย</button>
+    <div class="ai-q"><div class="ai-qh"><b>วันไหน</b><button type="button" class="ai-all" aria-pressed="${all}" data-act="ai-alldays">ทั้งทริป</button></div>${aiCal(dates, s.dates)}</div>
+    <div class="ai-q"><b>ผู้เดินทาง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","ผู้สูงอายุ")}</div></div>
+    <div class="ai-q"><div class="ai-qh"><b>เริ่มวัน</b><output class="ai-time">${hm(s.start)} น.</output></div>
+      <input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน">
+      <div class="ai-ticks" aria-hidden="true"><span>05:00</span><span>08:30</span><span>12:00</span></div></div>
+    <div class="ai-q ai-row-q"><b>จังหวะ</b>${aiChips("pace", AI_PACE, s.pace)}</div>
+    <div class="ai-q ai-row-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
+    <div class="ai-q"><b>สนใจ</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    ${ideas ? `<div class="ai-q ai-row-q"><b>อยากไป (${ideas})</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
+    <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
+    <label class="fld sm">อยากได้อะไรเพิ่ม<input id="ai-note" maxlength="200" placeholder="เช่น อยากเห็นฟูจิ, ไม่ชอบที่คนเยอะ" value="${esc(s.note)}" data-bind="sheet:note"></label>
+    <button class="btn primary ai-go" type="submit" ${s.dates.length ? "" : "disabled"}>${ic("spark",18)}วางแผน${all ? "ทั้งทริป" : " " + s.dates.length + " วัน"}</button>
   </form>`);
+}
+/* trip days as a small calendar; tap days to include or leave out */
+function aiCal(dates, picked){
+  const first = dates[0], last = dates[dates.length-1], lead = parseD(first).getDay();
+  const trail = (7 - (lead + dates.length) % 7) % 7;
+  const blank = n => Array.from({length:n}, () => `<span class="aic out"></span>`).join("");
+  return `<div class="ai-cal"><div class="ai-dow" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div><div class="ai-days">${blank(lead)}${dates.map((x, i) => {
+    const d = parseD(x), on = picked.includes(x);
+    return `<button type="button" class="aic" aria-pressed="${on}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="ai-day" data-d="${x}"><b>${d.getDate()}</b>${d.getDate() === 1 || i === 0 ? `<i>${MON[d.getMonth()]}</i>` : ""}</button>`;
+  }).join("")}${blank(trail)}</div></div>`;
 }
 async function aiRun(){
   const s = S.sheet, t = S.trip; if(!s || !t) return;
   const dates = tripDates(t);
   s.step = "loading"; s.err = ""; s.ctl = new AbortController(); render();
   try{
-    const res = await api("planTrip", {tripId:t.id, dates: s.scope === "day" ? [dates[S.day]] : [], prefs:{
-      adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:s.start, mode:s.mode, interests:s.interests,
+    const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), prefs:{
+      adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60), mode:s.mode, interests:s.interests,
       useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)}}, s.ctl.signal);
     if(S.sheet !== s) return;
     s.result = res; s.picks = {};
@@ -1594,6 +1628,11 @@ async function confirmJoin(){
 
 /* ---------- events ---------- */
 document.addEventListener("input", e => {
+  if(e.target.dataset && e.target.dataset.aiStart !== undefined && S.sheet){
+    const m = +e.target.value; S.sheet.start = m;
+    const o = document.querySelector(".ai-time"); if(o) o.textContent = pad(Math.floor(m/60)) + ":" + pad(m%60) + " น.";
+    return;
+  }
   const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
   const [root, path] = b.split(":");
   if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
@@ -1842,9 +1881,11 @@ document.addEventListener("click", async e => {
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
     case "ai-open": S.catTab = ""; S.sheet = aiDefaults(); render(); break;
-    case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.sheet[k] = (k === "meals" || k === "elders") ? !!v : v; render(); break; }
+    case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.sheet[k] = k === "meals" ? !!v : v; render(); break; }
+    case "ai-day": { const d = el.dataset.d, a = S.sheet.dates; S.sheet.dates = a.includes(d) ? a.filter(x => x !== d) : [...a, d]; render(); break; }
+    case "ai-alldays": { const all = tripDates(t); S.sheet.dates = S.sheet.dates.length === all.length ? [all[S.day] || all[0]] : all.slice(); render(); break; }
     case "ai-multi": { const v = el.dataset.v, a = S.sheet.interests; S.sheet.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
-    case "ai-num": { const k = el.dataset.k; S.sheet[k] = Math.max(k === "adults" ? 1 : 0, Math.min(20, S.sheet[k] + Number(el.dataset.d))); render(); break; }
+    case "ai-num": { const k = el.dataset.k; S.sheet[k] = Math.max(0, Math.min(20, S.sheet[k] + Number(el.dataset.d))); if(S.sheet.adults + S.sheet.elders < 1) S.sheet[k] = 1; render(); break; }
     case "ai-stop": if(S.sheet.ctl) S.sheet.ctl.abort(); break;
     case "ai-back": S.sheet.step = "ask"; render(); break;
     case "ai-pick": S.sheet.picks[el.dataset.k] = !S.sheet.picks[el.dataset.k]; render(); break;
@@ -1969,7 +2010,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28j";
+const BUILD = "2026-10-29a";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
