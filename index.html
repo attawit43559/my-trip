@@ -1193,7 +1193,7 @@ function shareSection(){
     <div class="share-hd">${ic("pin",18)}<b>แชร์จาก Google Maps เข้า "สนใจ"</b></div>
     ${!k ? `<p class="muted small">ตั้งคำสั่งลัดบน iPhone ครั้งเดียว แล้วกดแชร์ร้านหรือที่เที่ยวจาก Google Maps เข้าทริปได้เลย ไม่ต้องเปิดแอป</p>
       <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "สร้างรหัสคำสั่งลัด"}</button>`
-    : `<p class="muted small">ของที่แชร์เข้ามาจะไปอยู่ในทริปที่เปิดล่าสุดในแอป</p>
+    : `<p class="muted small">ระบบจะใส่ลงทริปที่อยู่ใกล้สถานที่นั้นให้เอง ถ้าหาไม่ได้จะใส่ทริปที่เปิดล่าสุดในแอป</p>
       <span class="small">รหัสส่วนตัว (ห้ามส่งให้คนอื่น)</span>${copy("รหัสส่วนตัว", k)}
       <details class="share-how"><summary>วิธีตั้งคำสั่งลัด</summary><ol>
         <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
@@ -2290,7 +2290,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29u";
+const BUILD = "2026-10-29v";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

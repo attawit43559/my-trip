@@ -226,7 +226,8 @@ const ACTIONS = {
     if (!mine.length) return { message: 'ยังไม่มีทริป สร้างทริปในแอปก่อนนะ' };
     const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
     const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
-    const trip = mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
+    const lastOpened = mine.find(t => t.id === row.obj.tripId);
+    let trip = lastOpened || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
     let place;
     const sent = Array.isArray(req.url) ? req.url.join(' ') : String(req.url || '');
     try { place = resolveMapLink_({ url: sent }); } catch (e) {
@@ -234,6 +235,8 @@ const ACTIONS = {
       return { message: 'อ่านลิงก์นี้ไม่ได้ ลองแชร์จากหน้าสถานที่ใน Google Maps' };
     }
     const name = place.name || 'สถานที่จาก Google Maps';
+    // with several trips, put it in the trip whose places are nearest to it
+    try { trip = nearestTrip_(mine, place, today, endOf, lastOpened) || trip; } catch (e) {}
     const link = (sent.match(/https?:\/\/[^\s<>"]+/) || [''])[0];
     return withLock_(() => {
       const dup = rows_(ITEMS).find(r => r.tripId === trip.id && r.obj.type === 'idea' && String(r.obj.title).toLowerCase() === name.toLowerCase());
@@ -246,6 +249,50 @@ const ACTIONS = {
     });
   }
 };
+
+/* where a shared place belongs: the trip (not yet over, if any) with something planned closest to it */
+function geocode_(text) {
+  text = String(text || '').trim().slice(0, 160);
+  if (!text) return null;
+  const cache = CacheService.getScriptCache(), ck = 'geo:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text));
+  const hit = cache.get(ck);
+  if (hit) return hit === '-' ? null : JSON.parse(hit);
+  const res = Maps.newGeocoder().geocode(text);
+  const loc = res && res.status === 'OK' && res.results[0] ? res.results[0].geometry.location : null;
+  const out = loc ? { lat: loc.lat, lon: loc.lng } : null;
+  cache.put(ck, out ? JSON.stringify(out) : '-', 21600);
+  return out;
+}
+function kmBetween_(a, b) {
+  const rad = x => x * Math.PI / 180, dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+function nearestTrip_(trips, place, today, endOf, lastOpened) {
+  if (trips.length < 2) return null;
+  const live = trips.filter(t => endOf(t) >= today);
+  const pool = live.length ? live : trips;
+  let at = place.lat != null && place.lon != null ? { lat: Number(place.lat), lon: Number(place.lon) } : (place.name ? geocode_(place.name) : null);
+  if (!at) return null;
+  const items = rows_(ITEMS);
+  const scored = pool.map(t => {
+    const pts = [];
+    items.forEach(r => {
+      if (r.tripId !== t.id) return;
+      const d = r.obj.data || {};
+      if (d.lat != null && d.lon != null && d.lat !== '' && !isNaN(Number(d.lat))) pts.push({ lat: Number(d.lat), lon: Number(d.lon) });
+      else if (r.obj.type === 'stay' && pts.length < 40) { const g = geocode_(d.address || r.obj.title); if (g) pts.push(g); }
+    });
+    if (t.destination) { const g = geocode_(t.destination); if (g) pts.push(g); }
+    const km = pts.length ? Math.min.apply(null, pts.map(p => kmBetween_(at, p))) : Infinity;
+    return { t, km };
+  });
+  const best = Math.min.apply(null, scored.map(x => x.km));
+  if (!(best <= 300)) return null;
+  const near = scored.filter(x => x.km <= best + 30).map(x => x.t);
+  if (lastOpened && near.some(t => t.id === lastOpened.id)) return lastOpened;
+  return near.sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0];
+}
 
 /* ---------------- sign-in ---------------- */
 
