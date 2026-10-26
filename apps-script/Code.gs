@@ -361,9 +361,17 @@ function planTrip_(req) {
   if (!dates.length) throw new Error('no_dates');
   // "start over": plan those days as if their own places and travel legs were gone (the app removes them when the new plan is added)
   if (req.replace) items = items.filter(i => !((i.type === 'place' || i.type === 'move') && dates.indexOf(i.date) >= 0));
+  // revising a draft: the stops the person kept count as already planned; the ones they unticked must not come back
+  const rv = req.revise || {};
+  (rv.keep || []).slice(0, 80).forEach(k => {
+    if (!k || dates.indexOf(String(k.date)) < 0) return;
+    items.push(k.type === 'move'
+      ? { type: 'move', date: String(k.date), time: String(k.time || ''), data: { mode: String(k.mode || ''), from: String(k.from || ''), to: String(k.to || '') } }
+      : { type: 'place', date: String(k.date), time: String(k.time || ''), title: String(k.title || ''), data: {} });
+  });
   const props = PropertiesService.getScriptProperties();
   const provider = (props.getProperty('AI_PROVIDER') || 'gemini').toLowerCase();
-  const prompt = planPrompt_(trip, items, dates, req.prefs || {});
+  const prompt = planPrompt_(trip, items, dates, req.prefs || {}, (rv.reject || []).slice(0, 40));
   const text = provider === 'claude' ? callClaude_(props, prompt, []) : provider === 'openai' ? callOpenAI_(props, prompt, []) : callGemini_(props, prompt, [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
   return cleanPlan_(parseJson_(text), dates, items);
 }
@@ -375,7 +383,7 @@ function tripDates_(trip) {
   return out;
 }
 
-function planPrompt_(trip, items, dates, prefs) {
+function planPrompt_(trip, items, dates, prefs, reject) {
   const s = v => String(v == null ? '' : v).slice(0, 200);
   const line = it => {
     const d = it.data || {};
@@ -405,6 +413,7 @@ function planPrompt_(trip, items, dates, prefs) {
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list item if at all possible' : 'use wish-list items where they fit well'}`,
     `- meals: ${p.meals ? 'include lunch and dinner as restaurant stops (real, well-known places near that part of the day)' : 'do not add meals'}`,
     p.note ? '- other wishes: ' + s(p.note) : '',
+    reject && reject.length ? 'The person is revising an earlier draft. Everything "already planned" above stays. They turned down these suggestions; fill those gaps (around the same times) with different ideas, and never suggest these again:\n' + reject.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}`).join('\n') + '\nOnly return the new items for those gaps (plus any travel legs they need), not the kept ones.' : '',
     'TRIP>>>',
     'Rules:',
     '- Keep every booking and already-planned item exactly as is; plan around them and never repeat them.',
@@ -416,7 +425,7 @@ function planPrompt_(trip, items, dates, prefs) {
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4, packed ≈ 5-6 (meals not counted). With children or older people keep walking moderate and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are short and in Thai (what to do or why, max ~60 characters). Times are 24-hour HH:MM, in order.',
-    '- "kind" is one of ที่เที่ยว, ร้านอาหาร, ช้อปปิ้ง. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน.',
+    '- "kind" is one of ที่เที่ยว, ร้านอาหาร, ช้อปปิ้ง. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน. A taxi or ride-hailing car is ขับรถ, with "แท็กซี่" written in its note.',
     '- Give each day a short Thai "summary" (theme of the day). Add up to 4 short practical Thai "tips" for the whole plan.',
     'Reply with only this JSON:',
     '{"days":[{"date":"YYYY-MM-DD","summary":"","items":[{"time":"HH:MM","type":"place","title":"","kind":"ที่เที่ยว","address":"","note":"","ideaId":""},{"time":"HH:MM","type":"move","mode":"ขนส่งสาธารณะ","from":"","to":"","note":""}]}],"tips":[""]}'
@@ -425,6 +434,16 @@ function planPrompt_(trip, items, dates, prefs) {
 
 // keep only well-formed items on the requested dates; ids must point at real wish-list items;
 // drop repeats: a second leg to the same place, or anything already in the plan that day
+function moveOf_(x, t, hm, modes) {
+  let mode = t(x.mode), note = t(x.note);
+  const car = /taxi|แท็กซี่|แท็กซี|grab|uber|cab|ride|รถยนต์|รถเช่า|car/i;
+  if (modes.indexOf(mode) < 0) {
+    if (car.test(mode)) { if (!/แท็กซี่|taxi|grab/i.test(note)) note = 'แท็กซี่' + (note ? ' · ' + note : ''); mode = 'ขับรถ'; }
+    else mode = /walk|เดิน/i.test(mode) ? 'เดิน' : 'ขนส่งสาธารณะ';
+  } else if (mode === 'ขนส่งสาธารณะ' && /แท็กซี่|taxi|grab|uber/i.test(note)) mode = 'ขับรถ';
+  return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120) };
+}
+
 function cleanPlan_(raw, dates, items) {
   const key = v => String(v == null ? '' : v).toLowerCase().replace(/[\s.,\-–·()'"]/g, '');
   const ideaIds = {}; items.filter(i => i.type === 'idea').forEach(i => { ideaIds[i.id] = true; });
@@ -434,7 +453,7 @@ function cleanPlan_(raw, dates, items) {
   const days = ((raw && raw.days) || []).filter(d => d && dates.indexOf(t(d.date)) >= 0).map(d => ({
     date: t(d.date), summary: t(d.summary).slice(0, 80),
     items: (d.items || []).slice(0, 14).map(x => x && x.type === 'move'
-      ? { time: hm(x.time), type: 'move', mode: modes.indexOf(t(x.mode)) >= 0 ? t(x.mode) : 'ขนส่งสาธารณะ', from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: t(x.note).slice(0, 120) }
+      ? moveOf_(x, t, hm, modes)
       : { time: hm(x && x.time), type: 'place', title: t(x && x.title).slice(0, 80), kind: kinds.indexOf(t(x && x.kind)) >= 0 ? t(x.kind) : 'ที่เที่ยว', address: t(x && x.address).slice(0, 160), note: t(x && x.note).slice(0, 120), ideaId: ideaIds[t(x && x.ideaId)] ? t(x.ideaId) : '' })
       .filter(x => x.type === 'move' ? (x.from || x.to) : x.title)
   }));
