@@ -410,6 +410,7 @@ function planPrompt_(trip, items, dates, prefs) {
     '- Arrival day: start activities no earlier than about 2 hours after the flight lands. Departure day: be heading to the airport about 3 hours before an international flight.',
     '- Each day stays near that night\'s hotel; group nearby places; respect usual opening hours; avoid back-tracking. On check-in days include going to the hotel; on check-out days start from it.',
     '- Add a travel leg (type "move") between stops when getting there takes more than a short walk, using the main way to get around unless walking is clearly better. Put the rough duration in its note.',
+    '- Exactly one travel leg for each journey: never add two legs with the same start or destination, and never a separate "leave early" or "get ready" item. Advice such as leaving 3 hours before a flight goes in that one leg\'s note together with the duration (e.g. "ประมาณ 45 นาที · ออกก่อนเครื่องออก 3 ชม."). The time of the leg is when to set off.',
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4, packed ≈ 5-6 (meals not counted). With children or older people keep walking moderate and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are short and in Thai (what to do or why, max ~60 characters). Times are 24-hour HH:MM, in order.',
@@ -420,8 +421,10 @@ function planPrompt_(trip, items, dates, prefs) {
   ].filter(Boolean).join('\n');
 }
 
-// keep only well-formed items on the requested dates; ids must point at real wish-list items
+// keep only well-formed items on the requested dates; ids must point at real wish-list items;
+// drop repeats: a second leg to the same place, or anything already in the plan that day
 function cleanPlan_(raw, dates, items) {
+  const key = v => String(v == null ? '' : v).toLowerCase().replace(/[\s.,\-–·()'"]/g, '');
   const ideaIds = {}; items.filter(i => i.type === 'idea').forEach(i => { ideaIds[i.id] = true; });
   const t = v => String(v == null ? '' : v).trim();
   const hm = v => { const m = t(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? ('0' + Math.min(23, +m[1])).slice(-2) + ':' + m[2] : ''; };
@@ -433,6 +436,25 @@ function cleanPlan_(raw, dates, items) {
       : { time: hm(x && x.time), type: 'place', title: t(x && x.title).slice(0, 80), kind: kinds.indexOf(t(x && x.kind)) >= 0 ? t(x.kind) : 'ที่เที่ยว', address: t(x && x.address).slice(0, 160), note: t(x && x.note).slice(0, 120), ideaId: ideaIds[t(x && x.ideaId)] ? t(x.ideaId) : '' })
       .filter(x => x.type === 'move' ? (x.from || x.to) : x.title)
   }));
+  days.forEach(d => {
+    const had = items.filter(i => i.date === d.date);
+    const seenTo = {}, seenLeg = {}, seenPlace = {};
+    const keptTo = {}, keptLeg = {};
+    had.forEach(i => {
+      if (i.type === 'move' && i.data) { seenTo[key(i.data.to)] = true; seenLeg[key(i.data.from) + '>' + key(i.data.to)] = true; }
+      if (i.type === 'place') seenPlace[key(i.title)] = true;
+    });
+    d.items = d.items.filter(x => {
+      if (x.type === 'move') {
+        const to = key(x.to), leg = key(x.from) + '>' + to;
+        const kept = keptTo[to] || keptLeg[leg];
+        if (kept) { if (x.note && kept.note.indexOf(x.note) < 0) kept.note = (kept.note ? kept.note + ' · ' : '') + x.note; return false; }
+        if (seenLeg[leg] || (to && seenTo[to])) return false;
+        seenLeg[leg] = true; keptLeg[leg] = x; if (to) { seenTo[to] = true; keptTo[to] = x; } return true;
+      }
+      const k = key(x.title); if (seenPlace[k]) return false; seenPlace[k] = true; return true;
+    });
+  });
   return { days, tips: ((raw && raw.tips) || []).map(t).filter(Boolean).slice(0, 4).map(x => x.slice(0, 160)) };
 }
 
