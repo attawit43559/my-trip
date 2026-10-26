@@ -281,6 +281,31 @@ p{margin:0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-sight{--deep:#8FD8CE;--soft:#17302D}:root:not([data-theme="light"]) .k-food{--deep:#FFB98A;--soft:#3A2416}:root:not([data-theme="light"]) .k-shop{--deep:#F3A3C6;--soft:#3A1A28}}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
+.ai-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--idea-soft);color:var(--idea);font-size:14px;font-weight:500}
+.ai-sheet{gap:14px}
+.ai-q{display:flex;flex-direction:column;gap:8px}
+.ai-q>b{font-size:15px;font-weight:500}
+.ai-q .chips button[aria-pressed="true"]{background:var(--idea-soft);color:var(--idea);box-shadow:inset 0 0 0 1.5px var(--idea-mid)}
+.ai-count{display:flex;align-items:center;gap:10px}
+.ai-count span{flex:1}
+.ai-count .round.sm{width:36px;height:36px;background:var(--tile)}
+.ai-count output{min-width:24px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.ai-wait{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 0 12px;text-align:center}
+.ai-day{display:flex;flex-direction:column;gap:6px}
+.ai-day-h{display:flex;flex-direction:column;gap:2px}
+.ai-list{list-style:none;margin:0;padding:4px 8px;background:var(--tile);border-radius:18px}
+.ai-list li+li{border-top:1px solid var(--line)}
+.ai-row{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 2px;border:0;background:none;text-align:left}
+.ai-row .time{width:40px;flex:none;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ai-row .ttl{font-weight:500;overflow-wrap:anywhere}
+.ai-row.off .grow,.ai-row.off .thumb-sm,.ai-row.off .time{opacity:.4}
+.ai-check{width:22px;height:22px;border-radius:7px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--line);background:var(--surface)}
+.ai-row[aria-pressed="true"] .ai-check{background:var(--idea-mid);border-color:var(--idea-mid);color:#fff}
+.ai-tag{font-size:11px;padding:1px 6px;border-radius:999px;background:var(--idea-soft);color:var(--idea);vertical-align:2px}
+.ai-tips{background:var(--accent-soft);border-radius:16px;padding:12px 14px}
+.ai-tips ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.5}
+.ai-foot{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1fr 1.4fr;gap:10px;background:var(--surface);padding:10px 0 4px;margin-top:4px}
+.ai-foot .btn{height:48px;font-size:15px}
 .t-idea{--deep:var(--idea);--soft:var(--idea-soft);--mid:var(--idea-mid);--on:#FFFFFF}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
@@ -471,6 +496,7 @@ const IC = {
   moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   edit:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  spark:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
   idea:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/>',
   food:'<path d="M6 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 3v18"/><path d="M17 21V3c-2.2 0-3.5 2.5-3.5 6v4H17"/>',
   shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
@@ -689,7 +715,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move","idea"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move","idea","ai"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -959,7 +985,7 @@ function vTrip(){
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
     <section class="stack" style="gap:14px">
-      <div class="sec-h"><h2>แผนรายวัน</h2></div>
+      <div class="sec-h" style="align-items:center"><h2>แผนรายวัน</h2>${dates.length ? `<button class="ai-btn" data-act="ai-open">${ic("spark",16)}ช่วยวางแผน</button>` : ""}</div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
@@ -1184,10 +1210,107 @@ async function planIdea(){
     S.sheet = null; render(); toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
   } catch(err){ fail(err); }
 }
+/* ---------- AI planner: a few quick choices, a draft per day, then pick what goes into the plan ---------- */
+const AI_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","เต็มที่"]];
+const AI_START = ["08:00","09:00","10:00"];
+const AI_INTERESTS = ["ธรรมชาติ","วัด/ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
+function aiDefaults(){
+  const t = S.trip, stay = S.items.find(i => i.type === "stay" && /\d/.test((i.data||{}).guests || ""));
+  const g = stay ? String(stay.data.guests) : "";
+  const adults = +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length);
+  const children = +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0;
+  return {kind:"ai", step:"ask", scope:"all", pace:"balanced", start:"09:00", mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:false, note:"", fromStay:!!stay};
+}
+function aiChips(key, opts, cur){
+  return `<div class="chips">${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
+    return `<button type="button" aria-pressed="${cur === v}" data-act="ai-opt" data-k="${key}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
+}
+function vAiPlan(s){
+  const head = `<div class="hd"><span class="thumb tc t-idea">${ic("spark")}</span><h2>ช่วยวางแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
+  const wrap = inner => `<div class="scrim" data-act="close-sheet"><div class="sheet ai-sheet" role="dialog" aria-modal="true" aria-label="ช่วยวางแผน" data-stop="1">${head}${inner}</div></div>`;
+  const dates = tripDates(S.trip);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">กำลังจัดแผน${s.scope === "day" ? "ของ" + esc(dShort(dates[S.day])) : "ทั้งทริป"}…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "review"){
+    const r = s.result || {days:[], tips:[]};
+    const n = Object.values(s.picks || {}).filter(Boolean).length;
+    const row = (x, k) => {
+      const isMove = x.type === "move", on = !!s.picks[k];
+      const icon = isMove ? (MODE_ICON[x.mode] || "move") : (IDEA_ICON[x.kind] || "pin");
+      const tone = isMove ? "t-move" : (x.kind && x.kind !== "ที่เที่ยว" ? IDEA_TONE[x.kind] : "t-place");
+      const title = isMove ? moveTitle(x.from, x.to) : x.title;
+      return `<li><button type="button" class="ai-row${on ? "" : " off"}" aria-pressed="${on}" data-act="ai-pick" data-k="${k}">
+        <span class="ai-check" aria-hidden="true">${on ? ic("check",14) : ""}</span><span class="time">${esc(x.time || "--:--")}</span>
+        <span class="thumb-sm ${tone}" aria-hidden="true">${ic(icon,16)}</span>
+        <span class="grow"><span class="ttl">${esc(title)}</span>${x.ideaId ? ` <span class="ai-tag">อยากไป</span>` : ""}${x.note ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button></li>`;
+    };
+    const days = r.days.map((d, di) => {
+      const idx = dates.indexOf(d.date);
+      return `<section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}</b>${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
+        ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : `<p class="muted small">วันนี้แผนเดิมเต็มแล้ว</p>`}</section>`;
+    }).join("");
+    const tips = r.tips && r.tips.length ? `<div class="ai-tips"><b class="small">เคล็ดลับ</b><ul>${r.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
+    return wrap(`<p class="muted small" style="margin-top:-4px">แตะรายการเพื่อเลือกหรือไม่เลือก แผนเดิมของคุณไม่ถูกแตะต้อง</p>
+      ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${tips}
+      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn primary" data-act="ai-add" ${n ? "" : "disabled"}>เพิ่ม ${n} รายการ</button></div>`);
+  }
+  const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
+  return wrap(`<form class="stack ai-form" data-form="ai" style="gap:16px">
+    ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
+    <div class="ai-q"><b>วางแผนวันไหน</b>${aiChips("scope", [["all","ทั้งทริป"],["day","เฉพาะ " + dShort(dates[S.day])]], s.scope)}</div>
+    <div class="ai-q"><b>ผู้เดินทาง</b>
+      <div class="ai-count"><span>ผู้ใหญ่</span><button type="button" class="round sm" data-act="ai-num" data-k="adults" data-d="-1" aria-label="ลดผู้ใหญ่">${ic("minus",16)}</button><output>${s.adults}</output><button type="button" class="round sm" data-act="ai-num" data-k="adults" data-d="1" aria-label="เพิ่มผู้ใหญ่">${ic("plus",16)}</button></div>
+      <div class="ai-count"><span>เด็ก</span><button type="button" class="round sm" data-act="ai-num" data-k="children" data-d="-1" aria-label="ลดเด็ก">${ic("minus",16)}</button><output>${s.children}</output><button type="button" class="round sm" data-act="ai-num" data-k="children" data-d="1" aria-label="เพิ่มเด็ก">${ic("plus",16)}</button></div>
+      <div class="chips"><button type="button" aria-pressed="${!!s.elders}" data-act="ai-opt" data-k="elders" data-v="${s.elders ? "" : "1"}">มีผู้สูงอายุ</button></div>
+      ${s.fromStay ? `<span class="muted small">ดึงจำนวนคนจากใบจองที่พัก</span>` : ""}</div>
+    <div class="ai-q"><b>จังหวะเที่ยว</b>${aiChips("pace", AI_PACE, s.pace)}</div>
+    <div class="ai-q"><b>เริ่มวันประมาณ</b>${aiChips("start", AI_START, s.start)}</div>
+    <div class="ai-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
+    <div class="ai-q"><b>สนใจอะไรบ้าง</b><span class="muted small">เลือกได้หลายอย่าง</span>
+      <div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    ${ideas ? `<div class="ai-q"><b>รายการอยากไป (${ideas})</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
+    <div class="ai-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านให้ด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
+    <label class="fld">อยากได้อะไรเพิ่ม (ไม่บังคับ)<input id="ai-note" maxlength="200" placeholder="เช่น อยากเห็นฟูจิ, ไม่ชอบที่คนเยอะ" value="${esc(s.note)}" data-bind="sheet:note"></label>
+    <button class="btn primary" type="submit">${ic("spark",18)}วางแผนเลย</button>
+  </form>`);
+}
+async function aiRun(){
+  const s = S.sheet, t = S.trip; if(!s || !t) return;
+  const dates = tripDates(t);
+  s.step = "loading"; s.err = ""; s.ctl = new AbortController(); render();
+  try{
+    const res = await api("planTrip", {tripId:t.id, dates: s.scope === "day" ? [dates[S.day]] : [], prefs:{
+      adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:s.start, mode:s.mode, interests:s.interests,
+      useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)}}, s.ctl.signal);
+    if(S.sheet !== s) return;
+    s.result = res; s.picks = {};
+    (res.days || []).forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
+    s.step = "review"; render();
+  } catch(e){
+    if(S.sheet !== s) return;
+    s.step = "ask"; s.err = e && e.code === "cancelled" ? "" : e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไปตอนนี้ ลองใหม่อีกครั้งในอีกสักครู่" : e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "วางแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
+    render();
+  }
+}
+async function aiAdd(){
+  const s = S.sheet, t = S.trip; if(!s || !t || !s.result) return;
+  let n = 0, first = "";
+  for(const [di, d] of s.result.days.entries()){
+    for(const [xi, x] of d.items.entries()){
+      if(!s.picks[di + "." + xi]) continue;
+      const base = {date:d.date, time:x.time || "", sub:x.note || "", createdBy:S.me, createdAt:Date.now() + n, source:"ai"};
+      if(x.type === "move") await store.addItem(t.id, {...base, type:"move", title:moveTitle(x.from, x.to), data:{mode:x.mode, from:x.from, to:x.to}});
+      else await store.addItem(t.id, {...base, type:"place", title:x.title, data:{kind:x.kind, address:x.address || "", ...(x.ideaId ? {fromIdea:x.ideaId} : {})}});
+      if(!first) first = d.date; n++;
+    }
+  }
+  const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
+  S.sheet = null; render(); toast(`เพิ่ม ${n} รายการลงแผนแล้ว`);
+}
 function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "account") return vAccount();
+  if(s.kind === "ai") return vAiPlan(s);
   const t = S.trip;
   if(s.kind === "item"){
     const it = S.items.find(i => i.id === s.id); if(!it) return "";
@@ -1659,6 +1782,7 @@ document.addEventListener("submit", async e => {
     } catch(err){ fail(err); }
     finally{ S.creating = false; }
   }
+  if(f === "ai") return aiRun();
   if(f === "sheet"){
     const s = S.sheet, t = S.trip; if(!s || !t) return;
     const isMove = s.kind === "move";
@@ -1717,6 +1841,14 @@ document.addEventListener("click", async e => {
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
+    case "ai-open": S.catTab = ""; S.sheet = aiDefaults(); render(); break;
+    case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.sheet[k] = (k === "meals" || k === "elders") ? !!v : v; render(); break; }
+    case "ai-multi": { const v = el.dataset.v, a = S.sheet.interests; S.sheet.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
+    case "ai-num": { const k = el.dataset.k; S.sheet[k] = Math.max(k === "adults" ? 1 : 0, Math.min(20, S.sheet[k] + Number(el.dataset.d))); render(); break; }
+    case "ai-stop": if(S.sheet.ctl) S.sheet.ctl.abort(); break;
+    case "ai-back": S.sheet.step = "ask"; render(); break;
+    case "ai-pick": S.sheet.picks[el.dataset.k] = !S.sheet.picks[el.dataset.k]; render(); break;
+    case "ai-add": aiAdd(); break;
     case "plan-idea": planIdea(); break;
     case "plan-goto": {
       const p = plannedFrom(S.sheet.id), i = p ? tripDates(t).indexOf(p.date) : -1;
@@ -1837,7 +1969,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-28i";
+const BUILD = "2026-10-28j";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
