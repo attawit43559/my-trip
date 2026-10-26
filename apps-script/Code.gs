@@ -362,7 +362,7 @@ function planTrip_(req) {
   const props = PropertiesService.getScriptProperties();
   const provider = (props.getProperty('AI_PROVIDER') || 'gemini').toLowerCase();
   const prompt = planPrompt_(trip, items, dates, req.prefs || {});
-  const text = provider === 'claude' ? callClaude_(props, prompt, []) : provider === 'openai' ? callOpenAI_(props, prompt, []) : callGemini_(props, prompt, [], { temperature: 0.5, thinking: 'medium' });
+  const text = provider === 'claude' ? callClaude_(props, prompt, []) : provider === 'openai' ? callOpenAI_(props, prompt, []) : callGemini_(props, prompt, [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
   return cleanPlan_(parseJson_(text), dates, items);
 }
 
@@ -406,6 +406,7 @@ function planPrompt_(trip, items, dates, prefs) {
     'TRIP>>>',
     'Rules:',
     '- Keep every booking and already-planned item exactly as is; plan around them and never repeat them.',
+    '- Hotel check-in, check-out and nights already show in the app: never add a hotel itself as a "place" stop. Travel legs to or from a hotel are fine.',
     '- Arrival day: start activities no earlier than about 2 hours after the flight lands. Departure day: be heading to the airport about 3 hours before an international flight.',
     '- Each day stays near that night\'s hotel; group nearby places; respect usual opening hours; avoid back-tracking. On check-in days include going to the hotel; on check-out days start from it.',
     '- Add a travel leg (type "move") between stops when getting there takes more than a short walk, using the main way to get around unless walking is clearly better. Put the rough duration in its note.',
@@ -447,7 +448,7 @@ function callGemini_(props, prompt, files, opts) {
     try {
       const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
         headers: { 'x-goog-api-key': key },
-        payload: { contents: [{ role: 'user', parts }], generationConfig: { temperature: opts.temperature || 0, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: opts.thinking || 'low' } } }
+        payload: { contents: [{ role: 'user', parts }], generationConfig: Object.assign({ temperature: opts.temperature || 0, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: opts.thinking || 'low' } }, opts.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}) }
       });
       const c = res.candidates && res.candidates[0];
       const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || '').join('');
