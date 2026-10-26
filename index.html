@@ -1744,7 +1744,17 @@ document.addEventListener("input", e => {
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
 /* place suggestions while typing: Google Places when a key is set, else OpenStreetMap (Photon), which is free and keyless */
-const GMAPS_KEY = "";
+const GMAPS_KEY = "AIzaSyDhRn__pYviScNn4k48nONBlhwYMwAlweQ";   // browser key: works only from this site and only for Places
+/* each phone asks Google at most this many times a day; after that (or if Google fails) suggestions come from OpenStreetMap */
+const GMAPS_DAILY = 150;
+function gmapsAllowance(){
+  try{
+    const k = "mytrip-gq-" + today(), n = +(localStorage.getItem(k) || 0);
+    if(n >= GMAPS_DAILY) return false;
+    localStorage.setItem(k, n + 1); return true;
+  } catch(_){ return true; }
+}
+let gmapsDownUntil = 0;
 let sugTimer = null, sugCtl = null, sugSession = "", sugHold = 0, sugPicked = 0;
 function closeSuggest(){ document.querySelectorAll(".sugg").forEach(x => x.remove()); }
 function suggestSoon(input){
@@ -1757,15 +1767,22 @@ async function fetchSuggest(input, q){
   try{
     if(sugCtl) sugCtl.abort(); sugCtl = new AbortController();
     let list;
-    if(GMAPS_KEY){
-      if(!sugSession) sugSession = (crypto.randomUUID ? crypto.randomUUID() : rid());
-      const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {method:"POST", signal:sugCtl.signal,
-        headers:{"Content-Type":"application/json", "X-Goog-Api-Key":GMAPS_KEY},
-        body:JSON.stringify({input:q, languageCode:"th", sessionToken:sugSession})});
-      const j = await r.json();
-      list = (j.suggestions || []).map(x => x.placePrediction).filter(Boolean).map(pp => ({
-        name:(pp.structuredFormat && pp.structuredFormat.mainText && pp.structuredFormat.mainText.text) || (pp.text && pp.text.text) || "",
-        area:(pp.structuredFormat && pp.structuredFormat.secondaryText && pp.structuredFormat.secondaryText.text) || "", placeId:pp.placeId})).slice(0, 6);
+    if(GMAPS_KEY && Date.now() > gmapsDownUntil && gmapsAllowance()){
+      try{
+        if(!sugSession) sugSession = (crypto.randomUUID ? crypto.randomUUID() : rid());
+        const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {method:"POST", signal:sugCtl.signal,
+          headers:{"Content-Type":"application/json", "X-Goog-Api-Key":GMAPS_KEY},
+          body:JSON.stringify({input:q, languageCode:"th", sessionToken:sugSession})});
+        if(!r.ok) throw {code:r.status};
+        const j = await r.json();
+        list = (j.suggestions || []).map(x => x.placePrediction).filter(Boolean).map(pp => ({
+          name:(pp.structuredFormat && pp.structuredFormat.mainText && pp.structuredFormat.mainText.text) || (pp.text && pp.text.text) || "",
+          area:(pp.structuredFormat && pp.structuredFormat.secondaryText && pp.structuredFormat.secondaryText.text) || "", placeId:pp.placeId})).slice(0, 6);
+      } catch(e){
+        if(e && e.name === "AbortError") throw e;
+        gmapsDownUntil = Date.now() + 10*60*1000;   // Google said no (billing paused, quota, network): use OpenStreetMap for a while
+        list = await photonList(q);
+      }
     } else list = await photonList(q);
     if(document.activeElement !== input || input.value.trim() !== q) return;
     closeSuggest();
@@ -2155,7 +2172,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29l";
+const BUILD = "2026-10-29m";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
