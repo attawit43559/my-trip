@@ -287,6 +287,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
 .ai-sheet{gap:10px}
 .ai-warn{color:var(--danger);font-weight:500}
+.link-wait{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 12px}
+.spinner.sm{width:20px;height:20px;border-width:3px}
+.paste-link{text-decoration:none;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:-6px;color:var(--idea);font-size:14px}
 
 .day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
 .clear-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px}
@@ -831,6 +834,7 @@ function openTrip(id, view="trip"){
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
     unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
   } else refreshTrip(id);   // reopening the same trip still fetches who joined since
+  try { localStorage.setItem("mytrip-last-trip", id); } catch(_){}
   go(view);
 }
 
@@ -1444,6 +1448,44 @@ async function aiAdd(){
   const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
   S.ai = null; S.catTab = ""; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
 }
+/* ---------- places shared from Google Maps ---------- */
+const MAPS_LINK = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+)\S*/i;
+/* Google's id for a place, so "Google Maps" in the app opens that exact place (an ids-only lookup, free) */
+async function gmapsFindId(name, lat, lon){
+  if(!GMAPS_KEY || !name) return "";
+  try{
+    const r = await fetch("https://places.googleapis.com/v1/places:searchText", {method:"POST",
+      headers:{"Content-Type":"application/json", "X-Goog-Api-Key":GMAPS_KEY, "X-Goog-FieldMask":"places.id"},
+      body:JSON.stringify({textQuery:name, pageSize:1, ...(lat != null && lon != null ? {locationBias:{circle:{center:{latitude:lat, longitude:lon}, radius:500}}} : {})})});
+    if(!r.ok) return "";
+    const j = await r.json(); return ((j.places || [])[0] || {}).id || "";
+  } catch(_){ return ""; }
+}
+/* fill the open "add to สนใจ" sheet from a Google Maps link */
+async function fillFromLink(url){
+  const s = S.sheet; if(!s || s.kind !== "idea") return;
+  s.linking = true; s.linkErr = ""; render();
+  try{
+    const r = await api("resolveMapLink", {url});
+    if(S.sheet !== s) return;
+    s.title = r.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = "";
+    s.placeId = await gmapsFindId(r.name, r.lat, r.lon);
+  } catch(e){
+    if(S.sheet !== s) return;
+    s.linkErr = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "อ่านลิงก์นี้ไม่ได้ ลองพิมพ์ชื่อเองแทนได้เลย";
+  }
+  s.linking = false; render();
+}
+/* opened as …/?add=<Google Maps link>: put it into สนใจ of the last trip used (switchable in the sheet) */
+function addFromLink(url){
+  const list = S.trips || [];
+  if(!list.length){ toast("สร้างทริปก่อน แล้วค่อยแชร์สถานที่เข้ามานะ"); return; }
+  let last = ""; try { last = localStorage.getItem("mytrip-last-trip") || ""; } catch(_){}
+  const t = list.find(x => x.id === last) || list[0];
+  openTrip(t.id);
+  S.catTab = ""; S.sheet = {kind:"idea", title:"", note:"", ideaKind:"ที่เที่ยว", fromLink:true}; render();
+  fillFromLink(url);
+}
 function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "trip-menu") return vTripMenu(s);
@@ -1476,8 +1518,12 @@ function vSheet(){
   if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
     <div class="hd"><span class="thumb tc ${IDEA_TONE[s.ideaKind] || "k-sight"}">${ic(IDEA_ICON[s.ideaKind] || "pin")}</span><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
+      ${s.fromLink && S.trips.length > 1 ? `<label class="fld">ทริป<select id="sh-trip">${S.trips.map(x => `<option value="${esc(x.id)}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
+      ${s.linking ? `<div class="link-wait"><div class="spinner sm" role="status" aria-label="กำลังอ่านลิงก์"></div><span class="muted small">กำลังอ่านลิงก์จาก Google Maps…</span></div>` : ""}
+      ${s.linkErr ? `<div class="err" role="alert">${esc(s.linkErr)}</div>` : ""}
       <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
       <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
+      ${!s.fromLink && navigator.clipboard && navigator.clipboard.readText ? `<button type="button" class="link-btn paste-link" data-act="paste-maps">${ic("pin",16)}วางลิงก์จาก Google Maps</button>` : ""}
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="เช่น เพื่อนแนะนำ, ต้องจองก่อน" value="${esc(s.note)}" data-bind="sheet:note"></label>
       <button class="btn primary" type="submit">บันทึก</button>
     </form>
@@ -1885,6 +1931,7 @@ document.addEventListener("focusout", e => {
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
 });
 document.addEventListener("change", e => {
+  if(e.target.id === "sh-trip" && S.sheet){ const keep = S.sheet; openTrip(e.target.value); S.sheet = keep; render(); return; }
   if(e.target.id === "attach-in"){
     const fl = Array.from(e.target.files || []); e.target.value = "";
     const it = S.sheet && S.items.find(i => i.id === S.sheet.id);
@@ -2033,6 +2080,11 @@ document.addEventListener("click", async e => {
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
+    case "paste-maps": {
+      let txt = ""; try { txt = await navigator.clipboard.readText(); } catch(_){}
+      const m = String(txt || "").match(MAPS_LINK);
+      if(!m){ toast("ยังไม่ได้คัดลอกลิงก์ Google Maps"); break; }
+      fillFromLink(m[0]); break; }
     case "ai-open": {
       if(!S.ai || S.ai.step === "ask") S.ai = aiDefaults();
       const was = S.catTab; S.catTab = was === "ai" ? "" : "ai"; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
@@ -2154,8 +2206,15 @@ async function onGoogleCredential(resp){
 }
 function afterLogin(){
   flush(); refreshTrips();
-  const code = S.pendingJoin; S.pendingJoin = null;
-  if(code) startJoin(code); else go("home");
+  const code = S.pendingJoin, add = S.pendingAdd; S.pendingJoin = null; S.pendingAdd = "";
+  if(code) startJoin(code);
+  else if(add){ go("home"); waitTrips(() => addFromLink(add)); }
+  else go("home");
+}
+/* run once the trip list has loaded (it comes from the phone first, then the server) */
+function waitTrips(fn, tries = 0){
+  if((S.trips && S.trips.length) || tries > 40) return fn();
+  setTimeout(() => waitTrips(fn, tries + 1), 150);
 }
 function needLogin(){
   if(S.view === "login") return;
@@ -2172,7 +2231,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29m";
+const BUILD = "2026-10-29n";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -2195,10 +2254,16 @@ async function checkUpdate(){
   flush();
   checkUpdate();
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
+  let add = ""; try { add = new URLSearchParams(location.search).get("add") || ""; } catch(_){}
+  if(!add){ const h = (location.hash || "").match(/^#add=(.+)$/); if(h) try { add = decodeURIComponent(h[1]); } catch(_){} }
+  const addUrl = (String(add).match(MAPS_LINK) || [])[0] || "";
+  if(addUrl){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
   // drop the invite part of the address straight away, so a refresh, bookmark or home-screen icon opens the trip list
   if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
-  if(!S.token){ S.pendingJoin = m ? m[1] : null; go("login"); return; }
-  if(m) startJoin(m[1]); else go("home");
+  if(!S.token){ S.pendingJoin = m ? m[1] : null; S.pendingAdd = addUrl; go("login"); return; }
+  if(m) startJoin(m[1]);
+  else if(addUrl){ go("home"); waitTrips(() => addFromLink(addUrl)); }
+  else go("home");
 })();
 })();
 </script>
