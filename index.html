@@ -499,7 +499,15 @@ html.lock,html.lock body{overflow:hidden}
 .ai-go:disabled,.ai-grad:disabled{opacity:.45;box-shadow:none}
 .ai-go .ic{color:#fff}
 .ai-panel .ai-foot{bottom:0;padding-bottom:6px}
-.ai-go{position:sticky;bottom:6px;height:48px;font-size:15px;font-weight:600;gap:6px;margin-top:4px}
+.ai-bar{display:flex;gap:8px;align-items:center}
+.ai-bar .cat-add{font-size:14px;padding:0 14px}
+.ai-bar .cat-add.ai-grad{background:linear-gradient(120deg,#7C5CFF 0%,#3D7BFF 50%,#14B8C9 100%);color:#fff;font-weight:600}
+.ai-bar .cat-add.ai-grad:disabled{opacity:.45}
+.ai-bar .ai-grad .ic{color:#fff}
+.ai-bar .ai-back{background:var(--tile);color:var(--ink)}
+.ai-wrap{align-items:flex-start}
+.ai-wrap>b{padding-top:7px}
+.ai-wrap .chips{flex-wrap:wrap;overflow:visible}
 </style>
 </head>
 <body>
@@ -1009,6 +1017,7 @@ function catCard(){
     ${tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">ช่วยวางแผน</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
+      ${aiFoot(S.ai)}
     </div>` : tab ? `<div class="dock-panel t-${tab}">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="${tab}">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
@@ -1324,13 +1333,13 @@ function vAiPlan(s){
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">แตะรายการเพื่อเลือกหรือไม่เลือก ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${tips}
-      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn ai-grad" data-act="ai-add" ${n || rm ? "" : "disabled"}>${rm ? "แทนที่ด้วย " + n + " รายการ" : "เพิ่ม " + n + " รายการ"}</button></div>`);
+`);
   }
   const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
   const all = s.dates.length === dates.length;
   const hm = m => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
   const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="ai-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${s[k]}</output><button type="button" data-act="ai-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
-  return wrap(`<form class="ai-form" data-form="ai">
+  return wrap(`<form class="ai-form" id="ai-form" data-form="ai">
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     <div class="ai-q"><div class="ai-qh"><b>วันไหน</b><button type="button" class="ai-all" aria-pressed="${all}" data-act="ai-alldays">ทั้งทริป</button></div>${aiCal(dates, s.dates)}</div>
     ${ownOn(s.dates).length ? `<div class="ai-q ai-row-q"><b>แผนเดิม (${ownOn(s.dates).length})</b>${aiChips("replace", [["","เก็บไว้ เพิ่มต่อ"],["1","ล้างแล้วจัดใหม่"]], s.replace)}</div>` : ""}
@@ -1338,12 +1347,20 @@ function vAiPlan(s){
     <div class="ai-q ai-row-q"><b>เริ่มวัน</b><input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"><output class="ai-time">${hm(s.start)}</output></div>
     <div class="ai-q ai-row-q"><b>จังหวะ</b>${aiChips("pace", AI_PACE, s.pace)}</div>
     <div class="ai-q ai-row-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
-    <div class="ai-q"><b>สนใจ</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
-    ${ideas ? `<div class="ai-q ai-row-q"><b>อยากไป (${ideas})</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
+    <div class="ai-q ai-row-q ai-wrap"><b>สนใจ</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    ${ideas ? `<div class="ai-q ai-row-q"><b>อยากไป</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
     <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
-    <button class="btn ai-go" type="submit" ${s.dates.length ? "" : "disabled"}>${ic("spark",18)}วางแผน${all ? "ทั้งทริป" : " " + s.dates.length + " วัน"}</button>
   </form>`);
+}
+/* the planner's buttons sit under the panel's list, like "เพิ่ม" on the other tabs */
+function aiFoot(s){
+  if(s.step === "ask") return `<div class="ai-bar"><button class="cat-add ai-grad" type="submit" form="ai-form" ${s.dates.length ? "" : "disabled"}>${ic("spark",16)}เริ่มวางแผน</button></div>`;
+  if(s.step === "review"){
+    const n = Object.values(s.picks || {}).filter(Boolean).length, rm = (s.replacing || []).length;
+    return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">ปรับตัวเลือก</button><button class="cat-add ai-grad" data-act="ai-add" ${n || rm ? "" : "disabled"}>${ic("check",16)}${rm ? "แทนที่ด้วย " + n + " รายการ" : "เพิ่ม " + n + " รายการ"}</button></div>`;
+  }
+  return "";
 }
 /* trip days as a small calendar; tap days to include or leave out */
 function aiCal(dates, picked){
@@ -2074,7 +2091,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29d";
+const BUILD = "2026-10-29e";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
