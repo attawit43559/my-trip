@@ -578,7 +578,7 @@ const IC = {
   shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
 };
 const TYPE = {
-  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}, idea:{label:"Wishlist"}
+  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}, idea:{label:"สนใจ"}
 };
 const ic = (n, s=22) => `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${IC[n]||""}</svg>`;
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -995,7 +995,7 @@ function entryHtml(e){
 }
 function catCard(){
   const tab = S.catTab || "";
-  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["idea","Wishlist"]];
+  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["idea","สนใจ"]];
   const list = tab === "idea"
     ? S.items.filter(i => i.type === "idea").sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
     : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
@@ -1325,7 +1325,7 @@ function vAiPlan(s){
       return `<li><button type="button" class="ai-row${on ? "" : " off"}" aria-pressed="${on}" data-act="ai-pick" data-k="${k}">
         <span class="ai-check" aria-hidden="true">${on ? ic("check",14) : ""}</span><span class="time">${esc(x.time || "--:--")}</span>
         <span class="thumb-sm ${tone}" aria-hidden="true">${ic(icon,16)}</span>
-        <span class="grow"><span class="ttl">${esc(title)}</span>${x.ideaId ? ` <span class="ai-tag">Wishlist</span>` : ""}${x.note ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button></li>`;
+        <span class="grow"><span class="ttl">${esc(title)}</span>${x.ideaId ? ` <span class="ai-tag">สนใจ</span>` : ""}${x.note ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button></li>`;
     };
     const days = r.days.map((d, di) => {
       const idx = dates.indexOf(d.date);
@@ -1350,8 +1350,8 @@ function vAiPlan(s){
     <div class="ai-q ai-row-q"><b>เริ่มวัน</b><input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"><output class="ai-time">${hm(s.start)}</output></div>
     <div class="ai-q ai-row-q"><b>จังหวะ</b>${aiChips("pace", AI_PACE, s.pace)}</div>
     <div class="ai-q ai-row-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
-    <div class="ai-q ai-row-q ai-wrap"><b>สนใจ</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
-    ${ideas ? `<div class="ai-q ai-row-q"><b>Wishlist</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
+    <div class="ai-q ai-row-q ai-wrap"><b>แนวเที่ยว</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
     <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
   </form>`);
@@ -1439,8 +1439,8 @@ function vSheet(){
   }
   const isMove = s.kind === "move";
   const dates = tripDates(t);
-  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มใน Wishlist" data-stop="1">
-    <div class="hd"><span class="thumb tc ${IDEA_TONE[s.ideaKind] || "k-sight"}">${ic(IDEA_ICON[s.ideaKind] || "pin")}</span><h2>เพิ่มใน Wishlist</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
+    <div class="hd"><span class="thumb tc ${IDEA_TONE[s.ideaKind] || "k-sight"}">${ic(IDEA_ICON[s.ideaKind] || "pin")}</span><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
       <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
       <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
@@ -2094,7 +2094,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29g";
+const BUILD = "2026-10-29h";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
