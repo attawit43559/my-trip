@@ -287,6 +287,14 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
 .ai-sheet{gap:10px}
 .ai-warn{color:var(--danger);font-weight:500}
+.share-box{background:var(--tile);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.share-hd{display:flex;align-items:center;gap:8px;color:var(--idea)}
+.share-box .pill-btn{align-self:flex-start;background:var(--surface)}
+.share-box .link-box{background:var(--surface);min-height:44px}
+.link-box.sm input{font-size:13px}
+.share-how summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--idea)}
+.share-how ol{margin:8px 0;padding-left:20px;font-size:13.5px;line-height:1.6}
+.share-act{display:flex;gap:4px;justify-content:flex-end}
 .link-wait{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 12px}
 .spinner.sm{width:20px;height:20px;border-width:3px}
 .paste-link{text-decoration:none;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:-6px;color:var(--idea);font-size:14px}
@@ -834,7 +842,10 @@ function openTrip(id, view="trip"){
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
     unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
   } else refreshTrip(id);   // reopening the same trip still fetches who joined since
-  try { localStorage.setItem("mytrip-last-trip", id); } catch(_){}
+  try {
+    if(localStorage.getItem("mytrip-share-on") && localStorage.getItem("mytrip-last-trip") !== id) api("shareTrip", {tripId:id}).catch(() => {});
+    localStorage.setItem("mytrip-last-trip", id);
+  } catch(_){}
   go(view);
 }
 
@@ -1170,10 +1181,32 @@ function vLogin(){
     ${S.loggingIn ? `<p class="muted small">กำลังเข้าสู่ระบบ…</p>` : ""}
   </main>`;
 }
+/* the iPhone shortcut: Google Maps → แชร์ → "เพิ่มใน My Trip" adds to สนใจ without opening anything */
+function shareSection(){
+  const k = S.shareKey;
+  const copy = (label, text) => `<div class="link-box sm"><input readonly value="${esc(text)}" aria-label="${esc(label)}"><button data-act="copy" data-text="${esc(text)}">คัดลอก</button></div>`;
+  return `<section class="share-box">
+    <div class="share-hd">${ic("pin",18)}<b>แชร์จาก Google Maps เข้า "สนใจ"</b></div>
+    ${!k ? `<p class="muted small">ตั้งคำสั่งลัดบน iPhone ครั้งเดียว แล้วกดแชร์ร้านหรือที่เที่ยวจาก Google Maps เข้าทริปได้เลย ไม่ต้องเปิดแอป</p>
+      <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "สร้างรหัสคำสั่งลัด"}</button>`
+    : `<p class="muted small">ของที่แชร์เข้ามาจะไปอยู่ในทริปที่เปิดล่าสุดในแอป</p>
+      <span class="small">รหัสส่วนตัว (ห้ามส่งให้คนอื่น)</span>${copy("รหัสส่วนตัว", k)}
+      <details class="share-how"><summary>วิธีตั้งคำสั่งลัด</summary><ol>
+        <li>เปิดแอป <b>คำสั่งลัด</b> → กด <b>+</b> → ตั้งชื่อ <b>เพิ่มใน My Trip</b></li>
+        <li>กด ⓘ → เปิด <b>แสดงในแผ่นงานการแชร์</b> → รับ <b>URL</b> และ <b>ข้อความ</b></li>
+        <li>เพิ่ม <b>รับ URL จากอินพุต</b> (Get URLs from Input)</li>
+        <li>เพิ่ม <b>รับเนื้อหาของ URL</b> (Get Contents of URL) แล้วตั้งค่า:<br>URL: วางลิงก์ด้านล่าง<br>วิธี: <b>POST</b> · เนื้อหาคำขอ: <b>JSON</b><br>เพิ่ม 3 ช่อง: <b>action</b> = shareAdd · <b>key</b> = รหัสด้านบน · <b>url</b> = ตัวแปร "URL"</li>
+        <li>เพิ่ม <b>รับค่าพจนานุกรม</b> (Get Dictionary Value) คีย์ <b>data.message</b></li>
+        <li>เพิ่ม <b>แสดงการแจ้งเตือน</b> (Show Notification) ด้วย "ค่าพจนานุกรม"</li>
+      </ol>${copy("ลิงก์หลังบ้าน", API_URL)}</details>
+      <div class="share-act"><button class="link-btn" data-act="share-reset">สร้างรหัสใหม่</button><button class="link-btn" data-act="share-off">ปิดการแชร์</button></div>`}
+  </section>`;
+}
 function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
+    ${shareSection()}
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -1468,7 +1501,7 @@ async function fillFromLink(url){
   try{
     const r = await api("resolveMapLink", {url});
     if(S.sheet !== s) return;
-    s.title = r.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = "";
+    s.title = r.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = ""; s.mapsUrl = url;
     s.placeId = await gmapsFindId(r.name, r.lat, r.lon);
   } catch(e){
     if(S.sheet !== s) return;
@@ -2029,7 +2062,7 @@ document.addEventListener("submit", async e => {
     if(s.kind === "idea"){
       try{
         await store.addItem(t.id, {type:"idea", date:"", time:"", title:s.title.trim(), sub:s.note.trim(),
-          data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
+          data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"", mapsUrl:s.mapsUrl||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
         S.sheet = null; S.catTab = "idea"; render(); toast("จดไว้แล้ว");
       } catch(err){ fail(err); }
       return;
@@ -2142,7 +2175,18 @@ document.addEventListener("click", async e => {
       try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
       break; }
     case "join-confirm": confirmJoin(); break;
-    case "account": S.sheet = {kind:"account"}; render(); break;
+    case "account": S.sheet = {kind:"account"}; render();
+      if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
+      break;
+    case "share-on": case "share-reset": {
+      S.shareBusy = true; render();
+      try { const r = await api("shareKey", {reset: a === "share-reset"}); S.shareKey = r.key; try { localStorage.setItem("mytrip-share-on", "1"); } catch(_){}
+        if(S.tripId) api("shareTrip", {tripId:S.tripId}).catch(() => {}); toast(a === "share-reset" ? "สร้างรหัสใหม่แล้ว ต้องแก้รหัสในคำสั่งลัดด้วย" : "สร้างรหัสแล้ว"); }
+      catch(e){ fail(e); }
+      S.shareBusy = false; render(); break; }
+    case "share-off": {
+      try { await api("shareKeyOff"); S.shareKey = null; try { localStorage.removeItem("mytrip-share-on"); } catch(_){} toast("ปิดการแชร์แล้ว"); } catch(e){ fail(e); }
+      render(); break; }
     case "detach": {
       const it = S.sheet && S.items.find(i => i.id === S.sheet.id); if(!it) break;
       const keep = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])].filter(x => x !== el.dataset.file);
@@ -2231,7 +2275,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29n";
+const BUILD = "2026-10-29o";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

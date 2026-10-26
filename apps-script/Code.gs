@@ -20,7 +20,8 @@
 const TRIPS = 'trips';
 const ITEMS = 'items';
 const SESSIONS = 'sessions';
-const OPEN_ACTIONS = { ping: true, login: true };
+const SHARE_KEYS = 'sharekeys';
+const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true };
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -192,7 +193,54 @@ const ACTIONS = {
   planTrip: (req) => planTrip_(req),
 
   // a place shared from Google Maps: open its link, read the name and position, guess what kind of place it is
-  resolveMapLink: (req) => resolveMapLink_(req)
+  resolveMapLink: (req) => resolveMapLink_(req),
+
+  // a personal code for the iPhone shortcut that adds places from Google Maps without opening the app
+  shareKey: (req) => withLock_(() => {
+    let row = rows_(SHARE_KEYS).find(r => r.obj.uid === req.me);
+    if (row && req.reset) { deleteWhere_(SHARE_KEYS, r => r.id === row.id); row = null; }
+    if (row) return { key: row.id };
+    if (req.peek) return { key: null };
+    const key = 'mt' + Utilities.getUuid().replace(/-/g, '').slice(0, 24);
+    upsert_(SHARE_KEYS, key, '', { uid: req.me, name: req.name, tripId: '', created: new Date().toISOString() });
+    return { key };
+  }),
+  shareKeyOff: (req) => withLock_(() => { deleteWhere_(SHARE_KEYS, r => r.obj.uid === req.me); return true; }),
+
+  // the app tells which trip was opened last; shared places go there
+  shareTrip: (req) => withLock_(() => {
+    const row = rows_(SHARE_KEYS).find(r => r.obj.uid === req.me);
+    if (!row) return false;
+    mustBeMember_(String(req.tripId), req.me);
+    upsert_(SHARE_KEYS, row.id, '', Object.assign({}, row.obj, { tripId: String(req.tripId) }));
+    return true;
+  }),
+
+  // called by the iPhone shortcut with the personal code: add the shared place to สนใจ, answer with one line
+  shareAdd: (req) => {
+    const key = String(req.key || '').trim();
+    const row = /^mt[a-f0-9]{24}$/.test(key) ? find_(SHARE_KEYS, key) : null;
+    if (!row) return { message: 'รหัสคำสั่งลัดไม่ถูกต้อง ลองสร้างรหัสใหม่ในแอป' };
+    const uid = row.obj.uid;
+    const mine = rows_(TRIPS).filter(r => isMember_(r.obj, uid)).map(r => r.obj);
+    if (!mine.length) return { message: 'ยังไม่มีทริป สร้างทริปในแอปก่อนนะ' };
+    const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+    const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
+    const trip = mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
+    let place;
+    try { place = resolveMapLink_({ url: req.url }); } catch (e) { return { message: 'อ่านลิงก์นี้ไม่ได้ ลองแชร์จากหน้าสถานที่ใน Google Maps' }; }
+    const name = place.name || 'สถานที่จาก Google Maps';
+    const link = (String(req.url || '').match(/https?:\/\/[^\s<>"]+/) || [''])[0];
+    return withLock_(() => {
+      const dup = rows_(ITEMS).find(r => r.tripId === trip.id && r.obj.type === 'idea' && String(r.obj.title).toLowerCase() === name.toLowerCase());
+      if (dup) return { message: name + ' อยู่ในทริป ' + trip.name + ' แล้ว' };
+      const id = 'sh' + Utilities.getUuid().replace(/-/g, '').slice(0, 14);
+      upsert_(ITEMS, id, trip.id, { id, tripId: trip.id, type: 'idea', date: '', time: '', title: name, sub: '',
+        data: { kind: place.kind, address: '', lat: place.lat, lon: place.lon, placeId: '', mapsUrl: link },
+        createdBy: uid, createdAt: Date.now(), source: 'share' });
+      return { message: 'เพิ่ม ' + name + ' ลงทริป ' + trip.name + ' แล้ว' };
+    });
+  }
 };
 
 /* ---------------- sign-in ---------------- */
