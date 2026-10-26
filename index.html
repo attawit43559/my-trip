@@ -300,6 +300,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .paste-link{text-decoration:none;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:-6px;color:var(--idea);font-size:14px}
 
 .day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+.day-h>p{margin-right:auto}.day-h .clear-btn{flex:none}
 .clear-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px}
 .clear-ask{display:flex;gap:6px}
 .clear-ask .pill-btn{height:32px;padding:0 12px;font-size:13px;background:var(--tile)}
@@ -507,6 +508,8 @@ html.lock,html.lock body{overflow:hidden}
 .ai-n output{min-width:20px;font-size:15px}
 .ai-range{flex:1;min-width:0;height:28px}
 .ai-time{width:46px;text-align:right;font-size:15px}
+.ex-prev{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x mandatory}.ex-prev img{height:300px;width:auto;border-radius:14px;box-shadow:var(--lift);flex:none;scroll-snap-align:start}
+.ex-go{justify-content:center;height:56px;font-size:16px;background:var(--tile);border-radius:18px;font-weight:500}.ex-scope{margin:2px 0 4px}
 .ai-attach{display:flex;gap:6px;align-items:flex-start;margin:6px 0 0;color:var(--muted)}.ai-attach svg{flex:none;margin-top:2px}.ai-attach b{color:var(--ink,inherit);font-weight:600}
 .ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
 /* the planner's own buttons wear an "AI" gradient */
@@ -596,6 +599,7 @@ const IC = {
   spark:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
   idea:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/>',
   food:'<path d="M6 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 3v18"/><path d="M17 21V3c-2.2 0-3.5 2.5-3.5 6v4H17"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
   shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
 };
 const TYPE = {
@@ -1095,6 +1099,7 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
+        ${S.clearAsk === d ? "" : `<button class="clear-btn" data-act="export-open">${ic("image",15)}บันทึกเป็นรูป</button>`}
         ${ownOn([d]).length ? (S.clearAsk === d
           ? `<span class="clear-ask"><button class="pill-btn" data-act="clear-no">ไม่ลบ</button><button class="pill-btn danger-soft" data-act="clear-yes" data-d="${d}">ลบ ${ownOn([d]).length} รายการ</button></span>`
           : `<button class="clear-btn" data-act="clear-ask" data-d="${d}">${ic("trash",15)}ล้างวันนี้</button>`) : ""}</div>
@@ -1496,6 +1501,99 @@ async function aiAdd(){
   const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
   S.ai = null; S.catTab = ""; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
 }
+/* ---------- day pages to keep or send: one picture per day, with a map ---------- */
+function loadScript(src){ return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("load")); document.head.appendChild(sc); }); }
+async function exportLibs(pdf){
+  if(!document.getElementById("mali-font")){ const l = document.createElement("link"); l.id = "mali-font"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap"; document.head.appendChild(l); }
+  if(!window.PlanExport) await loadScript("plan-export.js?v=" + BUILD);
+  if(pdf && !(window.jspdf && window.jspdf.jsPDF)) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+}
+function exportReset(s){ (s.urls || []).forEach(u => URL.revokeObjectURL(u)); s.files = null; s.urls = null; s.err = ""; }
+function vExport(s){
+  const dates = tripDates(S.trip), t = S.trip;
+  const chip = (k, label) => `<button type="button" aria-pressed="${s.scope === k}" data-act="export-scope" data-k="${k}">${label}</button>`;
+  const body = s.busy ? `<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังทำ"></div><p class="muted">${esc(s.busy)}</p></div>`
+    : s.files ? `<div class="ex-prev">${s.urls.map((u, i) => `<img src="${u}" alt="หน้า ${i + 1}">`).join("")}</div>
+      <button class="btn primary" data-act="export-share">${ic("upload",18)}${s.kind2 === "pdf" ? "แชร์หรือบันทึก PDF" : `แชร์หรือบันทึกรูป${s.files.length > 1 ? ` ${s.files.length} รูป` : ""}`}</button>
+      <p class="muted small" style="text-align:center">${s.kind2 === "pdf" ? "เลือก “บันทึกลงไฟล์” หรือส่งเข้า LINE ได้เลย" : "เลือก “บันทึกรูปภาพ” เพื่อเก็บไว้ในคลังรูป"}</p>`
+    : `<div class="grid2"><button class="pill-btn ex-go" data-act="export-run" data-k="img">${ic("image",18)}รูปภาพ</button><button class="pill-btn ex-go" data-act="export-run" data-k="pdf">${ic("file",18)}PDF</button></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกแผนเป็นรูป" data-stop="1">
+    <div class="hd"><span class="thumb tc t-place">${ic("image")}</span><h2>บันทึกแผนเป็นรูป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <p class="muted small" style="margin-top:-8px">วันละ 1 หน้า พร้อมแผนที่ของวันนั้น</p>
+    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
+    ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
+    ${body}
+  </div></div>`;
+}
+/* what one day looks like on paper: same rows as the plan, with map positions where we have them */
+function exportEntries(d){
+  return dayEntries(d).map(e => {
+    const it = e.it, data = it.data || {};
+    const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
+    if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay"};
+    if(it.type === "move") return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", icon:itemIcon(it)};
+    if(it.type === "flight") return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight"};
+    const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
+    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
+  });
+}
+async function exportPlaces(days){
+  let cache = {}; try { cache = JSON.parse(localStorage.getItem("mytrip-geo") || "{}"); } catch(_){}
+  const need = [...new Set(days.flatMap(d => d.entries.filter(e => e.q && !(e.q in cache)).map(e => e.q)))].slice(0, 60);
+  if(need.length && CONNECTED){ try { const res = await api("geocode", {q:need}); need.forEach((q, i) => cache[q] = res[i] || null); } catch(_){} }
+  try { localStorage.setItem("mytrip-geo", JSON.stringify(cache)); } catch(_){}
+  for(const d of days){
+    d.entries.forEach(e => { if(e.q && cache[e.q]){ e.lat = cache[e.q].lat; e.lon = cache[e.q].lon; } });
+    // a guess far from the rest of the day is probably a different place with the same name: leave it off the map
+    const pts = d.entries.filter(e => e.lat != null);
+    if(pts.length >= 3){
+      const mid = k => pts.map(e => e[k]).sort((a, b) => a - b)[Math.floor(pts.length / 2)];
+      const la = mid("lat"), lo = mid("lon");
+      pts.forEach(e => { if(Math.hypot(e.lat - la, (e.lon - lo) * Math.cos(la * Math.PI / 180)) > 0.8){ delete e.lat; delete e.lon; } });
+    }
+  }
+}
+async function exportRun(kind){
+  const s = S.sheet; if(!s || s.kind !== "export" || s.busy) return;
+  const t = S.trip, dates = tripDates(t);
+  const pick = s.scope === "all" ? dates : [dates[S.day]];
+  exportReset(s); s.kind2 = kind; s.busy = "กำลังเตรียม…"; render();
+  try{
+    await exportLibs(kind === "pdf");
+    const days = pick.map(d => ({tripName:t.name, dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
+    s.busy = "กำลังหาตำแหน่งบนแผนที่…"; render();
+    await exportPlaces(days);
+    const blobs = [];
+    for(const [i, d] of days.entries()){
+      if(S.sheet !== s) return;
+      s.busy = days.length > 1 ? `กำลังวาดหน้า ${i + 1} จาก ${days.length}…` : "กำลังวาดหน้า…"; render();
+      let c = await PlanExport.renderDay(d, {icons:IC});
+      let b; try { b = await new Promise((ok, no) => c.toBlob(x => x ? ok(x) : no(new Error("blob")), "image/jpeg", 0.92)); }
+      catch(_){ c = await PlanExport.renderDay(d, {icons:IC, tiles:false}); b = await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.92)); }
+      blobs.push(b);
+    }
+    const base = String(t.name || "My Trip").replace(/[\\/:*?"<>|]+/g, " ").trim();
+    if(kind === "pdf"){
+      const pdf = new window.jspdf.jsPDF({unit:"pt", format:[540, 960], compress:true});
+      for(const [i, b] of blobs.entries()){
+        const url = await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); });
+        if(i) pdf.addPage([540, 960]);
+        pdf.addImage(url, "JPEG", 0, 0, 540, 960);
+      }
+      s.files = [new File([pdf.output("blob")], `${base}${pick.length === 1 ? ` วันที่ ${days[0].dayNo}` : ""}.pdf`, {type:"application/pdf"})];
+    } else s.files = blobs.map((b, i) => new File([b], `${base} วันที่ ${days[i].dayNo}.jpg`, {type:"image/jpeg"}));
+    s.urls = blobs.map(b => URL.createObjectURL(b));
+  } catch(e){ s.err = "ทำไม่สำเร็จ ลองใหม่อีกครั้ง"; }
+  s.busy = ""; if(S.sheet === s) render();
+}
+async function exportShare(){
+  const s = S.sheet; if(!s || !s.files) return;
+  if(navigator.canShare && navigator.canShare({files:s.files})){
+    try { await navigator.share({files:s.files}); } catch(e){ if(e && e.name !== "AbortError") toast("แชร์ไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+    return;
+  }
+  for(const f of s.files){ const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+}
 /* ---------- places shared from Google Maps ---------- */
 const MAPS_LINK = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+)\S*/i;
 /* Google's id for a place, so "Google Maps" in the app opens that exact place (an ids-only lookup, free) */
@@ -1538,6 +1636,7 @@ function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "account") return vAccount();
+  if(s.kind === "export") return vExport(s);
   const t = S.trip;
   if(s.kind === "item"){
     const it = S.items.find(i => i.id === s.id); if(!it) return "";
@@ -2147,6 +2246,10 @@ document.addEventListener("click", async e => {
     case "ai-add": aiAdd(); break;
     case "ai-revise": aiRevise(); break;
     case "clear-ask": S.clearAsk = el.dataset.d; render(); break;
+    case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
+    case "export-scope": if(!S.sheet.busy){ S.sheet.scope = el.dataset.k; exportReset(S.sheet); render(); } break;
+    case "export-run": exportRun(el.dataset.k); break;
+    case "export-share": exportShare(); break;
     case "clear-no": S.clearAsk = null; render(); break;
     case "clear-yes": {
       const list = ownOn([el.dataset.d]); S.clearAsk = null;
@@ -2290,7 +2393,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29v";
+const BUILD = "2026-10-29w";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

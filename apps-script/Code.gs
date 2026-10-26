@@ -216,6 +216,9 @@ const ACTIONS = {
     return true;
   }),
 
+  // positions for plan stops that were added without one (used when saving day pages with a map)
+  geocode: (req) => (Array.isArray(req.q) ? req.q : []).slice(0, 60).map(q => { try { return geocode_(q); } catch (e) { return null; } }),
+
   // called by the iPhone shortcut with the personal code: add the shared place to สนใจ, answer with one line
   shareAdd: (req) => {
     const key = String(req.key || '').trim();
