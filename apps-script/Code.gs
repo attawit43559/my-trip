@@ -228,9 +228,13 @@ const ACTIONS = {
     const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
     const trip = mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
     let place;
-    try { place = resolveMapLink_({ url: req.url }); } catch (e) { return { message: 'อ่านลิงก์นี้ไม่ได้ ลองแชร์จากหน้าสถานที่ใน Google Maps' }; }
+    const sent = Array.isArray(req.url) ? req.url.join(' ') : String(req.url || '');
+    try { place = resolveMapLink_({ url: sent }); } catch (e) {
+      try { PropertiesService.getScriptProperties().setProperty('shareDebug', JSON.stringify({ at: new Date().toISOString(), sent: sent.slice(0, 500), err: String(e && e.message || e), chain: LINK_TRACE_ }).slice(0, 8000)); } catch (_) {}
+      return { message: 'อ่านลิงก์นี้ไม่ได้ ลองแชร์จากหน้าสถานที่ใน Google Maps' };
+    }
     const name = place.name || 'สถานที่จาก Google Maps';
-    const link = (String(req.url || '').match(/https?:\/\/[^\s<>"]+/) || [''])[0];
+    const link = (sent.match(/https?:\/\/[^\s<>"]+/) || [''])[0];
     return withLock_(() => {
       const dup = rows_(ITEMS).find(r => r.tripId === trip.id && r.obj.type === 'idea' && String(r.obj.title).toLowerCase() === name.toLowerCase());
       if (dup) return { message: name + ' อยู่ในทริป ' + trip.name + ' แล้ว' };
@@ -427,7 +431,9 @@ function planTrip_(req) {
   return cleanPlan_(parseJson_(text), dates, items);
 }
 
+var LINK_TRACE_ = [];
 function resolveMapLink_(req) {
+  LINK_TRACE_ = [];
   const m = String(req.url || '').match(/https?:\/\/[^\s<>"]+/);
   if (!m) throw new Error('bad_link');
   let url = m[0];
@@ -438,10 +444,17 @@ function resolveMapLink_(req) {
     if (!isGoogle(url)) throw new Error('bad_link');
     const cont = url.match(/[?&]continue=([^&]+)/);
     if (cont) { url = decodeURIComponent(cont[1]); continue; }
-    const r = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true });
+    const r = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' } });
     const h = r.getHeaders(), loc = h.Location || h.location;
-    if (!loc) break;
-    url = loc;
+    LINK_TRACE_.push(r.getResponseCode() + ' ' + url.slice(0, 300) + (loc ? ' -> ' + String(loc).slice(0, 300) : ''));
+    if (loc) { url = String(loc); if (url.charAt(0) === '/') url = 'https://www.google.com' + url; continue; }
+    // some short links answer with a page instead of a redirect: take the Maps address written in it
+    const body = r.getContentText().replace(/\\u003d/g, '=').replace(/\\u0026/g, '&').replace(/&amp;/g, '&').replace(/\\\//g, '/');
+    const found = body.match(/https?:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^\s"'<>\\]*/g) || [];
+    const best = found.find(isPlace);
+    LINK_TRACE_.push('page: ' + found.length + ' maps links' + (best ? ' best ' + best.slice(0, 300) : ''));
+    if (!best) break;
+    url = best;
   }
   if (!isGoogle(url)) throw new Error('bad_link');
   const dec = v => { try { return decodeURIComponent(String(v).replace(/\+/g, ' ')); } catch (e) { return String(v); } };
