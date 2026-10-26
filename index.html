@@ -499,6 +499,9 @@ html.lock,html.lock body{overflow:hidden}
 .ai-go:disabled,.ai-grad:disabled{opacity:.45;box-shadow:none}
 .ai-go .ic{color:#fff}
 .ai-panel .ai-foot{bottom:0;padding-bottom:6px}
+/* English words look bigger and bolder than Thai at the same size; tone them down to match */
+.seg button span.latin{font-size:.88em;font-weight:400;letter-spacing:.01em}
+.dock-hd b.latin{font-size:.92em;font-weight:500}
 .ai-bar{display:flex;gap:8px;align-items:center}
 .ai-bar .cat-add{font-size:14px;padding:0 14px}
 .ai-bar .cat-add.ai-grad{background:linear-gradient(120deg,#7C5CFF 0%,#3D7BFF 50%,#14B8C9 100%);color:#fff;font-weight:600}
@@ -1019,13 +1022,13 @@ function catCard(){
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
       ${aiFoot(S.ai)}
     </div>` : tab ? `<div class="dock-panel t-${tab}">
-      <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
+      <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow${/^[A-Za-z]/.test(Object.fromEntries(tabs)[tab]) ? " latin" : ""}">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="${tab}">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
       ${add}
     </div>` : ""}
     <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
       const n = S.items.filter(i => i.type === k).length;
-      return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
+      return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span${/^[A-Za-z]/.test(l) ? ' class="latin"' : ""}>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
     }).join("")}${tripDates(S.trip).length ? `<button class="t-ai" role="tab" aria-selected="${tab === "ai"}" data-act="ai-open">${ic("spark",16)}<span>ช่วยวางแผน</span></button>` : ""}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
@@ -2091,7 +2094,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29f";
+const BUILD = "2026-10-29g";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
