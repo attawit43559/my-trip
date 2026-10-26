@@ -210,7 +210,7 @@ p{margin:0}
 /* trip info lives in a floating bar at the bottom: it slides away while scrolling down, comes back on the way up, and opens upward when a tab is tapped */
 .dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
   background:var(--surface);border-radius:22px;padding:6px;
-  box-shadow:0 6px 24px rgba(43,33,28,.16),0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;transition:transform .28s ease,opacity .28s ease}
+  box-shadow:0 6px 24px rgba(43,33,28,.16),0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;transition:transform .28s ease,opacity .28s ease,bottom .2s ease-out}
 /* while typing, the tab row steps aside so the panel gets the room */
 html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
@@ -1784,10 +1784,19 @@ document.addEventListener("touchmove", e => {
   const box = e.target.closest && e.target.closest(".dock-body, .sheet");
   if(!box || box.scrollHeight <= box.clientHeight) e.preventDefault();
 }, {passive:false});
-/* a field inside the bottom panel scrolls into view once the keyboard is up */
+/* a field inside the bottom panel scrolls into view once the keyboard is up (one smooth move, after the keyboard settles) */
+let fieldToReveal = null, revealTimer = 0;
+function revealField(){
+  const el = fieldToReveal; fieldToReveal = null; clearTimeout(revealTimer);
+  if(!el || document.activeElement !== el) return;
+  const box = el.closest(".dock-body"); if(!box) return;
+  const b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const target = box.scrollTop + (r.top - b.top) - (b.height - r.height) / 2;
+  box.scrollTo({top: Math.max(0, target), behavior:"smooth"});
+}
 document.addEventListener("focusin", e => {
   if(!e.target.closest || !e.target.closest(".dock-body") || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-  setTimeout(() => e.target.scrollIntoView({block:"center", behavior:"smooth"}), 350);
+  fieldToReveal = e.target; clearTimeout(revealTimer); revealTimer = setTimeout(revealField, 700);   // fallback when no keyboard appears
 });
 /* hide the bottom bar while scrolling down the plan, bring it back when scrolling up or at the bottom */
 (function(){
@@ -1815,7 +1824,13 @@ document.addEventListener("focusin", e => {
     r.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
     document.documentElement.classList.toggle("kb", kb > 60);
   };
-  vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit); fit();
+  // the keyboard slides in over several frames: update once per frame, and bring a waiting field into view only after it settles
+  let raf = 0, settle = 0;
+  const onChange = () => {
+    if(!raf) raf = requestAnimationFrame(() => { raf = 0; fit(); });
+    clearTimeout(settle); settle = setTimeout(revealField, 160);
+  };
+  vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
 })();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
@@ -2108,7 +2123,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29j";
+const BUILD = "2026-10-29k";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
