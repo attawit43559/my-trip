@@ -2290,12 +2290,12 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29t";
+const BUILD = "2026-10-29u";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
     const html = await (await fetch(location.pathname + "?v=" + Date.now(), {cache:"no-store"})).text();
-    const live = (html.match(/const BUILD = "2026-10-29t"]+)"/) || [])[1];
+    const live = (html.match(/const BUILD = "([^"]+)"/) || [])[1];
     if(live && live !== BUILD && sessionStorage.getItem("mytrip-reloaded") !== live && !busyForm() && !(S.upload && S.upload.status === "reading")){
       sessionStorage.setItem("mytrip-reloaded", live);
       location.reload();
