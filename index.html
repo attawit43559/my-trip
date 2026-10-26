@@ -466,34 +466,40 @@ input,select,textarea{font-size:16px!important}
 .cal .tab.past::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:4px;border-left:1.5px solid var(--place-mid);border-bottom:1.5px solid var(--place-mid);transform:rotate(-45deg)}
 .cal .tab.past[aria-selected="true"]{background:var(--muted);color:var(--bg)}
 .cal .tab.past[aria-selected="true"]::after{border-color:var(--bg)}
-/* compact planner form */
-.ai-sheet{gap:8px;padding-top:12px}
-.ai-sheet .hd .thumb{width:36px;height:36px;border-radius:11px}
-.ai-sheet .hd h2{font-size:17px}
-.ai-sheet .hd .round{width:36px;height:36px}
-.ai-form{gap:9px}
-.ai-q{gap:4px}
-.ai-q>b,.ai-qh b{font-size:13px;color:var(--muted);font-weight:500}
-.ai-row-q>b{width:70px}
-.ai-q .chips{gap:5px}
-.ai-q .chips button{min-height:30px;padding:0 10px;font-size:12.5px}
-.ai-all{height:26px;font-size:12px}
-.ai-cal{gap:2px}
-.ai-dow span{font-size:10px}
-.ai-dow,.ai-days{gap:3px}
-.aic{height:30px;border-radius:8px}
-.aic b{font-size:13px}
-.aic i{font-size:8px;margin-top:1px}
-.ai-ns{gap:5px}
-.ai-n{flex-direction:row;justify-content:space-between;padding:4px 4px 4px 8px;border-radius:12px;gap:2px}
-.ai-n>span{font-size:11.5px}
-.ai-n>div{gap:2px}
-.ai-n button{width:24px;height:24px}
-.ai-n output{min-width:16px;font-size:14px}
-.ai-range{flex:1;min-width:0;height:24px}
-.ai-time{width:44px;text-align:right;font-size:14px}
-.ai-note input{height:38px!important;font-size:14px}
-.ai-go{position:sticky;bottom:0;height:46px;box-shadow:0 -8px 12px var(--surface)}
+/* planner form inside the bottom panel: tidy but with room to breathe */
+html.lock,html.lock body{overflow:hidden}
+.sheet,.dock-body{overscroll-behavior:contain}
+.dock-panel.ai-panel{max-height:calc(var(--vvh,100vh) - 130px)}
+.ai-panel .dock-body{padding:2px 4px 0}
+.ai-stack{display:flex;flex-direction:column;gap:12px}
+.ai-form{gap:14px;padding-bottom:4px}
+.ai-q{gap:7px}
+.ai-q>b,.ai-qh b{font-size:14px;color:var(--ink);font-weight:500}
+.ai-row-q>b{width:76px}
+.ai-q .chips{gap:6px}
+.ai-q .chips button{min-height:34px;padding:0 12px;font-size:13.5px}
+.ai-all{height:30px;font-size:13px}
+.ai-cal{gap:4px}
+.ai-dow span{font-size:11px}
+.ai-dow,.ai-days{gap:5px}
+.aic{height:36px;border-radius:10px}
+.aic b{font-size:14px}
+.aic i{font-size:9px;margin-top:2px}
+.ai-ns{gap:6px}
+.ai-n{flex-direction:column;padding:6px 4px 8px;border-radius:14px;gap:4px}
+.ai-n>span{font-size:12px}
+.ai-n>div{gap:4px}
+.ai-n button{width:28px;height:28px}
+.ai-n output{min-width:20px;font-size:15px}
+.ai-range{flex:1;min-width:0;height:28px}
+.ai-time{width:46px;text-align:right;font-size:15px}
+.ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
+/* the planner's own buttons wear an "AI" gradient */
+.ai-go,.ai-grad{border:0;color:#fff;background:linear-gradient(120deg,#7C5CFF 0%,#3D7BFF 50%,#14B8C9 100%);box-shadow:0 4px 14px rgba(61,123,255,.28)}
+.ai-go:disabled,.ai-grad:disabled{opacity:.45;box-shadow:none}
+.ai-go .ic{color:#fff}
+.ai-panel .ai-foot{bottom:0;padding-bottom:6px}
+.ai-go{position:sticky;bottom:6px;height:48px;font-size:15px;font-weight:600;gap:6px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -774,7 +780,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || (S.sheet && (["place","move","idea","ai"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1000,15 +1006,18 @@ function catCard(){
   /* the open animation plays once, when a tab is tapped; later re-renders (sync, toasts) must not replay it */
   const anim = S.dockAnim ? " anim" : ""; S.dockAnim = false;
   return `<nav class="dock${S.dockHidden && !tab ? " hide" : ""}${tab ? " open" : ""}${anim}" aria-label="ข้อมูลทริป">
-    ${tab ? `<div class="dock-panel t-${tab}">
+    ${tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
+      <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">ช่วยวางแผน</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
+      <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
+    </div>` : tab ? `<div class="dock-panel t-${tab}">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
-      <div class="dock-body">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
+      <div class="dock-body" data-k="${tab}">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
       ${add}
     </div>` : ""}
     <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
       const n = S.items.filter(i => i.type === k).length;
       return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
-    }).join("")}${tripDates(S.trip).length ? `<button class="t-ai" data-act="ai-open">${ic("spark",16)}<span>ช่วยวางแผน</span></button>` : ""}</div>
+    }).join("")}${tripDates(S.trip).length ? `<button class="t-ai" role="tab" aria-selected="${tab === "ai"}" data-act="ai-open">${ic("spark",16)}<span>ช่วยวางแผน</span></button>` : ""}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -1275,7 +1284,7 @@ async function planIdea(){
 /* ---------- AI planner: a few quick choices, a draft per day, then pick what goes into the plan ---------- */
 const AI_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","เต็มที่"]];
 const AI_START = ["08:00","09:00","10:00"];
-const AI_INTERESTS = ["ธรรมชาติ","วัด/ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
+const AI_INTERESTS = ["ธรรมชาติ","ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
 /* the places and travel legs people planned on these days (flights and stays are bookings, never cleared) */
 const ownOn = dates => S.items.filter(i => (i.type === "place" || i.type === "move") && dates.includes(i.date));
 function aiDefaults(){
@@ -1290,8 +1299,7 @@ function aiChips(key, opts, cur){
     return `<button type="button" aria-pressed="${cur === v}" data-act="ai-opt" data-k="${key}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
 }
 function vAiPlan(s){
-  const head = `<div class="hd"><span class="thumb tc t-ai">${ic("spark")}</span><h2>ช่วยวางแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
-  const wrap = inner => `<div class="scrim" data-act="close-sheet"><div class="sheet ai-sheet" role="dialog" aria-modal="true" aria-label="ช่วยวางแผน" data-stop="1">${head}${inner}</div></div>`;
+  const wrap = inner => `<div class="ai-stack">${inner}</div>`;
   const dates = tripDates(S.trip);
   if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">กำลังจัดแผน ${s.dates.length === dates.length ? "ทั้งทริป" : s.dates.length + " วัน"}…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
   if(s.step === "review"){
@@ -1316,7 +1324,7 @@ function vAiPlan(s){
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">แตะรายการเพื่อเลือกหรือไม่เลือก ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${tips}
-      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn primary" data-act="ai-add" ${n || rm ? "" : "disabled"}>${rm ? "แทนที่ด้วย " + n + " รายการ" : "เพิ่ม " + n + " รายการ"}</button></div>`);
+      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn ai-grad" data-act="ai-add" ${n || rm ? "" : "disabled"}>${rm ? "แทนที่ด้วย " + n + " รายการ" : "เพิ่ม " + n + " รายการ"}</button></div>`);
   }
   const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
   const all = s.dates.length === dates.length;
@@ -1333,8 +1341,8 @@ function vAiPlan(s){
     <div class="ai-q"><b>สนใจ</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
     ${ideas ? `<div class="ai-q ai-row-q"><b>อยากไป (${ideas})</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะ"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
-    <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="sheet:note"></label>
-    <button class="btn primary ai-go" type="submit" ${s.dates.length ? "" : "disabled"}>${ic("spark",18)}วางแผน${all ? "ทั้งทริป" : " " + s.dates.length + " วัน"}</button>
+    <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
+    <button class="btn ai-go" type="submit" ${s.dates.length ? "" : "disabled"}>${ic("spark",18)}วางแผน${all ? "ทั้งทริป" : " " + s.dates.length + " วัน"}</button>
   </form>`);
 }
 /* trip days as a small calendar; tap days to include or leave out */
@@ -1348,7 +1356,7 @@ function aiCal(dates, picked){
   }).join("")}${blank(trail)}</div></div>`;
 }
 async function aiRun(){
-  const s = S.sheet, t = S.trip; if(!s || !t) return;
+  const s = S.ai, t = S.trip; if(!s || !t) return;
   const dates = tripDates(t);
   s.step = "loading"; s.err = ""; s.ctl = new AbortController(); render();
   try{
@@ -1356,18 +1364,18 @@ async function aiRun(){
     const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:{
       adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60), mode:s.mode, interests:s.interests,
       useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)}}, s.ctl.signal);
-    if(S.sheet !== s) return;
+    if(S.ai !== s) return;
     s.result = res; s.picks = {};
     (res.days || []).forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
     s.step = "review"; render();
   } catch(e){
-    if(S.sheet !== s) return;
+    if(S.ai !== s) return;
     s.step = "ask"; s.err = e && e.code === "cancelled" ? "" : e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไปตอนนี้ ลองใหม่อีกครั้งในอีกสักครู่" : e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "วางแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
     render();
   }
 }
 async function aiAdd(){
-  const s = S.sheet, t = S.trip; if(!s || !t || !s.result) return;
+  const s = S.ai, t = S.trip; if(!s || !t || !s.result) return;
   let n = 0, first = "";
   for(const id of (s.replacing || [])) if(S.items.some(i => i.id === id)) await store.deleteItem(t.id, id);
   for(const [di, d] of s.result.days.entries()){
@@ -1380,13 +1388,12 @@ async function aiAdd(){
     }
   }
   const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
-  S.sheet = null; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
+  S.ai = null; S.catTab = ""; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "account") return vAccount();
-  if(s.kind === "ai") return vAiPlan(s);
   const t = S.trip;
   if(s.kind === "item"){
     const it = S.items.find(i => i.id === s.id); if(!it) return "";
@@ -1445,13 +1452,14 @@ function render(){
   const v = views[S.view];
   const active = document.activeElement && document.activeElement.id;
   /* keep the scroll position of the bottom panel and of sheets when the screen is redrawn */
-  const keep = [".dock-body", ".sheet"].map(sel => { const el = document.querySelector(sel); return el ? [sel, el.scrollTop] : null; }).filter(Boolean);
+  const keep = [".dock-body", ".sheet"].map(sel => { const el = document.querySelector(sel); return el ? [sel, el.scrollTop, el.dataset.k || ""] : null; }).filter(Boolean);
   document.getElementById("app").innerHTML = (v ? v() : `<div class="load muted">กำลังโหลด…</div>`)
     + (["trip","home"].includes(S.view) ? vSheet() : "")
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
-  keep.forEach(([sel, y]) => { const el = document.querySelector(sel); if(el && y) el.scrollTop = y; });
+  keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
   document.body.style.overflow = S.sheet ? "hidden" : "";
+  document.documentElement.classList.toggle("lock", !!(S.sheet || (S.view === "trip" && S.catTab)));
   if(S.view === "login") mountGoogleButton();
 }
 
@@ -1670,8 +1678,8 @@ async function confirmJoin(){
 
 /* ---------- events ---------- */
 document.addEventListener("input", e => {
-  if(e.target.dataset && e.target.dataset.aiStart !== undefined && S.sheet){
-    const m = +e.target.value; S.sheet.start = m;
+  if(e.target.dataset && e.target.dataset.aiStart !== undefined && S.ai){
+    const m = +e.target.value; S.ai.start = m;
     const o = document.querySelector(".ai-time"); if(o) o.textContent = pad(Math.floor(m/60)) + ":" + pad(m%60);
     return;
   }
@@ -1747,6 +1755,12 @@ function showSuggest(input, list){
     if(sh){ const lab = input.closest("label"); const top = lab.getBoundingClientRect().top - sh.getBoundingClientRect().top + sh.scrollTop - 8;
       if(ul.getBoundingClientRect().bottom > sh.getBoundingClientRect().bottom || lab.getBoundingClientRect().top < sh.getBoundingClientRect().top) sh.scrollTop = top; }
 }
+/* while a panel or sheet is open, only it scrolls; the page behind stays put (iPhone ignores overflow:hidden on its own) */
+document.addEventListener("touchmove", e => {
+  if(!document.documentElement.classList.contains("lock")) return;
+  const box = e.target.closest && e.target.closest(".dock-body, .sheet");
+  if(!box || box.scrollHeight <= box.clientHeight) e.preventDefault();
+}, {passive:false});
 /* hide the bottom bar while scrolling down the plan, bring it back when scrolling up or at the bottom */
 (function(){
   let lastY = window.scrollY, ticking = false;
@@ -1922,15 +1936,17 @@ document.addEventListener("click", async e => {
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
-    case "ai-open": S.catTab = ""; S.sheet = aiDefaults(); render(); break;
-    case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.sheet[k] = k === "meals" ? !!v : v; render(); break; }
-    case "ai-day": { const d = el.dataset.d, a = S.sheet.dates; S.sheet.dates = a.includes(d) ? a.filter(x => x !== d) : [...a, d]; render(); break; }
-    case "ai-alldays": { const all = tripDates(t); S.sheet.dates = S.sheet.dates.length === all.length ? [all[S.day] || all[0]] : all.slice(); render(); break; }
-    case "ai-multi": { const v = el.dataset.v, a = S.sheet.interests; S.sheet.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
-    case "ai-num": { const k = el.dataset.k; S.sheet[k] = Math.max(0, Math.min(20, S.sheet[k] + Number(el.dataset.d))); if(S.sheet.adults + S.sheet.elders < 1) S.sheet[k] = 1; render(); break; }
-    case "ai-stop": if(S.sheet.ctl) S.sheet.ctl.abort(); break;
-    case "ai-back": S.sheet.step = "ask"; render(); break;
-    case "ai-pick": S.sheet.picks[el.dataset.k] = !S.sheet.picks[el.dataset.k]; render(); break;
+    case "ai-open": {
+      if(!S.ai || S.ai.step === "ask") S.ai = aiDefaults();
+      const was = S.catTab; S.catTab = was === "ai" ? "" : "ai"; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
+    case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.ai[k] = k === "meals" ? !!v : v; render(); break; }
+    case "ai-day": { const d = el.dataset.d, a = S.ai.dates; S.ai.dates = a.includes(d) ? a.filter(x => x !== d) : [...a, d]; render(); break; }
+    case "ai-alldays": { const all = tripDates(t); S.ai.dates = S.ai.dates.length === all.length ? [all[S.day] || all[0]] : all.slice(); render(); break; }
+    case "ai-multi": { const v = el.dataset.v, a = S.ai.interests; S.ai.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
+    case "ai-num": { const k = el.dataset.k; S.ai[k] = Math.max(0, Math.min(20, S.ai[k] + Number(el.dataset.d))); if(S.ai.adults + S.ai.elders < 1) S.ai[k] = 1; render(); break; }
+    case "ai-stop": if(S.ai.ctl) S.ai.ctl.abort(); break;
+    case "ai-back": S.ai.step = "ask"; render(); break;
+    case "ai-pick": S.ai.picks[el.dataset.k] = !S.ai.picks[el.dataset.k]; render(); break;
     case "ai-add": aiAdd(); break;
     case "clear-ask": S.clearAsk = el.dataset.d; render(); break;
     case "clear-no": S.clearAsk = null; render(); break;
@@ -2058,7 +2074,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29c";
+const BUILD = "2026-10-29d";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
