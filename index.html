@@ -283,6 +283,12 @@ p{margin:0}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop{background:var(--soft);color:var(--deep)}
 .ai-sheet{gap:10px}
+.ai-warn{color:var(--danger);font-weight:500}
+.day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+.clear-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px}
+.clear-ask{display:flex;gap:6px}
+.clear-ask .pill-btn{height:32px;padding:0 12px;font-size:13px;background:var(--tile)}
+.pill-btn.danger-soft{background:color-mix(in srgb,var(--danger) 12%,var(--surface));color:var(--danger)}
 .ai-form{display:flex;flex-direction:column;gap:12px}
 .ai-q{display:flex;flex-direction:column;gap:6px}
 .ai-q>b,.ai-qh b{font-size:14px;font-weight:500}
@@ -1012,7 +1018,10 @@ function vTrip(){
       <div class="sec-h"><h2>แผนรายวัน</h2></div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
-      <p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
+      <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
+        ${ownOn([d]).length ? (S.clearAsk === d
+          ? `<span class="clear-ask"><button class="pill-btn" data-act="clear-no">ไม่ลบ</button><button class="pill-btn danger-soft" data-act="clear-yes" data-d="${d}">ลบ ${ownOn([d]).length} รายการ</button></span>`
+          : `<button class="clear-btn" data-act="clear-ask" data-d="${d}">${ic("trash",15)}ล้างวันนี้</button>`) : ""}</div>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <div class="add-row">
         <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
@@ -1238,12 +1247,14 @@ async function planIdea(){
 const AI_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","เต็มที่"]];
 const AI_START = ["08:00","09:00","10:00"];
 const AI_INTERESTS = ["ธรรมชาติ","วัด/ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
+/* the places and travel legs people planned on these days (flights and stays are bookings, never cleared) */
+const ownOn = dates => S.items.filter(i => (i.type === "place" || i.type === "move") && dates.includes(i.date));
 function aiDefaults(){
   const t = S.trip, stay = S.items.find(i => i.type === "stay" && /\d/.test((i.data||{}).guests || ""));
   const g = stay ? String(stay.data.guests) : "";
   const adults = +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length);
   const children = +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0;
-  return {kind:"ai", step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:""};
+  return {kind:"ai", step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:"", replace:""};
 }
 function aiChips(key, opts, cur){
   return `<div class="chips">${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
@@ -1273,9 +1284,10 @@ function vAiPlan(s){
         ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : `<p class="muted small">วันนี้แผนเดิมเต็มแล้ว</p>`}</section>`;
     }).join("");
     const tips = r.tips && r.tips.length ? `<div class="ai-tips"><b class="small">เคล็ดลับ</b><ul>${r.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
-    return wrap(`<p class="muted small" style="margin-top:-4px">แตะรายการเพื่อเลือกหรือไม่เลือก แผนเดิมของคุณไม่ถูกแตะต้อง</p>
+    const rm = (s.replacing || []).length;
+    return wrap(`<p class="muted small" style="margin-top:-4px">แตะรายการเพื่อเลือกหรือไม่เลือก ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${tips}
-      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn primary" data-act="ai-add" ${n ? "" : "disabled"}>เพิ่ม ${n} รายการ</button></div>`);
+      <div class="ai-foot"><button class="btn ghost" style="background:var(--tile)" data-act="ai-back">ปรับตัวเลือก</button><button class="btn primary" data-act="ai-add" ${n || rm ? "" : "disabled"}>${rm ? "แทนที่ด้วย " + n + " รายการ" : "เพิ่ม " + n + " รายการ"}</button></div>`);
   }
   const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
   const all = s.dates.length === dates.length;
@@ -1284,6 +1296,7 @@ function vAiPlan(s){
   return wrap(`<form class="ai-form" data-form="ai">
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     <div class="ai-q"><div class="ai-qh"><b>วันไหน</b><button type="button" class="ai-all" aria-pressed="${all}" data-act="ai-alldays">ทั้งทริป</button></div>${aiCal(dates, s.dates)}</div>
+    ${ownOn(s.dates).length ? `<div class="ai-q ai-row-q"><b>แผนเดิม (${ownOn(s.dates).length})</b>${aiChips("replace", [["","เก็บไว้ เพิ่มต่อ"],["1","ล้างแล้วจัดใหม่"]], s.replace)}</div>` : ""}
     <div class="ai-q"><b>ผู้เดินทาง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","ผู้สูงอายุ")}</div></div>
     <div class="ai-q"><div class="ai-qh"><b>เริ่มวัน</b><output class="ai-time">${hm(s.start)} น.</output></div>
       <input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน">
@@ -1312,7 +1325,8 @@ async function aiRun(){
   const dates = tripDates(t);
   s.step = "loading"; s.err = ""; s.ctl = new AbortController(); render();
   try{
-    const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), prefs:{
+    s.replacing = s.replace ? ownOn(s.dates).map(i => i.id) : [];
+    const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:{
       adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60), mode:s.mode, interests:s.interests,
       useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)}}, s.ctl.signal);
     if(S.sheet !== s) return;
@@ -1328,6 +1342,7 @@ async function aiRun(){
 async function aiAdd(){
   const s = S.sheet, t = S.trip; if(!s || !t || !s.result) return;
   let n = 0, first = "";
+  for(const id of (s.replacing || [])) if(S.items.some(i => i.id === id)) await store.deleteItem(t.id, id);
   for(const [di, d] of s.result.days.entries()){
     for(const [xi, x] of d.items.entries()){
       if(!s.picks[di + "." + xi]) continue;
@@ -1338,7 +1353,7 @@ async function aiAdd(){
     }
   }
   const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
-  S.sheet = null; render(); toast(`เพิ่ม ${n} รายการลงแผนแล้ว`);
+  S.sheet = null; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
@@ -1859,7 +1874,7 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": S.day = Number(el.dataset.i); render(); break;
+    case "day": S.day = Number(el.dataset.i); S.clearAsk = null; render(); break;
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
     case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
@@ -1890,6 +1905,12 @@ document.addEventListener("click", async e => {
     case "ai-back": S.sheet.step = "ask"; render(); break;
     case "ai-pick": S.sheet.picks[el.dataset.k] = !S.sheet.picks[el.dataset.k]; render(); break;
     case "ai-add": aiAdd(); break;
+    case "clear-ask": S.clearAsk = el.dataset.d; render(); break;
+    case "clear-no": S.clearAsk = null; render(); break;
+    case "clear-yes": {
+      const list = ownOn([el.dataset.d]); S.clearAsk = null;
+      for(const it of list) await store.deleteItem(t.id, it.id);
+      render(); toast(`ลบ ${list.length} รายการแล้ว`); break; }
     case "plan-idea": planIdea(); break;
     case "plan-goto": {
       const p = plannedFrom(S.sheet.id), i = p ? tripDates(t).indexOf(p.date) : -1;
@@ -2010,7 +2031,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29a";
+const BUILD = "2026-10-29b";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

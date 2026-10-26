@@ -354,11 +354,13 @@ function planTrip_(req) {
   const t = find_(TRIPS, String(req.tripId));
   if (!t || !isMember_(t.obj, req.me)) throw new Error('not_member');
   const trip = t.obj;
-  const items = rows_(ITEMS).filter(r => r.tripId === t.id).map(r => r.obj);
+  let items = rows_(ITEMS).filter(r => r.tripId === t.id).map(r => r.obj);
   const all = tripDates_(trip);
   const want = (req.dates || []).map(String).filter(d => all.indexOf(d) >= 0);
   const dates = want.length ? want : all;
   if (!dates.length) throw new Error('no_dates');
+  // "start over": plan those days as if their own places and travel legs were gone (the app removes them when the new plan is added)
+  if (req.replace) items = items.filter(i => !((i.type === 'place' || i.type === 'move') && dates.indexOf(i.date) >= 0));
   const props = PropertiesService.getScriptProperties();
   const provider = (props.getProperty('AI_PROVIDER') || 'gemini').toLowerCase();
   const prompt = planPrompt_(trip, items, dates, req.prefs || {});
