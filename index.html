@@ -562,6 +562,8 @@ function routeLink(it){
 const IDEA_KINDS = ["ที่เที่ยว","ร้านอาหาร","ช้อปปิ้ง"];
 const IDEA_ICON = {"ที่เที่ยว":"pin","ร้านอาหาร":"food","ช้อปปิ้ง":"shop"};
 const IDEA_TONE = {"ที่เที่ยว":"k-sight","ร้านอาหาร":"k-food","ช้อปปิ้ง":"k-shop"};
+/* restaurants and shops in the plan take their สนใจ colours; other places stay green */
+const toneOf = it => it.type === "idea" ? kindTone(it) : it.type === "place" && it.data && (it.data.kind === "ร้านอาหาร" || it.data.kind === "ช้อปปิ้ง") ? IDEA_TONE[it.data.kind] : "t-" + it.type;
 const kindTone = it => IDEA_TONE[(it.data||{}).kind] || "k-sight";
 const itemIcon = it => {
   const d = it.data || {};
@@ -1015,7 +1017,7 @@ function swipeItem(it, key, inner){
 }
 function entryHtml(e){
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
-    <span class="thumb tc t-${e.it.type}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}${e.note?`<br><span class="muted small">${esc(e.note)}</span>`:""}</span></button>`);
+    <span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}${e.note?`<br><span class="muted small">${esc(e.note)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -1288,7 +1290,7 @@ function vItemEdit(it, e){
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
     ${efld("โน้ต","note",e.note,"text","full")}`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไข ${esc(it.title)}" data-stop="1">
-    <div class="hd"><span class="thumb tc ${it.type === "idea" ? kindTone(it) : "t-" + it.type}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="item-edit" style="gap:14px">
       <div class="grid2">${body}</div>
       ${it.type !== "idea" ? editFiles(it) : ""}
@@ -1381,10 +1383,11 @@ function vAiPlan(s){
         ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : (d.attach || []).length ? "" : `<p class="muted small">วันนี้แผนเดิมเต็มแล้ว</p>`}
         ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}</section>`;
     }).join("");
-    const tips = r.tips && r.tips.length ? `<div class="ai-tips"><b class="small">เคล็ดลับ</b><ul>${r.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : "";
+    const off = Object.keys(s.picks || {}).length - n;
+    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "เอาเครื่องหมายถูกออกจากอันที่อยากเปลี่ยน แล้วบอกได้ว่าอยากได้แบบไหน"}</span><input id="ai-wish" maxlength="200" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" value="${esc(s.wish || "")}" data-bind="ai:wish"></label>`;
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">เอาเครื่องหมายถูกออกจากอันที่ไม่ชอบ แล้วกด <b>แก้ไข</b> ให้ AI หาอันใหม่มาแทน ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
-      ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${tips}
+      ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${days ? wish : ""}
 `);
   }
   const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
@@ -1456,14 +1459,14 @@ async function aiRevise(){
   const prev = s.result; s.rejected = [...(s.rejected || []), ...reject];
   s.step = "loading"; s.revisingN = reject.length; s.ctl = new AbortController(); render();
   try{
-    const res = await api("planTrip", {tripId:t.id, dates:[...days], replace:!!s.replace, prefs:aiPrefs(s), revise:{keep, reject:s.rejected}}, s.ctl.signal);
+    const res = await api("planTrip", {tripId:t.id, dates:[...days], replace:!!s.replace, prefs:aiPrefs(s), revise:{keep, reject:s.rejected, note:s_(s.wish)}}, s.ctl.signal);
     if(S.ai !== s) return;
     const fresh = {}, freshNotes = {}; (res.days || []).forEach(d => { fresh[d.date] = d.items.map(x => ({...x, _new:true})); freshNotes[d.date] = d.attach || []; });
     const merged = prev.days.map((d, di) => ({...d, attach:(d.attach || []).concat(freshNotes[d.date] || []), items: d.items.filter((x, xi) => s.picks[di + "." + xi]).map(x => ({...x, _new:false}))
       .concat(fresh[d.date] || []).sort((a, b) => (a.time || "99") < (b.time || "99") ? -1 : 1)}));
     s.result = {days:merged, tips:prev.tips}; s.picks = {};
     merged.forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
-    s.step = "review"; s.revisingN = 0; render();
+    s.wish = ""; s.step = "review"; s.revisingN = 0; render();
   } catch(e){
     if(S.ai !== s) return;
     s.result = prev; s.step = "review"; s.revisingN = 0; render();
@@ -1551,7 +1554,7 @@ function vSheet(){
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
-      <div class="hd"><span class="thumb tc ${it.type === "idea" ? kindTone(it) : "t-" + it.type}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+      <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
       ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
@@ -2287,7 +2290,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29q";
+const BUILD = "2026-10-29r";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
