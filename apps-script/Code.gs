@@ -503,7 +503,19 @@ function planTripRun_(req) {
     return parseJson_(many([p])[0]); } };
   let raws = many(prompts).map((text, i) => { try { return parse(text, i, prompts[i]); } catch (e) { return { days: [] }; } });
   // check each part: travel to every stop, a way back to the hotel, meals when asked; ask once more to fix what is missing
-  const fixes = raws.map((raw, i) => planGaps_(cleanPlan_(raw, chunks[i], items, { keepAirport: true, keepHotel: true }), items, prefs));
+  const used = {};
+  const fixes = raws.map((raw, i) => {
+    const plan = cleanPlan_(raw, chunks[i], items, { keepAirport: true, keepHotel: true });
+    const g = planGaps_(plan, items, prefs);
+    // the parts are planned at the same time, so the same place can turn up in two of them: the later one picks something else
+    plan.days.forEach(d => d.items.forEach(x => {
+      if (x.type !== 'place' || x.inside) return;
+      const k = x.ideaId || String(x.title).toLowerCase();
+      if (used[k] && used[k] !== d.date) g.push(`${d.date}: "${x.title}" is already planned on ${used[k]} — replace it with a different place`);
+      else used[k] = d.date;
+    }));
+    return g;
+  });
   const redo = fixes.map((g, i) => g.length ? i : -1).filter(i => i >= 0);
   if (redo.length) {
     const texts = many(redo.map(i => prompts[i] + '\n\nYour draft:\n' + JSON.stringify(raws[i]) + '\n\nFix these problems in the draft and reply with the full corrected JSON in the same format (change nothing else):\n' + fixes[i].map(g => '- ' + g).join('\n')));
@@ -525,6 +537,8 @@ function planTripRun_(req) {
 
 /* is this name that hotel or airport (airports match by their code or by being an airport) */
 const atSpot_ = (name, spot) => !!spot && (sameName_(name, spot.name) || (spot.code && (String(name || '').toUpperCase().indexOf(String(spot.code).toUpperCase()) >= 0 || /airport|สนามบิน|空港/i.test(String(name || '')))));
+/* an option's note without the words that only repeat its mode ("เดิน ~5 นาที" is the same as "~5 นาที") */
+const optKey_ = v => String(v || '').toLowerCase().replace(/^(แท็กซี่|แท็กซี|taxi|เดิน|walk(ing)?)\s*[·:-]?\s*/i, '').replace(/\s+/g, '');
 const sameName_ = (a, b) => { const k = v => String(v || '').toLowerCase().replace(/[\s.,\-–·()'"]/g, ''); const x = k(a), y = k(b); return !!x && !!y && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
 /* the person's own stops on that day that come after a given time (the new plan then does not end the day) */
 const plannedAfter_ = (items, date, time) => items.some(i => (i.type === 'place' || i.type === 'move') && i.date === date && (!time || !i.time || i.time >= time));
@@ -683,7 +697,8 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '- Travel: for every place, first work out where the group is coming from (the previous stop, or at the start of the day the hotel they slept in, or the airport on arrival day) and put how to get from there to this place in its "travel": {"time" (when to set off), "from" (that previous place, exactly as named), "mode", "note", "options"}. Do this even for a short walk. Only when a place is inside the previous one (a restaurant or show inside Tokyo Disneyland, a shop inside the same mall) set "inside" to that place\'s name and leave "travel" out. At the end of each day put the way back to that night\'s hotel in the day\'s "back" (same shape as travel, from the last stop). Give each travel "options" so the person can choose: always one by taxi (mode ขับรถ) and one by public transport (mode ขนส่งสาธารณะ, note says which line or bus), plus walking (mode เดิน) when it is under about 20 minutes on foot, plus any special service you know for that exact journey, such as the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, or a theme-park monorail (mode ขนส่งสาธารณะ, note gives its name and duration, e.g. "Airport Limousine Bus ~60 นาที"). Each option\'s note is just the duration and the key detail (e.g. "~20 นาที", "JR Yamanote ~15 นาที"). Set the travel\'s own "mode" and "note" to the option you recommend (taxi when children or older people are coming and the ride is short).',
     '- Never add separate "leave early" or "get ready" items. Advice such as leaving 3 hours before a flight goes in that travel\'s note together with the duration (e.g. "~45 นาที · ออกก่อน 3 ชม.").',
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4 (meals not counted). With children or older people keep walking moderate, keep stops near each other and add a rest.',
-    '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
+    '- When you schedule a wish-list item, copy its id into "ideaId" and use its title. Its note is from the person and is binding: if it gives a date, a time, a booking or a meal (e.g. "มื้อค่ำตามจอง" = their dinner booking), schedule it exactly that way.',
+    '- Each place appears at most once in the whole trip, and never visit the hotel you are staying at as a "place".',
     '- Times must run in order through the day with no overlaps: a travel leg starts when the stop before it ends, and the next stop starts when that leg arrives. Leave realistic time at each stop.',
     '- "title" is always the real name of one specific place (never "travel", "move", a hotel you are only passing, or a vague area such as "station restaurants" or "dining area"; name an actual restaurant).',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are in Thai and very short: just the key point in a few words, max ~35 characters, no full sentences (e.g. "ชมพระอาทิตย์ตก", "ราเมงต้นตำรับ", "แท็กซี่ ~20 นาที"). Times are 24-hour HH:MM, in order.',
@@ -708,11 +723,11 @@ function moveOf_(x, t, hm, modes) {
   (Array.isArray(x.options) ? x.options : []).slice(0, 5).forEach(o => {
     if (!o || options.length >= 4) return;
     const m = moveOf_({ mode: o.mode, note: o.note, time: '', from: '', to: '' }, t, hm, modes);
-    const k = m.mode + '|' + m.note.toLowerCase();
+    const k = m.mode + '|' + optKey_(m.note);
     if (seen[k]) return; seen[k] = true; seen[m.mode] = true;
     options.push({ mode: m.mode, note: m.note.slice(0, 60) });
   });
-  if (options.length && !options.some(o => o.mode === mode && o.note === note.slice(0, 60))) options.unshift({ mode, note: note.slice(0, 60) });
+  if (options.length && !options.some(o => o.mode === mode && optKey_(o.note) === optKey_(note))) options.unshift({ mode, note: note.slice(0, 60) });
   return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120), options: options.length > 1 ? options : [] };
 }
 
@@ -754,6 +769,7 @@ function cleanPlan_(raw, dates, items, opts) {
       : { time: hm(x && x.time), type: 'place', title: t(x && x.title).slice(0, 80), kind: kinds.indexOf(t(x && x.kind)) >= 0 ? t(x.kind) : 'ที่เที่ยว', address: t(x && x.address).slice(0, 160), note: t(x && x.note).slice(0, 60), ideaId: ideaIds[t(x && x.ideaId)] ? t(x.ideaId) : '', inside: t(x && x.inside).slice(0, 80) })
       .filter(x => x.type === 'move' ? (x.from || x.to) : x.title)
   }));
+  const seenAcross = {};
   days.forEach(d => {
     const had = items.filter(i => i.date === d.date);
     const seenTo = {}, seenLeg = {}, seenPlace = {};
@@ -773,7 +789,10 @@ function cleanPlan_(raw, dates, items, opts) {
         if (seenLeg[leg]) return false;
         seenLeg[leg] = true; keptLeg[leg] = x; lastKept = x; return true;
       }
-      const k = key(x.title); if (seenPlace[k]) return false; seenPlace[k] = true; lastKept = x; return true;
+      const k = key(x.title);
+      // a place appears once in the whole trip (restaurants inside a park are part of that visit)
+      if (seenPlace[k] || (!x.inside && seenAcross[k] && seenAcross[k] !== d.date)) return false;
+      seenPlace[k] = true; if (!x.inside) seenAcross[k] = d.date; lastKept = x; return true;
     });
     // a stop at the hotel on check-in/out day, or at the airport around a flight, becomes a note on that stay or flight
     const attach = {};
@@ -801,9 +820,25 @@ function cleanPlan_(raw, dates, items, opts) {
         if (d.date === arr && ((to.length === 3 && k.indexOf(to) >= 0) || (airport && !(from.length === 3 && k.indexOf(from) >= 0)))) { note(f, 'arrNote', 'ถึง ' + (fd.toCity || fd.to || 'ปลายทาง'), x.note); return false; }
         if (d.date === f.date && from.length === 3 && k.indexOf(from) >= 0) { note(f, 'note', f.title, x.note); return false; }
       }
+      // the hotel they are staying at is not a place to visit (its restaurant is)
+      const pr = Utilities.formatDate(new Date(new Date(d.date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
+      if (!opts.keepHotel && x.kind !== 'ร้านอาหาร' && [nightStay_(items, d.date), nightStay_(items, pr)].some(h => h && sameName_(x.title, h.title))) return false;
       return true;
     });
     d.attach = Object.keys(attach).map(k => attach[k]).filter(a => a.note);
+    // travel that goes nowhere (from a place to itself), or that led to a stop which was taken out, goes too
+    const here = d.items.filter(p => p.type === 'place');
+    const known = name => here.some(p => sameName_(p.title, name)) || items.some(i => i.type === 'stay' && sameName_(i.title, name))
+      || /airport|สนามบิน|空港/i.test(String(name || '')) || items.some(i => i.type === 'flight' && i.data && [i.data.from, i.data.to].some(c => c && String(name || '').toUpperCase().indexOf(String(c).toUpperCase()) >= 0));
+    d.items = d.items.filter(x => !(x.type === 'move' && (sameName_(x.from, x.to) || !known(x.to))));
+    // each leg leaves from where the group actually is after the stops that stayed in
+    let at = '';
+    d.items.forEach(x => {
+      if (x.type === 'place') { if (!x.inside) at = x.title; return; }
+      if (at && !sameName_(x.from, at) && !known(x.from)) x.from = at;
+      at = x.to;
+    });
+    d.items = d.items.filter(x => x.type !== 'move' || known(x.from) || here.length);
     // keep the day in time order (items without a time stay where they were)
     d.items = d.items.map((x, i) => ({ x, i })).sort((a, b) => (a.x.time && b.x.time && a.x.time !== b.x.time) ? (a.x.time < b.x.time ? -1 : 1) : a.i - b.i).map(o => o.x);
   });
