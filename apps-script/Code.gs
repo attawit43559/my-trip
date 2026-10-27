@@ -800,6 +800,8 @@ function callGeminiMany_(props, prompts) {
         if (text) return text;
       }
     } catch (e) {}
+    // busy (too many at once on the free tier): wait a moment, then ask on its own
+    if (r.getResponseCode() === 429) Utilities.sleep(2000 + i * 1500);
     try { return callGemini_(props, prompts[i], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 }); } catch (e) { return ''; }
   });
 }
