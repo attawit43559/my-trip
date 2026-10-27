@@ -657,7 +657,7 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     });
     if (d.fr.end) lines.push(`  end: "${s(d.fr.end.name)}"${at_(d.g.end)}${kmTo(last, d.g.end)}`);
     else lines.push('  end: (no booking — the last leg is null)');
-    lines.push(`  → this day needs ${d.stops.length} stops and ${d.stops.length + 1} legs`);
+    lines.push(`  → "stops" for this day has ${d.stops.length} entries`);
     return lines.join('\n');
   };
   return [
@@ -673,10 +673,10 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     wish ? 'What the person asks for these days (follow it, it overrides the rules below, but still never add or remove places): ' + s(wish) : '',
     'TRIP>>>',
     'Rules:',
-    '- "legs" covers every gap of the day in order: legs[0] from the start to place 1, legs[1] from place 1 to place 2, … and the last one from the last place to the end. So legs has one more entry than there are places. Use null only where there is no start or end, or for a place that is inside the place before it.',
+    '- "legs" lists every journey of the day in order, each with "from" and "to" written exactly as the places are named above: from the start to place 1, from place 1 to place 2, … and from the last place to the end. Leave out the journey to a place that is inside the place before it, and the first or last journey when there is no start or end booking. Only when the group really has to pass by its hotel on the way (e.g. drop luggage before check-in on an arrival day) you may split that journey in two through the hotel (one leg to the hotel, one from it).',
     '- For every leg look at exactly where the group is at that moment and where it goes next, and work out the real route (which line, station or road) and a realistic duration from the distance.',
-    '- Each leg: {"time" (when to set off, HH:MM), "mode", "note", "options"}. options: always one by taxi (mode ขับรถ, note "แท็กซี่ ~N นาที"), one by public transport (mode ขนส่งสาธารณะ, note gives the line or bus and duration, e.g. "JR Yamanote ~15 นาที"), walking (mode เดิน) when under about 20 minutes on foot, plus any special service you know for that exact journey (the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, a theme-park monorail; mode ขนส่งสาธารณะ, note gives its name and duration). Set the leg\'s own mode and note to the option you recommend (short taxi rides when children or older people are coming; walking when very close).',
-    '- "stops" has one entry per place, same order: {"time" (arrival, HH:MM), "inside" (true only when this place is inside the place before it, e.g. a restaurant inside Tokyo DisneySea; its leg is then null), "note" (Thai, max ~35 characters, only when useful, e.g. "ซื้อตั๋วล่วงหน้า")}.',
+    '- Each leg: {"from", "to", "time" (when to set off, HH:MM), "mode", "note", "options"}. options: always one by taxi (mode ขับรถ, note "แท็กซี่ ~N นาที"), one by public transport (mode ขนส่งสาธารณะ, note gives the line or bus and duration, e.g. "JR Yamanote ~15 นาที"), walking (mode เดิน) when under about 20 minutes on foot, plus any special service you know for that exact journey (the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, a theme-park monorail; mode ขนส่งสาธารณะ, note gives its name and duration). Set the leg\'s own mode and note to the option you recommend (short taxi rides when children or older people are coming; walking when very close).',
+    '- "stops" has one entry per place, same order: {"time" (arrival, HH:MM), "until" (when the group leaves, HH:MM), "inside" (true only when this place is inside the place before it, e.g. a restaurant inside Tokyo DisneySea; it then has no journey), "note" (Thai, max ~35 characters, only when useful, e.g. "ซื้อตั๋วล่วงหน้า")}.',
     '- Times: start the day around the preferred time; on an arrival day about 2 hours after landing; on a departure day set off so the group reaches the airport about 3 hours before an international flight (say so in that leg\'s note, e.g. "~60 นาที · ถึงก่อน 3 ชม."). Follow times and bookings in the person\'s notes exactly. Leave realistic time at each place (a theme park the whole day, a museum 1.5-2 hours, a meal about 1 hour; lunch around 11:30-13:00, dinner around 18:00-19:30). Everything in order with no overlaps: a leg sets off when the place before it is left, the next place starts when the leg arrives.',
     '- "startNote" / "endNote": a short Thai tip about the hotel or airport at the start or end of the day (e.g. "ฝากกระเป๋าก่อนเช็กอิน", "รับกระเป๋าแล้วซื้อ Suica"), or "".',
     '- "tips": 0-3 short Thai tips (max ~80 characters each, real names only), only when there is something worth saying:',
@@ -685,23 +685,45 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     '  · grouping: when a place is far from the rest of the day, say so and name a better day from the other days if one is near it.',
     '- "summary": the theme of the day in Thai, a few words. Notes in Thai. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน (a taxi is ขับรถ with "แท็กซี่" in its note).',
     'Reply with only this JSON:',
-    '{"days":[{"date":"YYYY-MM-DD","summary":"","legs":[{"time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"time":"HH:MM","inside":false,"note":""}],"startNote":"","endNote":"","tips":[""]}]}'
+    '{"days":[{"date":"YYYY-MM-DD","summary":"","legs":[{"from":"","to":"","time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"time":"HH:MM","until":"HH:MM","inside":false,"note":""}],"startNote":"","endNote":"","tips":[""]}]}'
   ].filter(Boolean).join('\n');
 }
 
-/* what is wrong with the AI's answer for one day (so it can be asked once more) */
-function routeGaps_(d, r) {
-  const out = [], n = d.stops.length;
-  if (!r) return [`${d.date}: the day is missing — give its legs and stops`];
-  const legs = Array.isArray(r.legs) ? r.legs : [], st = Array.isArray(r.stops) ? r.stops : [];
-  if (st.length !== n) out.push(`${d.date}: "stops" must have exactly ${n} entries, one per place in order`);
-  for (let i = 0; i <= n; i++) {
-    const need = (i === 0 ? !!d.fr.start : true) && (i === n ? !!d.fr.end : true) && !(i > 0 && i < n && st[i] && st[i].inside === true) && !(n === 0 && !(d.fr.start && d.fr.end && !sameName_(d.fr.start.name, d.fr.end.name)));
-    if (need && !(legs[i] && typeof legs[i] === 'object' && legs[i].mode)) {
-      const from = i === 0 ? d.fr.start.name : d.stops[i - 1].title, to = i === n ? d.fr.end.name : d.stops[i].title;
-      out.push(`${d.date}: legs[${i}] (from "${from}" to "${to}") is missing — give it with its options`);
+/* the gaps of a day (start → place 1 → … → end) and the AI's legs for each. Legs are matched by where they go ("to");
+   a leg that first passes by a hotel (dropping bags before a park) comes back as a detour on that gap. */
+function routeLegs_(d, r, items) {
+  const n = d.stops.length, legs = (Array.isArray(r && r.legs) ? r.legs : []).filter(l => l && typeof l === 'object' && l.mode);
+  const st = Array.isArray(r && r.stops) ? r.stops : [];
+  const isStay = name => items.some(i => i.type === 'stay' && sameName_(i.title, name));
+  const named = legs.some(l => String(l.to || '').trim());
+  const raw = Array.isArray(r && r.legs) ? r.legs : [];
+  let cur = 0, parentKind = null, prev = d.fr.start ? d.fr.start.name : '';
+  const gaps = [];
+  const take = (i, to) => {
+    if (!named) { const l = raw[i]; return { main: l && typeof l === 'object' && l.mode ? l : null, via: [] }; }
+    for (let k = cur; k < legs.length; k++) if (sameName_(legs[k].to, to)) {
+      const via = legs.slice(cur, k).filter(x => isStay(x.to) && !sameName_(x.to, to));
+      cur = k + 1; return { main: legs[k], via };
     }
-  }
+    return { main: null, via: [] };
+  };
+  d.stops.forEach((it, i) => {
+    const x = st[i] && typeof st[i] === 'object' ? st[i] : {};
+    const inside = !!(parentKind && x.inside === true && parentKind !== 'ร้านอาหาร');
+    if (!inside && prev) gaps.push(Object.assign({ i, from: prev, to: it.title }, take(i, it.title)));
+    else gaps.push(null);
+    if (!inside) { prev = it.title; parentKind = (it.data || {}).kind || 'ที่เที่ยว'; }
+  });
+  if (d.fr.end && prev && !sameName_(prev, d.fr.end.name)) gaps.push(Object.assign({ i: n, from: prev, to: d.fr.end.name }, take(n, d.fr.end.name)));
+  return gaps;
+}
+
+/* what is wrong with the AI's answer for one day (so it can be asked once more) */
+function routeGaps_(d, r, items) {
+  if (!r) return [`${d.date}: the day is missing — give its legs and stops`];
+  const out = [], st = Array.isArray(r.stops) ? r.stops : [];
+  if (st.length !== d.stops.length) out.push(`${d.date}: "stops" must have exactly ${d.stops.length} entries, one per place in order`);
+  routeLegs_(d, r, items || []).forEach(g => { if (g && !g.main) out.push(`${d.date}: the leg from "${g.from}" to "${g.to}" is missing — give it (with "from", "to" and options)`); });
   return out;
 }
 
@@ -710,39 +732,47 @@ function routeDay_(d, r, items, p) {
   const hm = v => { const m = t(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? ('0' + Math.min(23, +m[1])).slice(-2) + ':' + m[2] : ''; };
   const modes = ['ขับรถ', 'ขนส่งสาธารณะ', 'เดิน'], kinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
   r = r || {};
-  const legs = Array.isArray(r.legs) ? r.legs : [], st = Array.isArray(r.stops) ? r.stops : [];
+  const st = Array.isArray(r.stops) ? r.stops : [], gaps = routeLegs_(d, r, items);
   const out = [];
-  const leg = (i, from, to) => {
-    const x = legs[i] && typeof legs[i] === 'object' ? legs[i] : null;
+  const move = (x, from, to) => {
     const m = moveOf_(Object.assign({}, x || { mode: 'ขนส่งสาธารณะ' }, { from, to }), t, hm, modes);
     m.from = String(from).slice(0, 80); m.to = String(to).slice(0, 80);
     if (!x) m.guess = true;
     out.push(m);
   };
-  let prev = d.fr.start ? d.fr.start.name : '', parent = null;
+  const legTo = g => {
+    let from = g.from;
+    g.via.forEach(v => { const h = items.find(i => i.type === 'stay' && sameName_(i.title, v.to)); move(v, from, h.title); from = h.title; });
+    move(g.main, from, g.to);
+  };
+  let parent = null;
   d.stops.forEach((it, i) => {
     const x = st[i] && typeof st[i] === 'object' ? st[i] : {}, data = it.data || {};
     const kind = kinds.indexOf(data.kind) >= 0 ? data.kind : 'ที่เที่ยว';
-    const inside = !!(parent && x.inside === true && parent.kind !== 'ร้านอาหาร');
-    if (!inside && prev) leg(i, prev, it.title);
-    const place = { time: hm(x.time), type: 'place', title: t(it.title).slice(0, 80), kind, address: t(data.address).slice(0, 160),
-      note: (t(it.sub) || t(x.note)).slice(0, 80), ideaId: it.type === 'idea' ? it.id : t(data.fromIdea), ref: it.id, inside: inside ? parent.title : '' };
+    const g = gaps[i];
+    if (g) legTo(g);
+    const place = { time: hm(x.time), until: hm(x.until), type: 'place', title: t(it.title).slice(0, 80), kind, address: t(data.address).slice(0, 160),
+      note: (t(it.sub) || t(x.note)).slice(0, 80), ideaId: it.type === 'idea' ? it.id : t(data.fromIdea), ref: it.id, inside: !g && parent ? parent.title : '' };
     out.push(place);
-    if (!inside) { prev = place.title; parent = place; }
+    if (!place.inside) parent = place;
   });
-  if (d.fr.end && prev && !sameName_(prev, d.fr.end.name)) leg(d.stops.length, prev, d.fr.end.name);
+  if (gaps[d.stops.length]) legTo(gaps[d.stops.length]);
   // times run forward through the day; a missing one follows from the item before it
   const toM = v => { const m = /^(\d\d):(\d\d)$/.exec(v || ''); return m ? +m[1] * 60 + +m[2] : -1; };
   const fmt = m => { m = Math.min(23 * 60 + 59, Math.max(0, m)); return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
-  let cur = -1, last = null;
+  let cur = -1, last = null, outer = -1;
   out.forEach(x => {
     let m = toM(x.time);
+    // a leg leaves when the group is done at the place before it (or at the park a restaurant inside it belongs to)
+    if (x.type === 'place' && !x.inside) outer = toM(x.until);
+    const left = last && last.type === 'place' && x.type === 'move' ? Math.max(toM(last.until), last.inside ? outer : -1) : -1;
+    if (x.type === 'move' && left > cur && (m < 0 || m <= cur)) m = left;
     const gap = !last ? 0 : last.type === 'place' ? (x.type === 'move' ? 60 : 15) : 30;
     if (m < 0) m = cur < 0 ? (toM(hm(p.start)) >= 0 ? toM(hm(p.start)) : 540) : cur + gap;
     else if (cur >= 0 && m < cur) m = cur;
     x.time = fmt(m); cur = m; last = x;
   });
-  out.forEach(x => { delete x.guess; });
+  out.forEach(x => { delete x.guess; delete x.until; });
   // tips for the hotel or the airport go onto that booking on the day of check-in/out or the flight
   const prevD = Utilities.formatDate(new Date(new Date(d.date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
   const slept = nightStay_(items, prevD), tonight = nightStay_(items, d.date);
@@ -793,7 +823,7 @@ function planRouteRun_(req) {
   const raws = many(prompts).map((text, i) => parse(text, prompts[i]));
   const pick = (raw, d) => ((raw && raw.days) || []).find(x => x && String(x.date) === d.date) || null;
   // anything missing (a leg, a stop) is asked for once more
-  const fixes = chunks.map((ds, i) => [].concat.apply([], ds.map(d => routeGaps_(d, pick(raws[i], d)))));
+  const fixes = chunks.map((ds, i) => [].concat.apply([], ds.map(d => routeGaps_(d, pick(raws[i], d), items))));
   const redo = fixes.map((g, i) => g.length ? i : -1).filter(i => i >= 0);
   if (redo.length) {
     const texts = many(redo.map(i => prompts[i] + '\n\nYour answer:\n' + JSON.stringify(raws[i]) + '\n\nFix these problems and reply with the full corrected JSON in the same format (change nothing else):\n' + fixes[i].map(g => '- ' + g).join('\n')));
