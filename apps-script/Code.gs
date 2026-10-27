@@ -685,7 +685,7 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4 (meals not counted). With children or older people keep walking moderate, keep stops near each other and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
     '- Times must run in order through the day with no overlaps: a travel leg starts when the stop before it ends, and the next stop starts when that leg arrives. Leave realistic time at each stop.',
-    '- "title" is always the real name of the place itself (never "travel", "move" or a hotel you are only passing).',
+    '- "title" is always the real name of one specific place (never "travel", "move", a hotel you are only passing, or a vague area such as "station restaurants" or "dining area"; name an actual restaurant).',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are in Thai and very short: just the key point in a few words, max ~35 characters, no full sentences (e.g. "ชมพระอาทิตย์ตก", "ราเมงต้นตำรับ", "แท็กซี่ ~20 นาที"). Times are 24-hour HH:MM, in order.',
     '- "kind" is one of ที่เที่ยว, ร้านอาหาร, ช้อปปิ้ง. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน. A taxi or ride-hailing car is ขับรถ, with "แท็กซี่" written in its note.',
     '- Give each day a short Thai "summary" (theme of the day, a few words).',
