@@ -1092,7 +1092,6 @@ function vTrip(){
     <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
-      ${dates.length ? `<button class="round tb-save" data-act="export-open" aria-label="บันทึกแผนเป็นรูป">${ic("image",20)}</button>` : ""}
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
     <section class="stack" style="gap:14px">
@@ -1100,9 +1099,8 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
-        ${ownOn([d]).length ? (S.clearAsk === d
-          ? `<span class="clear-ask"><button class="pill-btn" data-act="clear-no">ไม่ลบ</button><button class="pill-btn danger-soft" data-act="clear-yes" data-d="${d}">ลบ ${ownOn([d]).length} รายการ</button></span>`
-          : `<button class="clear-btn" data-act="clear-ask" data-d="${d}">${ic("trash",15)}ล้างวันนี้</button>`) : ""}</div>
+        <button class="clear-btn" data-act="export-open">${ic("image",15)}บันทึก</button>
+        ${ownOn(dates).length ? `<button class="clear-btn" data-act="clear-open">${ic("trash",15)}ล้าง</button>` : ""}</div>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <div class="add-row">
         <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
@@ -1508,6 +1506,17 @@ async function exportLibs(pdf){
   if(pdf && !(window.jspdf && window.jspdf.jsPDF)) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
 }
 function exportReset(s){ (s.urls || []).forEach(u => URL.revokeObjectURL(u)); s.files = null; s.urls = null; s.err = ""; }
+/* clear this day's or the whole trip's places and travel legs; flights and stays stay */
+function vClear(s){
+  const dates = tripDates(S.trip), list = ownOn(s.scope === "all" ? dates : [dates[S.day]]);
+  const chip = (k, label) => `<button type="button" aria-pressed="${s.scope === k}" data-act="clear-scope" data-k="${k}">${label}</button>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ล้างแผน" data-stop="1">
+    <div class="hd"><span class="thumb tc t-move">${ic("trash")}</span><h2>ล้างแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <p class="muted small" style="margin-top:-8px">ลบสถานที่และการเดินทาง เที่ยวบินกับที่พักยังอยู่</p>
+    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
+    <div class="grid2"><button class="pill-btn ex-go" data-act="sheet-cancel">ไม่ลบ</button><button class="pill-btn ex-go danger-soft" data-act="clear-run" ${list.length ? "" : "disabled"}>${list.length ? `ลบ ${list.length} รายการ` : "ไม่มีอะไรให้ลบ"}</button></div>
+  </div></div>`;
+}
 function vExport(s){
   const dates = tripDates(S.trip), t = S.trip;
   const chip = (k, label) => `<button type="button" aria-pressed="${s.scope === k}" data-act="export-scope" data-k="${k}">${label}</button>`;
@@ -1636,6 +1645,7 @@ function vSheet(){
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
+  if(s.kind === "clear") return vClear(s);
   const t = S.trip;
   if(s.kind === "item"){
     const it = S.items.find(i => i.id === s.id); if(!it) return "";
@@ -2244,7 +2254,13 @@ document.addEventListener("click", async e => {
     case "ai-pick": S.ai.picks[el.dataset.k] = !S.ai.picks[el.dataset.k]; render(); break;
     case "ai-add": aiAdd(); break;
     case "ai-revise": aiRevise(); break;
-    case "clear-ask": S.clearAsk = el.dataset.d; render(); break;
+    case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
+    case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
+    case "clear-run": {
+      const dates = tripDates(t), list = ownOn(S.sheet.scope === "all" ? dates : [dates[S.day]]);
+      S.sheet = null;
+      for(const it of list) await store.deleteItem(t.id, it.id);
+      render(); toast(`ลบ ${list.length} รายการแล้ว`); break; }
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-scope": if(!S.sheet.busy){ S.sheet.scope = el.dataset.k; exportReset(S.sheet); render(); } break;
     case "export-run": exportRun(el.dataset.k); break;
@@ -2261,6 +2277,7 @@ document.addEventListener("click", async e => {
       setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
     case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
     case "close-sheet": S.sheet = null; render(); break;
+    case "sheet-cancel": S.sheet = null; render(); break;
     case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
     case "rm-cancel": S.rmAsk = null; render(); break;
     case "rm-member": {
@@ -2392,7 +2409,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29x";
+const BUILD = "2026-10-29y";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
