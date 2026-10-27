@@ -589,7 +589,7 @@ function planGaps_(plan, items, prefs) {
     for (let i = 0; i + 1 < xs.length; i++) {
       const a = xs[i], b = xs[i + 1];
       if (a.type === 'place' && b.type === 'place' && !sameName_(a.title, b.title) && !within(b, a))
-        out.push(`${d.date}: "${b.title}" (${b.time}) has no travel from where the group is before it, "${a.inside || a.title}" — add its "travel" (or set "inside" if it is really inside "${a.inside || a.title}")`);
+        out.push(`${d.date}: "${b.title}" (${b.time}) has no travel from where the group is before it, "${a.inside || a.title}" — add its "travel"${a.kind === 'ร้านอาหาร' ? '' : ` (or set "inside" if it is really inside "${a.inside || a.title}")`}`);
       if (a.type === 'move' && b.type === 'place' && !sameName_(a.to, b.title) && !sameName_(a.to, b.inside))
         out.push(`${d.date}: the travel at ${a.time} goes to "${a.to}" but the next stop is "${b.title}" — make the travel lead to "${b.title}"`);
       if (a.type === 'place' && b.type === 'move' && b.from && !sameName_(b.from, a.title) && !sameName_(b.from, a.inside))
@@ -762,7 +762,9 @@ function cleanPlan_(raw, dates, items, opts) {
     if (h && b && typeof b === 'object' && prev && !sameName_(prev, h.title)) out.push({ type: 'move', time: b.time, from: t(b.from) || prev, to: h.title, mode: b.mode, note: b.note, options: b.options });
     return out;
   };
-  const days = ((raw && raw.days) || []).filter(d => d && dates.indexOf(t(d.date)) >= 0).map(d => ({
+  const insideOk = d => { let parent = null; (d.items || []).forEach(x => { if (!x || x.type === 'move') return;
+    if (t(x.inside) && (!parent || parent.kind === 'ร้านอาหาร' || !sameName_(x.inside, parent.title))) x.inside = ''; if (!t(x.inside)) parent = x; }); return d; };
+  const days = ((raw && raw.days) || []).filter(d => d && dates.indexOf(t(d.date)) >= 0).map(insideOk).map(d => ({
     date: t(d.date), summary: t(d.summary).slice(0, 80),
     items: expand(d).slice(0, 30).map(x => x && x.type === 'move'
       ? moveOf_(x, t, hm, modes)
