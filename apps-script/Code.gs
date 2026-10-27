@@ -516,16 +516,35 @@ function planTripRun_(req) {
   // still no way back to the hotel at the end of a day: add the leg so the day ends where everyone sleeps
   plan.days.forEach(d => {
     const h = nightStay_(items, d.date), last = d.items[d.items.length - 1];
-    if (!h || !last || last.type !== 'place' || sameName_(last.title, h.title) || plannedOn_(items, d.date)) return;
+    if (!h || !last || last.type !== 'place' || sameName_(last.title, h.title) || plannedAfter_(items, d.date, last.time)) return;
     const m = String(last.time || '').match(/^(\d\d):(\d\d)$/), at = m ? Math.min(23 * 60 + 30, +m[1] * 60 + +m[2] + 90) : -1;
     d.items.push({ time: at < 0 ? '' : ('0' + Math.floor(at / 60)).slice(-2) + ':' + ('0' + at % 60).slice(-2), type: 'move', mode: 'ขนส่งสาธารณะ', from: last.title, to: h.title, note: 'กลับที่พัก', options: [] });
   });
   return plan;
 }
 
+/* is this name that hotel or airport (airports match by their code or by being an airport) */
+const atSpot_ = (name, spot) => !!spot && (sameName_(name, spot.name) || (spot.code && (String(name || '').toUpperCase().indexOf(String(spot.code).toUpperCase()) >= 0 || /airport|สนามบิน|空港/i.test(String(name || '')))));
 const sameName_ = (a, b) => { const k = v => String(v || '').toLowerCase().replace(/[\s.,\-–·()'"]/g, ''); const x = k(a), y = k(b); return !!x && !!y && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
+/* the person's own stops on that day that come after a given time (the new plan then does not end the day) */
+const plannedAfter_ = (items, date, time) => items.some(i => (i.type === 'place' || i.type === 'move') && i.date === date && (!time || !i.time || i.time >= time));
 /* the day already has the person's own stops (the new plan only adds to them) */
 const plannedOn_ = (items, date) => items.some(i => (i.type === 'place' || i.type === 'move') && i.date === date);
+/* where a day starts and ends: the hotel slept in or the airport landed at, and tonight's hotel or the airport to fly from */
+function dayFrame_(items, date) {
+  const prev = Utilities.formatDate(new Date(new Date(date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
+  const slept = nightStay_(items, prev), tonight = nightStay_(items, date);
+  const arr = items.find(i => i.type === 'flight' && ((i.data || {}).arrDate || i.date) === date && (i.data || {}).to);
+  const dep = items.find(i => i.type === 'flight' && i.date === date && (i.data || {}).from && i !== arr);
+  const start = arr ? { name: (arr.data.to || '') + ' airport', code: arr.data.to, text: `lands at ${arr.data.to} airport at ${arr.data.arrTime || '?'}` }
+    : slept ? { name: slept.title, text: `wakes up at "${slept.title}"` + (slept.endDate === date ? ` and checks out by ${slept.endTime || '11:00'}` : '') } : null;
+  const end = dep ? { name: (dep.data.from || '') + ' airport', code: dep.data.from, text: `must reach ${dep.data.from} airport about 3 hours before the ${dep.time} flight` }
+    : tonight ? { name: tonight.title, text: `sleeps at "${tonight.title}"` + (tonight.date === date ? ` (check in from ${tonight.time || '15:00'})` : '') } : null;
+  const moving = start && end && !sameName_(start.name, end.name);
+  const text = [start ? 'starts: ' + start.text : 'starts: (no booking)', end ? 'ends: ' + end.text : 'ends: (no booking)',
+    moving ? `travel day: include the journey from "${start.name}" to "${end.name}" (with luggage) and plan the rest of the day around it` : ''].filter(Boolean).join(' · ');
+  return { start, end, moving, text };
+}
 /* where the group sleeps that night, if a stay covers it */
 function nightStay_(items, date) { return items.find(i => i.type === 'stay' && i.date && i.endDate && i.date <= date && date < i.endDate) || null; }
 
@@ -535,7 +554,7 @@ function planGaps_(plan, items, prefs) {
   (plan.days || []).forEach(d => {
     const xs = d.items;
     // a day with no flight should be a real day out, with meals when they were asked for
-    const flying = (items || []).some(i => i.type === 'flight' && (i.date === d.date || (i.data && i.data.arrDate) === d.date));
+    const flying = (items || []).some(i => i.type === 'flight' && (i.date === d.date || (i.data && i.data.arrDate) === d.date)) || dayFrame_(items || [], d.date).moving;
     const places = xs.filter(x => x.type === 'place'), food = places.filter(x => x.kind === 'ร้านอาหาร');
     if (!flying && !plannedOn_(items || [], d.date)) {
       if (places.length - food.length < 1 || places.length < 2) out.push(`${d.date}: the day is too empty — plan a full day out (2-3 sights, or one big place such as a theme park for the whole day), each with its travel`);
@@ -543,11 +562,16 @@ function planGaps_(plan, items, prefs) {
     } else if (prefs && prefs.meals && !food.length && places.length >= 2 && !plannedOn_(items || [], d.date)) out.push(`${d.date}: add a meal as a restaurant stop at a sensible time`);
     // the day should end with a travel leg back to that night's hotel
     const h = nightStay_(items || [], d.date), last = xs[xs.length - 1];
-    if (h && last && !plannedOn_(items || [], d.date) && !(last.type === 'move' && sameName_(last.to, h.title)) && !(last.type === 'place' && sameName_(last.title, h.title)))
+    if (h && last && !plannedAfter_(items || [], d.date, last.time) && !(last.type === 'move' && sameName_(last.to, h.title)) && !(last.type === 'place' && sameName_(last.title, h.title)))
       out.push(`${d.date}: the day ends at "${last.type === 'move' ? last.to : last.title}" with no travel leg back to the hotel "${h.title}" — add one after the last stop, with options`);
     const within = (b, a) => sameName_(b.inside, a.title) || (b.inside && sameName_(b.inside, a.inside));
-    if (xs[0] && xs[0].type === 'place' && !xs[0].inside && !plannedOn_(items || [], d.date))
-      out.push(`${d.date}: "${xs[0].title}" (${xs[0].time}) has no travel from where the day starts (the hotel, or the airport on arrival day) — add its "travel"`);
+    const fr = dayFrame_(items || [], d.date);
+    if (!plannedOn_(items || [], d.date) && xs.length && fr.start) {
+      const first = xs[0];
+      if (first.type === 'place' && !first.inside) out.push(`${d.date}: "${first.title}" (${first.time}) has no travel from where the day starts, "${fr.start.name}" — add its "travel" from there`);
+      else if (first.type === 'move' && !atSpot_(first.from, fr.start)) out.push(`${d.date}: the day starts at "${fr.start.name}" but the first travel leaves from "${first.from}" — the first travel must leave from "${fr.start.name}"`);
+      if (fr.moving && !xs.some(x => x.type === 'move' && atSpot_(x.to, fr.end))) out.push(`${d.date}: this is a travel day from "${fr.start.name}" to "${fr.end.name}" but the plan never goes to "${fr.end.name}" — add that journey (with options) at a sensible time and plan the stops around it`);
+    }
     for (let i = 0; i + 1 < xs.length; i++) {
       const a = xs[i], b = xs[i + 1];
       if (a.type === 'place' && b.type === 'place' && !sameName_(a.title, b.title) && !within(b, a))
@@ -635,6 +659,8 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '<<<TRIP',
     `Trip: "${s(trip.name)}" · ${s(trip.startDate)} for ${s(trip.days)} days · ${(trip.memberIds || []).length} people use the app.`,
     `Plan only these dates: ${dates.join(', ')}`,
+    'Where each day starts and ends (follow this exactly; the first travel of a day leaves from its start, the day ends at its end):',
+    dates.map(d => '- ' + d + ': ' + dayFrame_(items, d).text).join('\n'),
     'Bookings and plans already in the trip:',
     items.map(line).filter(Boolean).join('\n') || '- none',
     'Wish list (places the group wants to visit, not yet scheduled):',
@@ -659,6 +685,7 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4 (meals not counted). With children or older people keep walking moderate, keep stops near each other and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
     '- Times must run in order through the day with no overlaps: a travel leg starts when the stop before it ends, and the next stop starts when that leg arrives. Leave realistic time at each stop.',
+    '- "title" is always the real name of the place itself (never "travel", "move" or a hotel you are only passing).',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are in Thai and very short: just the key point in a few words, max ~35 characters, no full sentences (e.g. "ชมพระอาทิตย์ตก", "ราเมงต้นตำรับ", "แท็กซี่ ~20 นาที"). Times are 24-hour HH:MM, in order.',
     '- "kind" is one of ที่เที่ยว, ร้านอาหาร, ช้อปปิ้ง. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน. A taxi or ride-hailing car is ขับรถ, with "แท็กซี่" written in its note.',
     '- Give each day a short Thai "summary" (theme of the day, a few words).',
@@ -697,10 +724,20 @@ function cleanPlan_(raw, dates, items, opts) {
   const hm = v => { const m = t(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? ('0' + Math.min(23, +m[1])).slice(-2) + ':' + m[2] : ''; };
   const kinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'], modes = ['ขับรถ', 'ขนส่งสาธารณะ', 'เดิน'];
   // each place carries the way to reach it ("travel"); turn those into travel legs in front of it, and the day's "back" into a last leg to the hotel
+  const junk = v => /^(travel|move|transfer|trip|การเดินทาง|เดินทาง|-)?$/i.test(t(v));
   const expand = d => {
     const out = []; let prev = '';
-    (d.items || []).slice(0, 16).forEach(x => {
+    const list = (d.items || []).slice(0, 16).filter(Boolean).map(x => (x.type === 'travel' || x.type === 'transfer') ? Object.assign({}, x, { type: 'move' }) : x);
+    list.forEach((x, i) => {
+      if (x.type !== 'move' && junk(x.title)) {
+        const nx = list[i + 1], name = nx && (nx.type === 'move' ? t(nx.from) : nx.travel && t(nx.travel.from));
+        if (name && !junk(name)) list[i] = Object.assign({}, x, { title: name });
+      }
+    });
+    list.forEach((x, i) => { if (x.type === 'move' && junk(x.to)) { const nx = list[i + 1]; if (nx && nx.type !== 'move' && !junk(nx.title)) list[i] = Object.assign({}, x, { to: nx.title }); } });
+    list.forEach(x => {
       if (!x) return;
+      if (x.type !== 'move' && junk(x.title)) return;
       if (x.type === 'move'){ out.push(x); prev = t(x.to) || prev; return; }
       const tr = x.travel;
       if (tr && typeof tr === 'object' && !t(x.inside)) out.push({ type: 'move', time: tr.time, from: t(tr.from) || prev, to: t(x.title), mode: tr.mode, note: tr.note, options: tr.options });
