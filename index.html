@@ -853,6 +853,8 @@ function openTrip(id, view="trip"){
   if(S.tripId !== id){
     unsubTrip && unsubTrip(); unsubItems && unsubItems();
     S.tripId = id; S.trip = null; S.items = []; S.day = 0;
+    if(S.ai && S.ai.ctl) S.ai.ctl.abort();
+    S.ai = null; S.catTab = "";   // a planner draft belongs to the trip it was made for
     S.tripMissing = false;
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
     unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
@@ -1365,7 +1367,7 @@ function aiDefaults(){
   const g = stay ? String(stay.data.guests) : "";
   const adults = +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length);
   const children = +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0;
-  return {kind:"ai", step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:"", replace:""};
+  return {kind:"ai", tripId:t.id, step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:"", replace:""};
 }
 function aiChips(key, opts, cur){
   return `<div class="chips">${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
@@ -2317,7 +2319,7 @@ document.addEventListener("click", async e => {
       if(!m){ toast("ยังไม่ได้คัดลอกลิงก์ Google Maps"); break; }
       fillFromLink(m[0]); break; }
     case "ai-open": {
-      if(!S.ai || S.ai.step === "ask") S.ai = aiDefaults();
+      if(!S.ai || S.ai.step === "ask" || S.ai.tripId !== S.trip.id) S.ai = aiDefaults();
       const was = S.catTab; S.catTab = was === "ai" ? "" : "ai"; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
     case "ai-opt": { const k = el.dataset.k, v = el.dataset.v; S.ai[k] = k === "meals" ? !!v : v; render(); break; }
     case "ai-day": { const d = el.dataset.d, a = S.ai.dates; S.ai.dates = a.includes(d) ? a.filter(x => x !== d) : [...a, d]; render(); break; }
@@ -2489,7 +2491,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30h";
+const BUILD = "2026-10-30i";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
