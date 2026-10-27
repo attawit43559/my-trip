@@ -517,6 +517,7 @@ html.lock,html.lock body{overflow:hidden}
 .ai-modes button em{font-style:normal;opacity:.8}
 .ai-modes button[aria-pressed="true"]{border-color:var(--move-mid);background:var(--move-soft);color:var(--move)}
 .ai-view{margin-bottom:6px}.aic:disabled{opacity:.3}
+.ai-empty{background:var(--accent-soft);border-radius:16px;padding:12px 14px;font-size:14px;margin:4px 0 8px}
 .ai-attach{display:flex;gap:6px;align-items:flex-start;margin:6px 0 0;color:var(--muted)}.ai-attach svg{flex:none;margin-top:2px}.ai-attach b{color:var(--ink,inherit);font-weight:600}
 .ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
 .ai-note textarea.grow-area{display:block;width:100%;min-height:44px;border:0;border-radius:16px;background:var(--tile);padding:10px 16px;font:inherit;font-size:15px;line-height:1.5;color:var(--ink);resize:none;overflow:hidden;box-sizing:border-box}
@@ -1376,7 +1377,7 @@ function aiChips(key, opts, cur){
 function vAiPlan(s){
   const wrap = inner => `<div class="ai-stack">${inner}</div>`;
   const dates = tripDates(S.trip);
-  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${s.revisingWish ? "กำลังปรับแผนตามที่ขอ…" : s.revisingN ? "กำลังหาตัวเลือกใหม่แทน " + s.revisingN + " รายการ…" : "กำลังจัดแผน " + (s.dates.length === dates.length ? "ทั้งทริป" : s.dates.length + " วัน") + "…"}</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${s.revisingWish ? "กำลังปรับแผนตามที่ขอ…" : s.revisingN ? "กำลังหาตัวเลือกใหม่แทน " + s.revisingN + " รายการ…" : "กำลังจัดแผน " + (s.dates.length === dates.length ? "ทั้งทริป" : s.dates.length + " วัน") + "…"}</p><p class="muted small">ใช้เวลาประมาณ 20–90 วินาที ปิดหน้าจอระหว่างรอได้ กลับมาแล้วแผนจะขึ้นเอง</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
   if(s.step === "review"){
     const r = s.result || {days:[], tips:[]};
     const n = Object.values(s.picks || {}).filter(Boolean).length;
@@ -1404,6 +1405,7 @@ function vAiPlan(s){
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">เอาเครื่องหมายถูกออกจากอันที่ไม่ชอบ แล้วกด <b>แก้ไข</b> ให้ AI หาอันใหม่มาแทน ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
       ${r.days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", r.days.map(d => d.date))}</div>` : ""}
+      ${!r.days.some(d => d.items.length || (d.attach || []).length) ? `<p class="ai-empty">AI ไม่ได้เพิ่มอะไร${s.replace ? "" : " เพราะวันที่เลือกมีแผนอยู่แล้ว ถ้าอยากให้จัดใหม่ทั้งวัน กด <b>เริ่มใหม่</b> แล้วเลือก <b>ล้างแล้วจัดใหม่</b>"}</p>` : ""}
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${days ? wish : ""}
 `);
   }
@@ -1443,6 +1445,22 @@ function aiCal(dates, picked, act = "ai-day", only = null){
     return `<button type="button" class="aic" aria-pressed="${on}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="${act}" data-d="${x}" ${off ? "disabled" : ""}><b>${d.getDate()}</b>${d.getDate() === 1 || i === 0 ? `<i>${MON[d.getMonth()]}</i>` : ""}</button>`;
   }).join("")}${blank(trail)}</div></div>`;
 }
+/* planning can take a minute; if the phone drops the request meanwhile (screen locked, app in the background), pick the answer up from the server */
+async function planCall(s, body){
+  const job = rid();
+  try { return await api("planTrip", {...body, job}, s.ctl.signal); }
+  catch(e){
+    if(!e || (e.code !== "offline" && e.code !== "server_error")) throw e;
+    for(let i = 0; i < 45; i++){
+      await new Promise(ok => setTimeout(ok, 4000));
+      if(s.ctl.signal.aborted || S.ai !== s) throw {code:"cancelled"};
+      let r = null; try { r = await api("planResult", {job}); } catch(_){ continue; }
+      if(r && r.missing && i > 3) break;
+      if(r && r.done){ if(r.error) throw {code:r.error}; return r.plan; }
+    }
+    throw e;
+  }
+}
 async function aiRun(){
   const s = S.ai, t = S.trip; if(!s || !t) return;
   const dates = tripDates(t);
@@ -1450,7 +1468,7 @@ async function aiRun(){
   try{
     s.replacing = s.replace ? ownOn(s.dates).map(i => i.id) : [];
     s.rejected = [];
-    const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:aiPrefs(s)}, s.ctl.signal);
+    const res = await planCall(s, {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:aiPrefs(s)});
     if(S.ai !== s) return;
     s.result = res; s.picks = {}; s.viewDay = ((res.days || [])[0] || {}).date;
     (res.days || []).forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
@@ -1477,7 +1495,7 @@ async function aiRevise(){
   const prev = s.result; s.rejected = [...(s.rejected || []), ...reject];
   s.step = "loading"; s.revisingN = reject.length; s.ctl = new AbortController(); render();
   try{
-    const res = await api("planTrip", {tripId:t.id, dates:[...days], replace:!!s.replace, prefs:aiPrefs(s), revise:{keep, reject:s.rejected, note:s_(s.wish)}}, s.ctl.signal);
+    const res = await planCall(s, {tripId:t.id, dates:[...days], replace:!!s.replace, prefs:aiPrefs(s), revise:{keep, reject:s.rejected, note:s_(s.wish)}});
     if(S.ai !== s) return;
     const fresh = {}, freshNotes = {}; (res.days || []).forEach(d => { fresh[d.date] = d.items.map(x => ({...x, _new:true})); freshNotes[d.date] = d.attach || []; });
     const merged = prev.days.map((d, di) => ({...d, attach:(d.attach || []).concat(freshNotes[d.date] || []), items: d.items.filter((x, xi) => s.picks[di + "." + xi]).map(x => ({...x, _new:false}))
@@ -1499,7 +1517,7 @@ async function aiReviseAll(){
   const dates = [day];
   s.step = "loading"; s.revisingN = 0; s.revisingWish = true; s.ctl = new AbortController(); render();
   try{
-    const res = await api("planTrip", {tripId:t.id, dates, replace:!!s.replace, prefs:aiPrefs(s), revise:{draft, note:s_(s.wish)}}, s.ctl.signal);
+    const res = await planCall(s, {tripId:t.id, dates, replace:!!s.replace, prefs:aiPrefs(s), revise:{draft, note:s_(s.wish)}});
     if(S.ai !== s) return;
     const had = new Set(draft.map(x => (x.type === "move" ? x.from + ">" + x.to : x.title).toLowerCase()));
     const byDate = {}; (res.days || []).forEach(d => byDate[d.date] = d);
@@ -2491,7 +2509,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30i";
+const BUILD = "2026-10-30j";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

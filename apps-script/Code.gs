@@ -191,6 +191,11 @@ const ACTIONS = {
 
   // draft a day-by-day plan from what the trip already holds; nothing is saved until the person picks items
   planTrip: (req) => planTrip_(req),
+  // the answer to a planTrip the phone may have stopped waiting for (screen locked, app in the background)
+  planResult: (req) => {
+    const v = CacheService.getScriptCache().get('plan:' + req.me + ':' + String(req.job || '').slice(0, 40));
+    return v ? JSON.parse(v) : { done: false, missing: true };
+  },
 
   // a place shared from Google Maps: open its link, read the name and position, guess what kind of place it is
   resolveMapLink: (req) => resolveMapLink_(req),
@@ -456,6 +461,14 @@ function bookingPrompt_(req) {
 }
 
 function planTrip_(req) {
+  const cache = CacheService.getScriptCache(), jk = req.job ? 'plan:' + req.me + ':' + String(req.job).slice(0, 40) : '';
+  const keep = v => { if (jk) try { cache.put(jk, JSON.stringify(v), 900); } catch (e) {} };
+  keep({ done: false });
+  try { const plan = planTripRun_(req); keep({ done: true, plan }); return plan; }
+  catch (e) { keep({ done: true, error: String(e && e.message || e).split(':')[0] }); throw e; }
+}
+
+function planTripRun_(req) {
   const t = find_(TRIPS, String(req.tripId));
   if (!t || !isMember_(t.obj, req.me)) throw new Error('not_member');
   const trip = t.obj;
@@ -481,8 +494,8 @@ function planTrip_(req) {
   // when the person asks for an airport or hotel stop in words, leave those stops in the plan
   const wishes = String(prefs.note || '') + ' ' + String(rv.note || '');
   const opts = { keepAirport: /สนามบิน|airport|ท่าอากาศยาน/i.test(wishes), keepHotel: /โรงแรม|ที่พัก|hotel/i.test(wishes) };
-  // long trips are planned two days at a time, all at once, so every day gets full attention (a long reply gets thin)
-  const chunks = []; for (let i = 0; i < dates.length; i += 2) chunks.push(dates.slice(i, i + 2));
+  // long trips are planned three days at a time, all at once, so every day gets full attention (a long reply gets thin)
+  const chunks = []; for (let i = 0; i < dates.length; i += 3) chunks.push(dates.slice(i, i + 3));
   const prompts = chunks.map(ds => planPrompt_(trip, items, ds, prefs, (rv.reject || []).slice(0, 40), String(rv.note || '').slice(0, 200), draft.filter(k => ds.indexOf(String(k.date)) >= 0)));
   const many = ps => provider === 'gemini' ? callGeminiMany_(props, ps) : ps.map(p => provider === 'claude' ? callClaude_(props, p, []) : callOpenAI_(props, p, []));
   const parse = (text, i, p) => { try { return parseJson_(text); } catch (e) {
