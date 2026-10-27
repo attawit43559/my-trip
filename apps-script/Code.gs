@@ -499,6 +499,7 @@ function planTrip_(req) {
   if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
   const raw = { days: [].concat.apply([], raws.map(r => (r && r.days) || [])) };
   const plan = cleanPlan_(raw, dates, items, opts);
+  if (req.debug) plan.debug = { chunks, fixes, redo, raws: raws.map(r => JSON.stringify(r).slice(0, 6000)) };
   // still no way back to the hotel at the end of a day: add the leg so the day ends where everyone sleeps
   plan.days.forEach(d => {
     const h = nightStay_(items, d.date), last = d.items[d.items.length - 1];
