@@ -354,6 +354,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .t-ai{--deep:var(--ai);--soft:var(--ai-soft);--mid:var(--ai-mid);--on:#FFFFFF}
 .t-idea{--deep:var(--idea);--soft:var(--idea-soft);--mid:var(--idea-mid);--on:#FFFFFF}
 .thumb.tc{background:var(--mid);color:var(--on)}
+.thumb.night,.entry .thumb.night{background:transparent;border:2px solid var(--mid);color:var(--deep);border-radius:999px;box-sizing:border-box}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
 .hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
 .seg button .ic{color:var(--deep)}
@@ -1020,8 +1021,8 @@ function swipeItem(it, key, inner){
     <div class="trow-slide">${inner}</div></li>`;
 }
 function entryHtml(e){
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? `<span class="moon t-${e.it.type}" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : esc(e.time||"--:--")}</span>
-    <span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span><span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}${e.note?`<br><span class="muted small">${esc(e.note)}</span>`:""}</span></button>`);
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.time||"--:--")}</span>
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}${e.note?`<br><span class="muted small">${esc(e.note)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -2409,7 +2410,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29z";
+const BUILD = "2026-10-30a";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
