@@ -1394,8 +1394,9 @@ function aiPool(dates){
 function aiEnds(date){
   const prev = (() => { const d = parseD(date); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; })();
   const night = x => S.items.find(i => i.type === "stay" && i.date && i.endDate && i.date <= x && x < i.endDate);
-  const arr = S.items.find(i => i.type === "flight" && arrDateOf(i) === date && (i.data||{}).to);
-  const dep = S.items.find(i => i.type === "flight" && i.date === date && (i.data||{}).from && i !== arr);
+  const fs = S.items.filter(i => i.type === "flight" && i.data);
+  const arr = fs.find(i => arrDateOf(i) === date && i.data.to && (i.date < date || night(date)));
+  const dep = fs.find(i => i.date === date && i.data.from && i !== arr);
   const a = arr ? "สนามบิน " + arr.data.to : (night(prev) || {}).title, b = dep ? "สนามบิน " + dep.data.from : (night(date) || {}).title;
   return [a ? "เริ่มที่ " + a : "", b && b !== a ? "จบที่ " + b : b ? "กลับ " + b : ""].filter(Boolean).join(" · ");
 }
@@ -2536,7 +2537,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31a";
+const BUILD = "2026-10-31b";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

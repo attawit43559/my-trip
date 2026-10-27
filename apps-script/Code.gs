@@ -617,7 +617,7 @@ function planAssignRun_(req) {
     '- Restaurants (kind ร้านอาหาร): when meals are wanted give each day out up to one lunch and one dinner from the wish list that are near that day\'s sights (a restaurant inside a theme park goes on that park\'s day). Never invent places.',
     '- Order each day\'s ids the way the day would go (morning sight, lunch, afternoon, dinner) along the route, with no back-tracking.',
     '- Leave out what does not fit well and say why in "left" (Thai, a few words).',
-    '- "summary": the theme of the day in Thai, a few words. "note": only when useful, Thai, max ~60 characters (e.g. "บ่ายยังว่าง", "ไม่มีร้านอาหารแถวนี้ในที่สนใจ").',
+    '- "summary": the theme of the day in Thai, a few words. "note": usually "". Only when the person should know something about how the day is filled, Thai, max ~60 characters (e.g. "บ่ายยังว่าง", "ไม่มีร้านอาหารแถวนี้ในที่สนใจ"). Never repeat a place\'s own note, the summary, or where the day starts and ends.',
     'Reply with only this JSON:',
     '{"days":[{"date":"YYYY-MM-DD","ids":[""],"summary":"","note":""}],"left":[{"id":"","why":""}]}'
   ].join('\n');
@@ -746,8 +746,7 @@ function routeDay_(d, r, items, p) {
   // tips for the hotel or the airport go onto that booking on the day of check-in/out or the flight
   const prevD = Utilities.formatDate(new Date(new Date(d.date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
   const slept = nightStay_(items, prevD), tonight = nightStay_(items, d.date);
-  const arr = items.find(i => i.type === 'flight' && ((i.data || {}).arrDate || i.date) === d.date && (i.data || {}).to);
-  const dep = items.find(i => i.type === 'flight' && i.date === d.date && (i.data || {}).from && i !== arr);
+  const fl = flightsOn_(items, d.date), arr = fl.arr, dep = fl.dep;
   const attach = [], tips = (Array.isArray(r.tips) ? r.tips : []).map(t).filter(Boolean).slice(0, 3).map(v => v.slice(0, 120));
   const add = (it, field, label, note) => { note = t(note).slice(0, 80); if (note && it) attach.push({ id: it.id, field, label, note }); };
   if (t(r.startNote)) {
@@ -820,8 +819,7 @@ const plannedOn_ = (items, date) => items.some(i => (i.type === 'place' || i.typ
 function dayFrame_(items, date) {
   const prev = Utilities.formatDate(new Date(new Date(date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
   const slept = nightStay_(items, prev), tonight = nightStay_(items, date);
-  const arr = items.find(i => i.type === 'flight' && ((i.data || {}).arrDate || i.date) === date && (i.data || {}).to);
-  const dep = items.find(i => i.type === 'flight' && i.date === date && (i.data || {}).from && i !== arr);
+  const flights = flightsOn_(items, date), arr = flights.arr, dep = flights.dep;
   const start = arr ? { name: (arr.data.to || '') + ' airport', code: arr.data.to, text: `lands at ${arr.data.to} airport at ${arr.data.arrTime || '?'}` }
     : slept ? { name: slept.title, text: `wakes up at "${slept.title}"` + (slept.endDate === date ? ` and checks out by ${slept.endTime || '11:00'}` : '') } : null;
   const end = dep ? { name: (dep.data.from || '') + ' airport', code: dep.data.from, text: `must reach ${dep.data.from} airport about 3 hours before the ${dep.time} flight` }
@@ -830,6 +828,15 @@ function dayFrame_(items, date) {
   const text = [start ? 'starts: ' + start.text : 'starts: (no booking)', end ? 'ends: ' + end.text : 'ends: (no booking)',
     moving ? `travel day: include the journey from "${start.name}" to "${end.name}" (with luggage) and plan the rest of the day around it` : ''].filter(Boolean).join(' · ');
   return { start, end, moving, text };
+}
+/* the flight that brings the group in on a day (the day starts at that airport) and the one that takes it away (the day ends there).
+   A flight that leaves and lands on the same day ends the day when nobody sleeps anywhere that night (flying home), otherwise it starts it. */
+function flightsOn_(items, date) {
+  const fs = items.filter(i => i.type === 'flight' && i.data);
+  const tonight = nightStay_(items, date);
+  const arr = fs.find(i => (i.data.arrDate || i.date) === date && i.data.to && (i.date < date || tonight)) || null;
+  const dep = fs.find(i => i.date === date && i.data.from && i !== arr) || null;
+  return { arr, dep };
 }
 /* where the group sleeps that night, if a stay covers it */
 function nightStay_(items, date) { return items.find(i => i.type === 'stay' && i.date && i.endDate && i.date <= date && date < i.endDate) || null; }
