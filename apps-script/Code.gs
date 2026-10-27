@@ -482,7 +482,11 @@ function planTrip_(req) {
   // when the person asks for an airport or hotel stop in words, leave those stops in the plan
   const wishes = String(((req.prefs || {}).note) || '') + ' ' + String(rv.note || '');
   const opts = { keepAirport: /สนามบิน|airport|ท่าอากาศยาน/i.test(wishes), keepHotel: /โรงแรม|ที่พัก|hotel/i.test(wishes) };
-  let raw = parseJson_(ask(prompt));
+  // a reply that is not valid JSON (cut off or garbled) gets one more try
+  const askJson = p => { let text = ask(p); try { return parseJson_(text); } catch (e) {
+    try { PropertiesService.getScriptProperties().setProperty('planDebug', JSON.stringify({ at: new Date().toISOString(), len: text.length, head: String(text).slice(0, 1500), tail: String(text).slice(-1500) })); } catch (_) {}
+    text = ask(p); return parseJson_(text); } };
+  let raw = askJson(prompt);
   // check the draft: every move between two different places needs a travel leg; if some are missing, ask once more to fix just that
   const gaps = planGaps_(cleanPlan_(raw, dates, items, { keepAirport: true, keepHotel: true }), items);
   if (gaps.length) {
