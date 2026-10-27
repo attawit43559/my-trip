@@ -1566,18 +1566,33 @@ function exportEntries(d){
     const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
     if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay"};
     if(it.type === "move") return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", icon:itemIcon(it)};
-    if(it.type === "flight") return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight"};
+    if(it.type === "flight"){
+      // pin the airport: where you land on the arrival row, otherwise whichever end of the flight is nearer the rest of the day
+      const ap = c => s_(c) ? s_(c).toUpperCase() + " airport" : "";
+      const ends = e.phase === "arr" ? [ap(data.to)] : [ap(data.from), arrDateOf(it) === d ? ap(data.to) : ""].filter(Boolean);
+      return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight", qs:ends};
+    }
     const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
     return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
 }
 async function exportPlaces(days){
   let cache = {}; try { cache = JSON.parse(localStorage.getItem("mytrip-geo") || "{}"); } catch(_){}
-  const need = [...new Set(days.flatMap(d => d.entries.filter(e => e.q && !(e.q in cache)).map(e => e.q)))].slice(0, 60);
+  const need = [...new Set(days.flatMap(d => d.entries.flatMap(e => [e.q, ...(e.qs || [])]).filter(q => q && !(q in cache))))].slice(0, 60);
   if(need.length && CONNECTED){ try { const res = await api("geocode", {q:need}); need.forEach((q, i) => cache[q] = res[i] || null); } catch(_){} }
   try { localStorage.setItem("mytrip-geo", JSON.stringify(cache)); } catch(_){}
   for(const d of days){
     d.entries.forEach(e => { if(e.q && cache[e.q]){ e.lat = cache[e.q].lat; e.lon = cache[e.q].lon; } });
+    const others = d.entries.filter(e => e.lat != null && e.type !== "flight");
+    d.entries.forEach(e => {
+      const opts = (e.qs || []).map(q => cache[q]).filter(Boolean); if(!opts.length) return;
+      let best = opts[0];
+      if(others.length && opts.length > 1){
+        const dist = p => Math.min(...others.map(o => Math.hypot(o.lat - p.lat, o.lon - p.lon)));
+        best = opts.reduce((a, b) => dist(b) < dist(a) ? b : a);
+      }
+      e.lat = best.lat; e.lon = best.lon;
+    });
     // a guess far from the rest of the day is probably a different place with the same name: leave it off the map
     const pts = d.entries.filter(e => e.lat != null);
     if(pts.length >= 3){
@@ -2436,7 +2451,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30b";
+const BUILD = "2026-10-30c";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
