@@ -477,23 +477,27 @@ function planTrip_(req) {
   const props = PropertiesService.getScriptProperties();
   const provider = (props.getProperty('AI_PROVIDER') || 'gemini').toLowerCase();
   const draft = (rv.draft || []).slice(0, 120).filter(k => k && dates.indexOf(String(k.date)) >= 0);
-  const prompt = planPrompt_(trip, items, dates, req.prefs || {}, (rv.reject || []).slice(0, 40), String(rv.note || '').slice(0, 200), draft);
-  const ask = p => provider === 'claude' ? callClaude_(props, p, []) : provider === 'openai' ? callOpenAI_(props, p, []) : callGemini_(props, p, [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
+  const prefs = req.prefs || {};
   // when the person asks for an airport or hotel stop in words, leave those stops in the plan
-  const wishes = String(((req.prefs || {}).note) || '') + ' ' + String(rv.note || '');
+  const wishes = String(prefs.note || '') + ' ' + String(rv.note || '');
   const opts = { keepAirport: /สนามบิน|airport|ท่าอากาศยาน/i.test(wishes), keepHotel: /โรงแรม|ที่พัก|hotel/i.test(wishes) };
-  // a reply that is not valid JSON (cut off or garbled) gets one more try
-  const askJson = p => { let text = ask(p); try { return parseJson_(text); } catch (e) {
-    try { PropertiesService.getScriptProperties().setProperty('planDebug', JSON.stringify({ at: new Date().toISOString(), len: text.length, head: String(text).slice(0, 1500), tail: String(text).slice(-1500) })); } catch (_) {}
-    text = ask(p); return parseJson_(text); } };
-  let raw = askJson(prompt);
-  // check the draft: every move between two different places needs a travel leg; if some are missing, ask once more to fix just that
-  const gaps = planGaps_(cleanPlan_(raw, dates, items, { keepAirport: true, keepHotel: true }), items);
-  if (gaps.length) {
-    try {
-      raw = parseJson_(ask(prompt + '\n\nYour draft:\n' + JSON.stringify(raw) + '\n\nFix these problems in the draft and reply with the full corrected JSON in the same format (change nothing else):\n' + gaps.map(g => '- ' + g).join('\n')));
-    } catch (e) {}
+  // long trips are planned two days at a time, all at once, so every day gets full attention (a long reply gets thin)
+  const chunks = []; for (let i = 0; i < dates.length; i += 2) chunks.push(dates.slice(i, i + 2));
+  const prompts = chunks.map(ds => planPrompt_(trip, items, ds, prefs, (rv.reject || []).slice(0, 40), String(rv.note || '').slice(0, 200), draft.filter(k => ds.indexOf(String(k.date)) >= 0)));
+  const many = ps => provider === 'gemini' ? callGeminiMany_(props, ps) : ps.map(p => provider === 'claude' ? callClaude_(props, p, []) : callOpenAI_(props, p, []));
+  const parse = (text, i, p) => { try { return parseJson_(text); } catch (e) {
+    try { props.setProperty('planDebug', JSON.stringify({ at: new Date().toISOString(), chunk: i, len: String(text).length, tail: String(text).slice(-1500) })); } catch (_) {}
+    return parseJson_(many([p])[0]); } };
+  let raws = many(prompts).map((text, i) => { try { return parse(text, i, prompts[i]); } catch (e) { return { days: [] }; } });
+  // check each part: travel to every stop, a way back to the hotel, meals when asked; ask once more to fix what is missing
+  const fixes = raws.map((raw, i) => planGaps_(cleanPlan_(raw, chunks[i], items, { keepAirport: true, keepHotel: true }), items, prefs));
+  const redo = fixes.map((g, i) => g.length ? i : -1).filter(i => i >= 0);
+  if (redo.length) {
+    const texts = many(redo.map(i => prompts[i] + '\n\nYour draft:\n' + JSON.stringify(raws[i]) + '\n\nFix these problems in the draft and reply with the full corrected JSON in the same format (change nothing else):\n' + fixes[i].map(g => '- ' + g).join('\n')));
+    redo.forEach((i, k) => { try { const fixed = parseJson_(texts[k]); if (fixed && fixed.days && fixed.days.length) raws[i] = fixed; } catch (e) {} });
   }
+  if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
+  const raw = { days: [].concat.apply([], raws.map(r => (r && r.days) || [])) };
   const plan = cleanPlan_(raw, dates, items, opts);
   // still no way back to the hotel at the end of a day: add the leg so the day ends where everyone sleeps
   plan.days.forEach(d => {
@@ -512,10 +516,17 @@ const plannedOn_ = (items, date) => items.some(i => (i.type === 'place' || i.typ
 function nightStay_(items, date) { return items.find(i => i.type === 'stay' && i.date && i.endDate && i.date <= date && date < i.endDate) || null; }
 
 /* places one after another with no travel leg between them */
-function planGaps_(plan, items) {
+function planGaps_(plan, items, prefs) {
   const out = [];
   (plan.days || []).forEach(d => {
     const xs = d.items;
+    // a day with no flight should be a real day out, with meals when they were asked for
+    const flying = (items || []).some(i => i.type === 'flight' && (i.date === d.date || (i.data && i.data.arrDate) === d.date));
+    const places = xs.filter(x => x.type === 'place'), food = places.filter(x => x.kind === 'ร้านอาหาร');
+    if (!flying && !plannedOn_(items || [], d.date)) {
+      if (places.length - food.length < 1 || places.length < 2) out.push(`${d.date}: the day is too empty — plan a full day out (2-3 sights, or one big place such as a theme park for the whole day), each with its travel`);
+      if (prefs && prefs.meals && food.length < 2) out.push(`${d.date}: add lunch and dinner as restaurant stops (kind ร้านอาหาร, real places near where the group is at that time; set "inside" when the restaurant is inside the place before it, otherwise give its "travel")`);
+    } else if (prefs && prefs.meals && !food.length && places.length >= 2 && !plannedOn_(items || [], d.date)) out.push(`${d.date}: add a meal as a restaurant stop at a sensible time`);
     // the day should end with a travel leg back to that night's hotel
     const h = nightStay_(items || [], d.date), last = xs[xs.length - 1];
     if (h && last && !plannedOn_(items || [], d.date) && !(last.type === 'move' && sameName_(last.to, h.title)) && !(last.type === 'place' && sameName_(last.title, h.title)))
@@ -619,7 +630,7 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     `- pace: ${(Number(p.children) || 0) + (Number(p.elders) || 0) > 0 ? 'relaxed (children or older people are coming): fewer stops, places close together, as little travelling between them as possible' : s(p.pace) || 'balanced'} · day starts around ${s(p.start) || '09:00'}`,
     `- interests: ${(p.interests || []).map(s).join(', ') || 'anything'}`,
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list item if at all possible' : 'use wish-list items where they fit well'}`,
-    `- meals: ${p.meals ? 'include lunch and dinner as restaurant stops (real, well-known places near that part of the day)' : 'do not add meals'}`,
+    `- meals: ${p.meals ? 'on every day out include lunch and dinner as restaurant stops with kind ร้านอาหาร (real, well-known places near where the group is at that time; inside a theme park pick a restaurant in the park and set "inside")' : 'do not add meals'}`,
     p.note ? '- other wishes (follow these even where they go against the rules below): ' + s(p.note) : '',
     draft && draft.length ? 'The person is revising this draft (not saved yet):\n' + draft.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}${r.note ? ' (' + s(r.note) + ')' : ''}`).join('\n') + '\nTheir request (follow it even where it goes against the rules below): ' + s(wish) + '\nReturn the complete updated plan for these days: keep what still fits, change what they ask.' : '',
     reject && reject.length ? 'The person is revising an earlier draft. Everything "already planned" above stays. They turned down these suggestions; fill those gaps (around the same times) with different ideas, and never suggest these again:\n' + reject.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}`).join('\n') + (wish ? '\nWhat they want instead (follow this even where it goes against the rules below): ' + s(wish) : '') + '\nOnly return the new items for those gaps (plus any travel legs they need), not the kept ones.' : '',
@@ -769,6 +780,27 @@ function callGemini_(props, prompt, files, opts) {
     } catch (e) { lastErr = e; }
   }
   throw lastErr;
+}
+
+/* several planner prompts sent to Gemini together (UrlFetchApp.fetchAll); a failed one is retried on its own */
+function callGeminiMany_(props, prompts) {
+  if (prompts.length === 1) return [callGemini_(props, prompts[0], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 })];
+  const key = props.getProperty('GEMINI_API_KEY');
+  if (!key) throw new Error('missing_GEMINI_API_KEY');
+  const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash';
+  const reqs = prompts.map(p => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': key }, muteHttpExceptions: true,
+    payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { temperature: 0.5, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
+  const res = UrlFetchApp.fetchAll(reqs);
+  return res.map((r, i) => {
+    try {
+      if (r.getResponseCode() < 300) {
+        const c = (JSON.parse(r.getContentText()).candidates || [])[0];
+        const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || '').join('');
+        if (text) return text;
+      }
+    } catch (e) {}
+    try { return callGemini_(props, prompts[i], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 }); } catch (e) { return ''; }
+  });
 }
 
 function callClaude_(props, prompt, files) {
