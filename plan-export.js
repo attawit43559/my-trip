@@ -71,7 +71,11 @@
   }
 
   /* ---------- map ---------- */
-  const TILE = 512; // Carto @2x tiles
+  /* map tiles are 256 px; they are drawn 1.5x so street names stay readable on a phone screen */
+  const TILE = 384, SRC = 256;
+  const tileUrls = (z, x, y) => [
+    `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
+    `https://tile.openstreetmap.org/${z}/${x}/${y}.png`];
   const lon2x = (lon, z) => (lon + 180) / 360 * TILE * Math.pow(2, z);
   const lat2y = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TILE * Math.pow(2, z); };
   function loadImg(src){ return new Promise(res => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; setTimeout(() => res(null), 12000); }); }
@@ -86,13 +90,15 @@
     const ox = (Math.max(...xs) + Math.min(...xs)) / 2 - bw / 2, oy = (Math.max(...ys) + Math.min(...ys)) / 2 - bh / 2;
     x.save(); rrect(x, bx, by, bw, bh, 44); x.clip();
     x.fillStyle = "#F2EEE6"; x.fillRect(bx, by, bw, bh);
-    let tilesOk = 0;
+    let tilesOk = 0, usedOsm = false;
     if(opts.tiles !== false){
       const n = Math.pow(2, z), jobs = [];
       for(let tx = Math.floor(ox / TILE); tx <= Math.floor((ox + bw) / TILE); tx++) for(let ty = Math.floor(oy / TILE); ty <= Math.floor((oy + bh) / TILE); ty++){
         if(ty < 0 || ty >= n) continue;
         const wx = ((tx % n) + n) % n;
-        jobs.push(loadImg(`https://${"abcd"[(tx + ty) & 3]}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wx}/${ty}@2x.png`).then(img => { if(img){ x.drawImage(img, bx + tx * TILE - ox, by + ty * TILE - oy, TILE, TILE); tilesOk++; } }));
+        const [main, spare] = tileUrls(z, wx, ty);
+        jobs.push(loadImg(main).then(img => img || loadImg(spare).then(i2 => { if(i2) usedOsm = true; return i2; })).then(img => {
+          if(img){ x.imageSmoothingQuality = "high"; x.drawImage(img, 0, 0, SRC, SRC, bx + tx * TILE - ox, by + ty * TILE - oy, TILE, TILE); tilesOk++; } }));
       }
       await Promise.all(jobs);
     }
@@ -122,7 +128,7 @@
     });
     x.restore();
     x.save(); rrect(x, bx, by, bw, bh, 44); x.strokeStyle = C.line; x.lineWidth = 3; x.stroke(); x.restore();
-    if(tilesOk){ x.fillStyle = "rgba(90,80,70,0.75)"; x.font = font(400, 17); x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillText("© OpenStreetMap © CARTO", bx + bw - 26, by + bh - 18); }
+    if(tilesOk){ x.fillStyle = "rgba(90,80,70,0.75)"; x.font = font(400, 17); x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillText(usedOsm ? "© OpenStreetMap contributors" : "© Esri · OpenStreetMap", bx + bw - 26, by + bh - 18); }
   }
 
   /* the trip card at the top, like the one in the app: soft colour, mountains and sun */
