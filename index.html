@@ -519,6 +519,7 @@ html.lock,html.lock body{overflow:hidden}
 .ai-view{margin-bottom:6px}.aic:disabled{opacity:.3}
 .ai-attach{display:flex;gap:6px;align-items:flex-start;margin:6px 0 0;color:var(--muted)}.ai-attach svg{flex:none;margin-top:2px}.ai-attach b{color:var(--ink,inherit);font-weight:600}
 .ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
+.ai-note textarea.grow-area{display:block;width:100%;min-height:44px;border:0;border-radius:16px;background:var(--tile);padding:10px 16px;font:inherit;font-size:15px;line-height:1.5;color:var(--ink);resize:none;overflow:hidden;box-sizing:border-box}
 /* the planner's own buttons wear an "AI" gradient */
 .ai-go,.ai-grad{border:0;color:#fff;background:linear-gradient(120deg,#7C5CFF 0%,#3D7BFF 50%,#14B8C9 100%);box-shadow:0 4px 14px rgba(61,123,255,.28)}
 .ai-go:disabled,.ai-grad:disabled{opacity:.45;box-shadow:none}
@@ -1379,7 +1380,7 @@ function vAiPlan(s){
     const n = Object.values(s.picks || {}).filter(Boolean).length;
     const row = (x, k) => {
       const isMove = x.type === "move", on = !!s.picks[k];
-      const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^(แท็กซี่|เดิน)\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
+      const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode && o.note === s_(x.note).slice(0, 60)}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^(แท็กซี่|เดิน)\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
       const icon = isMove ? (MODE_ICON[x.mode] || "move") : (IDEA_ICON[x.kind] || "pin");
       const tone = isMove ? "t-move" : (x.kind && x.kind !== "ที่เที่ยว" ? IDEA_TONE[x.kind] : "t-place");
       const title = isMove ? moveTitle(x.from, x.to) : x.title;
@@ -1397,7 +1398,7 @@ function vAiPlan(s){
         ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}</section>`;
     }).join("");
     const off = Object.keys(s.picks || {}).length - n;
-    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "อยากให้ปรับวันนี้ยังไง พิมพ์บอกแล้วกด แก้ไข ได้เลย"}</span><input id="ai-wish" maxlength="200" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" value="${esc(s.wish || "")}" data-bind="ai:wish"></label>`;
+    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "อยากให้ปรับวันนี้ยังไง พิมพ์บอกแล้วกด แก้ไข ได้เลย"}</span><textarea id="ai-wish" class="grow-area" rows="1" maxlength="400" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" data-bind="ai:wish">${esc(s.wish || "")}</textarea></label>`;
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">เอาเครื่องหมายถูกออกจากอันที่ไม่ชอบ แล้วกด <b>แก้ไข</b> ให้ AI หาอันใหม่มาแทน ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
       ${r.days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", r.days.map(d => d.date))}</div>` : ""}
@@ -1417,7 +1418,7 @@ function vAiPlan(s){
     <div class="ai-q ai-row-q ai-wrap"><b>สไตล์</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
     ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะสม"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>ร้านอาหาร</b>${aiChips("meals", [["1","แนะนำ"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
-    <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
+    <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><textarea id="ai-note" class="grow-area" rows="1" maxlength="400" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" data-bind="ai:note">${esc(s.note)}</textarea></label>
   </form>`);
 }
 /* the planner's buttons sit under the panel's list, like "เพิ่ม" on the other tabs */
@@ -1767,7 +1768,10 @@ function render(){
   document.body.style.overflow = S.sheet ? "hidden" : "";
   document.documentElement.classList.toggle("lock", !!(S.sheet || (S.view === "trip" && S.catTab)));
   if(S.view === "login") mountGoogleButton();
+  fitAreas();
 }
+/* typing boxes that grow line by line so the whole message stays visible */
+function fitAreas(el){ (el ? [el] : document.querySelectorAll("textarea.grow-area")).forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }); }
 
 const s_ = v => (v === null || v === undefined) ? "" : String(v).trim();
 const cleanDate = v => validD(s_(v)) ? s_(v) : "";
@@ -1992,6 +1996,7 @@ document.addEventListener("input", e => {
   const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
   const [root, path] = b.split(":");
   if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
+  if(e.target.classList.contains("grow-area")){ fitAreas(e.target); e.target.scrollIntoView({block:"nearest"}); }
   if(b === "ai:wish"){ const btn = document.querySelector('[data-act="ai-revise"]'); const s = S.ai; if(btn && s) btn.disabled = !(s_(s.wish) || Object.values(s.picks || {}).some(v => !v)); }
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
@@ -2464,7 +2469,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30f";
+const BUILD = "2026-10-30g";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
