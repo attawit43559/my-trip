@@ -476,9 +476,12 @@ function planTrip_(req) {
   });
   const props = PropertiesService.getScriptProperties();
   const provider = (props.getProperty('AI_PROVIDER') || 'gemini').toLowerCase();
-  const prompt = planPrompt_(trip, items, dates, req.prefs || {}, (rv.reject || []).slice(0, 40), String(rv.note || '').slice(0, 200));
+  const draft = (rv.draft || []).slice(0, 120).filter(k => k && dates.indexOf(String(k.date)) >= 0);
+  const prompt = planPrompt_(trip, items, dates, req.prefs || {}, (rv.reject || []).slice(0, 40), String(rv.note || '').slice(0, 200), draft);
   const text = provider === 'claude' ? callClaude_(props, prompt, []) : provider === 'openai' ? callOpenAI_(props, prompt, []) : callGemini_(props, prompt, [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
-  return cleanPlan_(parseJson_(text), dates, items);
+  // when the person asks for an airport or hotel stop in words, leave those stops in the plan
+  const wishes = String(((req.prefs || {}).note) || '') + ' ' + String(rv.note || '');
+  return cleanPlan_(parseJson_(text), dates, items, { keepAirport: /สนามบิน|airport|ท่าอากาศยาน/i.test(wishes), keepHotel: /โรงแรม|ที่พัก|hotel/i.test(wishes) });
 }
 
 var LINK_TRACE_ = [];
@@ -536,7 +539,7 @@ function tripDates_(trip) {
   return out;
 }
 
-function planPrompt_(trip, items, dates, prefs, reject, wish) {
+function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
   const s = v => String(v == null ? '' : v).slice(0, 200);
   const line = it => {
     const d = it.data || {};
@@ -565,8 +568,9 @@ function planPrompt_(trip, items, dates, prefs, reject, wish) {
     `- interests: ${(p.interests || []).map(s).join(', ') || 'anything'}`,
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list item if at all possible' : 'use wish-list items where they fit well'}`,
     `- meals: ${p.meals ? 'include lunch and dinner as restaurant stops (real, well-known places near that part of the day)' : 'do not add meals'}`,
-    p.note ? '- other wishes: ' + s(p.note) : '',
-    reject && reject.length ? 'The person is revising an earlier draft. Everything "already planned" above stays. They turned down these suggestions; fill those gaps (around the same times) with different ideas, and never suggest these again:\n' + reject.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}`).join('\n') + (wish ? '\nWhat they want instead (follow this): ' + s(wish) : '') + '\nOnly return the new items for those gaps (plus any travel legs they need), not the kept ones.' : '',
+    p.note ? '- other wishes (follow these even where they go against the rules below): ' + s(p.note) : '',
+    draft && draft.length ? 'The person is revising this draft (not saved yet):\n' + draft.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}${r.note ? ' (' + s(r.note) + ')' : ''}`).join('\n') + '\nTheir request (follow it even where it goes against the rules below): ' + s(wish) + '\nReturn the complete updated plan for these days: keep what still fits, change what they ask.' : '',
+    reject && reject.length ? 'The person is revising an earlier draft. Everything "already planned" above stays. They turned down these suggestions; fill those gaps (around the same times) with different ideas, and never suggest these again:\n' + reject.map(r => `- ${s(r.date)} ${s(r.time)} ${r.type === 'move' ? 'travel ' + s(r.from) + ' → ' + s(r.to) : s(r.title)}`).join('\n') + (wish ? '\nWhat they want instead (follow this even where it goes against the rules below): ' + s(wish) : '') + '\nOnly return the new items for those gaps (plus any travel legs they need), not the kept ones.' : '',
     'TRIP>>>',
     'Rules:',
     '- Keep every booking and already-planned item exactly as is; plan around them and never repeat them.',
@@ -597,7 +601,8 @@ function moveOf_(x, t, hm, modes) {
   return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120) };
 }
 
-function cleanPlan_(raw, dates, items) {
+function cleanPlan_(raw, dates, items, opts) {
+  opts = opts || {};
   const key = v => String(v == null ? '' : v).toLowerCase().replace(/[\s.,\-–·()'"]/g, '');
   const ideaIds = {}; items.filter(i => i.type === 'idea').forEach(i => { ideaIds[i.id] = true; });
   const t = v => String(v == null ? '' : v).trim();
@@ -638,7 +643,7 @@ function cleanPlan_(raw, dates, items) {
     d.items = d.items.filter(x => {
       if (x.type !== 'place' || x.ideaId) return true;
       const k = key(x.title);
-      for (const st of items.filter(i => i.type === 'stay')) {
+      for (const st of opts.keepHotel ? [] : items.filter(i => i.type === 'stay')) {
         const onIn = st.date === d.date, onOut = st.endDate === d.date;
         if (!onIn && !onOut) continue;
         const sk = key(st.title), same = sk.length >= 4 && k.length >= 4 && (k.indexOf(sk) >= 0 || sk.indexOf(k) >= 0);
@@ -648,7 +653,7 @@ function cleanPlan_(raw, dates, items) {
           return false;
         }
       }
-      for (const f of items.filter(i => i.type === 'flight')) {
+      for (const f of opts.keepAirport ? [] : items.filter(i => i.type === 'flight')) {
         const fd = f.data || {}, arr = fd.arrDate || f.date;
         const to = key(fd.to), from = key(fd.from), airport = /airport|สนามบิน/i.test(x.title);
         if (d.date === arr && ((to.length === 3 && k.indexOf(to) >= 0) || (airport && !(from.length === 3 && k.indexOf(from) >= 0)))) { note(f, 'arrNote', 'ถึง ' + (fd.toCity || fd.to || 'ปลายทาง'), x.note); return false; }
