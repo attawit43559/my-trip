@@ -1379,7 +1379,7 @@ function vAiPlan(s){
     const n = Object.values(s.picks || {}).filter(Boolean).length;
     const row = (x, k) => {
       const isMove = x.type === "move", on = !!s.picks[k];
-      const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^แท็กซี่\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
+      const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^(แท็กซี่|เดิน)\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
       const icon = isMove ? (MODE_ICON[x.mode] || "move") : (IDEA_ICON[x.kind] || "pin");
       const tone = isMove ? "t-move" : (x.kind && x.kind !== "ที่เที่ยว" ? IDEA_TONE[x.kind] : "t-place");
       const title = isMove ? moveTitle(x.from, x.to) : x.title;
@@ -2464,7 +2464,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30e";
+const BUILD = "2026-10-30f";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
