@@ -564,7 +564,7 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     ideas.join('\n') || '- none',
     'Preferences from the person asking:',
     `- travellers: ${s(p.adults) || 0} adults, ${s(p.children) || 0} children, ${s(p.elders) || 0} older people`,
-    `- pace: ${s(p.pace) || 'balanced'} · day starts around ${s(p.start) || '09:00'} · main way to get around: ${s(p.mode) || 'ขนส่งสาธารณะ'}`,
+    `- pace: ${(Number(p.children) || 0) + (Number(p.elders) || 0) > 0 ? 'relaxed (children or older people are coming): fewer stops, places close together, as little travelling between them as possible' : s(p.pace) || 'balanced'} · day starts around ${s(p.start) || '09:00'}`,
     `- interests: ${(p.interests || []).map(s).join(', ') || 'anything'}`,
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list item if at all possible' : 'use wish-list items where they fit well'}`,
     `- meals: ${p.meals ? 'include lunch and dinner as restaurant stops (real, well-known places near that part of the day)' : 'do not add meals'}`,
@@ -577,15 +577,15 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '- Hotel check-in, check-out and nights, and flight departures and arrivals, already show in the app: never add a hotel or an airport itself as a "place" stop just for being there. Travel legs to or from a hotel or airport are fine. Only when there is a useful tip about the hotel or airport itself (drop bags early, collect luggage, pre-register) add one "place" titled exactly with that hotel or airport name, the tip in "note"; the app turns it into a note on that stay or flight.',
     '- Arrival day: start activities no earlier than about 2 hours after the flight lands. Departure day: be heading to the airport about 3 hours before an international flight.',
     '- Each day stays near that night\'s hotel; group nearby places; respect usual opening hours; avoid back-tracking. On check-in days include going to the hotel; on check-out days start from it.',
-    '- Add a travel leg (type "move") between stops when getting there takes more than a short walk, using the main way to get around unless walking is clearly better. Put the rough duration in its note.',
+    '- Add a travel leg (type "move") between stops when getting there takes more than a short walk. Give each leg "options" so the person can choose: always one by taxi (mode ขับรถ) and one by public transport (mode ขนส่งสาธารณะ, note says which line or bus), plus walking (mode เดิน) when it is under about 20 minutes on foot. Each option\'s note is just the duration and the key detail (e.g. "~20 นาที", "JR Yamanote ~15 นาที"). Set the leg\'s own "mode" and "note" to the option you recommend (taxi when children or older people are coming and the ride is short).',
     '- Exactly one travel leg for each journey: never add two legs with the same start or destination, and never a separate "leave early" or "get ready" item. Advice such as leaving 3 hours before a flight goes in that one leg\'s note together with the duration (e.g. "~45 นาที · ออกก่อน 3 ชม."). The time of the leg is when to set off.',
-    '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4, packed ≈ 5-6 (meals not counted). With children or older people keep walking moderate and add a rest.',
+    '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4 (meals not counted). With children or older people keep walking moderate, keep stops near each other and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
     '- Use real places only. Titles are the place name as commonly written (English or local); notes are in Thai and very short: just the key point in a few words, max ~35 characters, no full sentences (e.g. "ชมพระอาทิตย์ตก", "ราเมงต้นตำรับ", "แท็กซี่ ~20 นาที"). Times are 24-hour HH:MM, in order.',
     '- "kind" is one of ที่เที่ยว, ร้านอาหาร, ช้อปปิ้ง. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน. A taxi or ride-hailing car is ขับรถ, with "แท็กซี่" written in its note.',
     '- Give each day a short Thai "summary" (theme of the day, a few words).',
     'Reply with only this JSON:',
-    '{"days":[{"date":"YYYY-MM-DD","summary":"","items":[{"time":"HH:MM","type":"place","title":"","kind":"ที่เที่ยว","address":"","note":"","ideaId":""},{"time":"HH:MM","type":"move","mode":"ขนส่งสาธารณะ","from":"","to":"","note":""}]}]}'
+    '{"days":[{"date":"YYYY-MM-DD","summary":"","items":[{"time":"HH:MM","type":"place","title":"","kind":"ที่เที่ยว","address":"","note":"","ideaId":""},{"time":"HH:MM","type":"move","mode":"ขนส่งสาธารณะ","from":"","to":"","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}]}]}'
   ].filter(Boolean).join('\n');
 }
 
@@ -598,7 +598,16 @@ function moveOf_(x, t, hm, modes) {
     if (car.test(mode)) { if (!/แท็กซี่|taxi|grab/i.test(note)) note = 'แท็กซี่' + (note ? ' · ' + note : ''); mode = 'ขับรถ'; }
     else mode = /walk|เดิน/i.test(mode) ? 'เดิน' : 'ขนส่งสาธารณะ';
   } else if (mode === 'ขนส่งสาธารณะ' && /แท็กซี่|taxi|grab|uber/i.test(note)) mode = 'ขับรถ';
-  return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120) };
+  // the ways to get there the person can pick from (taxi, public transport, walking), one of each at most
+  const options = [], seen = {};
+  (Array.isArray(x.options) ? x.options : []).slice(0, 4).forEach(o => {
+    if (!o) return;
+    const m = moveOf_({ mode: o.mode, note: o.note, time: '', from: '', to: '' }, t, hm, modes);
+    if (seen[m.mode]) return; seen[m.mode] = true;
+    options.push({ mode: m.mode, note: m.note.slice(0, 60) });
+  });
+  if (options.length && !seen[mode]) options.unshift({ mode, note: note.slice(0, 60) });
+  return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120), options: options.length > 1 ? options : [] };
 }
 
 function cleanPlan_(raw, dates, items, opts) {

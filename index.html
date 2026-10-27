@@ -511,6 +511,12 @@ html.lock,html.lock body{overflow:hidden}
 .ai-time{width:46px;text-align:right;font-size:15px}
 .ex-prev{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x mandatory}.ex-prev img{height:300px;width:auto;border-radius:14px;box-shadow:var(--lift);flex:none;scroll-snap-align:start}
 .ex-go{justify-content:center;height:56px;font-size:16px;background:var(--tile);border-radius:18px;font-weight:500}.ex-scope{margin:2px 0 4px}
+.ai-modes{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px 40px}
+.ai-modes::-webkit-scrollbar{display:none}
+.ai-modes button{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:12.5px;color:var(--muted);white-space:nowrap;flex:none}
+.ai-modes button em{font-style:normal;opacity:.8}
+.ai-modes button[aria-pressed="true"]{border-color:var(--move-mid);background:var(--move-soft);color:var(--move)}
+.ai-view{margin-bottom:6px}.aic:disabled{opacity:.3}
 .ai-attach{display:flex;gap:6px;align-items:flex-start;margin:6px 0 0;color:var(--muted)}.ai-attach svg{flex:none;margin-top:2px}.ai-attach b{color:var(--ink,inherit);font-weight:600}
 .ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
 /* the planner's own buttons wear an "AI" gradient */
@@ -1373,24 +1379,28 @@ function vAiPlan(s){
     const n = Object.values(s.picks || {}).filter(Boolean).length;
     const row = (x, k) => {
       const isMove = x.type === "move", on = !!s.picks[k];
+      const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^แท็กซี่\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
       const icon = isMove ? (MODE_ICON[x.mode] || "move") : (IDEA_ICON[x.kind] || "pin");
       const tone = isMove ? "t-move" : (x.kind && x.kind !== "ที่เที่ยว" ? IDEA_TONE[x.kind] : "t-place");
       const title = isMove ? moveTitle(x.from, x.to) : x.title;
       return `<li><button type="button" class="ai-row${on ? "" : " off"}" aria-pressed="${on}" data-act="ai-pick" data-k="${k}">
         <span class="ai-check" aria-hidden="true">${on ? ic("check",14) : ""}</span><span class="time">${esc(x.time || "--:--")}</span>
         <span class="thumb-sm ${tone}" aria-hidden="true">${ic(icon,16)}</span>
-        <span class="grow"><span class="ttl">${esc(title)}</span>${x._new ? ` <span class="ai-tag ai-new">ใหม่</span>` : ""}${x.ideaId ? ` <span class="ai-tag">สนใจ</span>` : ""}${x.note ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button></li>`;
+        <span class="grow"><span class="ttl">${esc(title)}</span>${x._new ? ` <span class="ai-tag ai-new">ใหม่</span>` : ""}${x.ideaId ? ` <span class="ai-tag">สนใจ</span>` : ""}${x.note && !choose ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button>${choose}</li>`;
     };
+    const shown = r.days.some(d => d.date === s.viewDay) ? s.viewDay : (r.days[0] || {}).date;
     const days = r.days.map((d, di) => {
+      if(d.date !== shown) return "";
       const idx = dates.indexOf(d.date);
       return `<section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}</b>${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
         ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : (d.attach || []).length ? "" : `<p class="muted small">วันนี้แผนเดิมเต็มแล้ว</p>`}
         ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}</section>`;
     }).join("");
     const off = Object.keys(s.picks || {}).length - n;
-    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "อยากให้ปรับอะไร พิมพ์บอกแล้วกด แก้ไข ได้เลย"}</span><input id="ai-wish" maxlength="200" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" value="${esc(s.wish || "")}" data-bind="ai:wish"></label>`;
+    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "อยากให้ปรับวันนี้ยังไง พิมพ์บอกแล้วกด แก้ไข ได้เลย"}</span><input id="ai-wish" maxlength="200" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" value="${esc(s.wish || "")}" data-bind="ai:wish"></label>`;
     const rm = (s.replacing || []).length;
     return wrap(`<p class="muted small" style="margin-top:-4px">เอาเครื่องหมายถูกออกจากอันที่ไม่ชอบ แล้วกด <b>แก้ไข</b> ให้ AI หาอันใหม่มาแทน ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
+      ${r.days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", r.days.map(d => d.date))}</div>` : ""}
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${days ? wish : ""}
 `);
   }
@@ -1404,11 +1414,9 @@ function vAiPlan(s){
     ${ownOn(s.dates).length ? `<div class="ai-q ai-row-q"><b>แผนเดิม (${ownOn(s.dates).length})</b>${aiChips("replace", [["","เก็บไว้ เพิ่มต่อ"],["1","ล้างแล้วจัดใหม่"]], s.replace)}</div>` : ""}
     <div class="ai-q"><b>ผู้เดินทาง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
     <div class="ai-q ai-row-q"><b>เริ่มวัน</b><input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"><output class="ai-time">${hm(s.start)}</output></div>
-    <div class="ai-q ai-row-q"><b>จังหวะ</b>${aiChips("pace", AI_PACE, s.pace)}</div>
-    <div class="ai-q ai-row-q"><b>เดินทางหลัก</b>${aiChips("mode", MOVE_MODES, s.mode)}</div>
     <div class="ai-q ai-row-q ai-wrap"><b>สไตล์</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
     ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะสม"]], s.useIdeas)}</div>` : ""}
-    <div class="ai-q ai-row-q"><b>มื้ออาหาร</b>${aiChips("meals", [["1","แนะนำร้านด้วย"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
+    <div class="ai-q ai-row-q"><b>ร้านอาหาร</b>${aiChips("meals", [["1","แนะนำ"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
     <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><input id="ai-note" maxlength="200" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" value="${esc(s.note)}" data-bind="ai:note"></label>
   </form>`);
 }
@@ -1423,13 +1431,13 @@ function aiFoot(s){
   return "";
 }
 /* trip days as a small calendar; tap days to include or leave out */
-function aiCal(dates, picked){
+function aiCal(dates, picked, act = "ai-day", only = null){
   const first = dates[0], last = dates[dates.length-1], lead = parseD(first).getDay();
   const trail = (7 - (lead + dates.length) % 7) % 7;
   const blank = n => Array.from({length:n}, () => `<span class="aic out"></span>`).join("");
   return `<div class="ai-cal"><div class="ai-dow" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div><div class="ai-days">${blank(lead)}${dates.map((x, i) => {
-    const d = parseD(x), on = picked.includes(x);
-    return `<button type="button" class="aic" aria-pressed="${on}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="ai-day" data-d="${x}"><b>${d.getDate()}</b>${d.getDate() === 1 || i === 0 ? `<i>${MON[d.getMonth()]}</i>` : ""}</button>`;
+    const d = parseD(x), on = picked.includes(x), off = only && !only.includes(x);
+    return `<button type="button" class="aic" aria-pressed="${on}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}" data-act="${act}" data-d="${x}" ${off ? "disabled" : ""}><b>${d.getDate()}</b>${d.getDate() === 1 || i === 0 ? `<i>${MON[d.getMonth()]}</i>` : ""}</button>`;
   }).join("")}${blank(trail)}</div></div>`;
 }
 async function aiRun(){
@@ -1441,7 +1449,7 @@ async function aiRun(){
     s.rejected = [];
     const res = await api("planTrip", {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:aiPrefs(s)}, s.ctl.signal);
     if(S.ai !== s) return;
-    s.result = res; s.picks = {};
+    s.result = res; s.picks = {}; s.viewDay = ((res.days || [])[0] || {}).date;
     (res.days || []).forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
     s.step = "review"; render();
   } catch(e){
@@ -1451,7 +1459,7 @@ async function aiRun(){
   }
 }
 const aiPrefs = s => ({adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60),
-  mode:s.mode, interests:s.interests, useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)});
+  interests:s.interests, useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)});
 /* "แก้ไข": keep the ticked stops, ask for new ones only where something was unticked */
 async function aiRevise(){
   const s = S.ai, t = S.trip; if(!s || !t || !s.result) return;
@@ -1483,8 +1491,9 @@ async function aiRevise(){
 /* nothing unticked but a request typed: rework the whole draft for those days around it */
 async function aiReviseAll(){
   const s = S.ai, t = S.trip, prev = s.result;
-  const draft = prev.days.flatMap(d => d.items.map(x => ({date:d.date, ...x})));
-  const dates = prev.days.map(d => d.date);
+  const day = prev.days.some(d => d.date === s.viewDay) ? s.viewDay : (prev.days[0] || {}).date;
+  const draft = prev.days.filter(d => d.date === day).flatMap(d => d.items.map(x => ({date:d.date, ...x})));
+  const dates = [day];
   s.step = "loading"; s.revisingN = 0; s.revisingWish = true; s.ctl = new AbortController(); render();
   try{
     const res = await api("planTrip", {tripId:t.id, dates, replace:!!s.replace, prefs:aiPrefs(s), revise:{draft, note:s_(s.wish)}}, s.ctl.signal);
@@ -2294,6 +2303,10 @@ document.addEventListener("click", async e => {
     case "ai-stop": if(S.ai.ctl) S.ai.ctl.abort(); break;
     case "ai-back": S.ai.step = "ask"; S.ai.result = null; S.ai.rejected = []; render(); break;
     case "ai-pick": S.ai.picks[el.dataset.k] = !S.ai.picks[el.dataset.k]; render(); break;
+    case "ai-view": S.ai.viewDay = el.dataset.d; render(); break;
+    case "ai-mode": {
+      const [di, xi] = el.dataset.k.split(".").map(Number), x = S.ai.result.days[di].items[xi], o = x.options[Number(el.dataset.o)];
+      if(o){ x.mode = o.mode; x.note = o.note; } render(); break; }
     case "ai-add": aiAdd(); break;
     case "ai-revise": aiRevise(); break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
@@ -2451,7 +2464,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30d";
+const BUILD = "2026-10-30e";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
