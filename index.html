@@ -517,6 +517,17 @@ html.lock,html.lock body{overflow:hidden}
 .ai-modes button em{font-style:normal;opacity:.8}
 .ai-modes button[aria-pressed="true"]{border-color:var(--move-mid);background:var(--move-soft);color:var(--move)}
 .ai-view{margin-bottom:6px}.aic:disabled{opacity:.3}
+.ai-prow{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 2px}
+.ai-prow .time{width:18px;flex:none;text-align:center;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ai-prow .ttl{font-weight:500;overflow-wrap:anywhere}
+.ai-mv{display:flex;gap:2px;flex:none}
+.ai-mv button{width:32px;height:32px;border-radius:999px;border:0;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}
+.ai-mv button:disabled{opacity:.3}
+.ai-free{flex-wrap:wrap;gap:6px}
+.ai-free button{min-height:36px;padding:0 10px 0 6px;font-size:13px;gap:6px;text-align:left}
+.ai-free button .ic:last-child{color:var(--ai)}
+.thumb-xs{width:22px;height:22px;border-radius:7px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--soft);color:var(--deep)}
+.ai-tips b{display:inline-flex;align-items:center;gap:6px;font-weight:600}
 .ai-empty{background:var(--accent-soft);border-radius:16px;padding:12px 14px;font-size:14px;margin:4px 0 8px}
 .ai-attach{display:flex;gap:6px;align-items:flex-start;margin:6px 0 0;color:var(--muted)}.ai-attach svg{flex:none;margin-top:2px}.ai-attach b{color:var(--ink,inherit);font-weight:600}
 .ai-note input{height:44px!important;font-size:15px;background:var(--tile)!important}
@@ -587,7 +598,7 @@ const itemIcon = it => {
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
-  chev:'<path d="M9 6l6 6-6 6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   stay:'<path d="M3 19V6"/><path d="M3 15h18v4"/><path d="M21 15v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11.5" r="2"/>',
   place:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
@@ -1358,8 +1369,6 @@ async function planIdea(){
   } catch(err){ fail(err); }
 }
 /* ---------- AI planner: a few quick choices, a draft per day, then pick what goes into the plan ---------- */
-const AI_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","เต็มที่"]];
-const AI_START = ["08:00","09:00","10:00"];
 const AI_INTERESTS = ["ธรรมชาติ","ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
 /* the places and travel legs people planned on these days (flights and stays are bookings, never cleared) */
 const ownOn = dates => S.items.filter(i => (i.type === "place" || i.type === "move") && dates.includes(i.date));
@@ -1368,19 +1377,54 @@ function aiDefaults(){
   const g = stay ? String(stay.data.guests) : "";
   const adults = +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length);
   const children = +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0;
-  return {kind:"ai", tripId:t.id, step:"ask", dates:tripDates(t).slice(), pace:"balanced", start:540, mode:"ขนส่งสาธารณะ", interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:"", replace:""};
+  return {kind:"ai", tripId:t.id, step:"ask", dates:tripDates(t).slice(), start:540, interests:[], useIdeas:"fit", meals:true, adults, children, elders:0, note:""};
 }
 function aiChips(key, opts, cur){
   return `<div class="chips">${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
     return `<button type="button" aria-pressed="${cur === v}" data-act="ai-opt" data-k="${key}" data-v="${esc(v)}">${esc(l)}</button>`; }).join("")}</div>`;
 }
+/* what the planner may place on the chosen days: wish-list places not planned on other days, and places already on these days */
+function aiPool(dates){
+  const ideas = S.items.filter(i => i.type === "idea" && (!plannedFrom(i.id) || dates.includes(plannedFrom(i.id).date)));
+  const free = new Set(ideas.map(i => i.id));
+  const fixed = S.items.filter(i => i.type === "place" && dates.includes(i.date) && !free.has((i.data||{}).fromIdea));
+  return ideas.concat(fixed);
+}
+/* where a day starts and ends, in a few words (the hotel slept in or the airport landed at; tonight's hotel or the airport to fly from) */
+function aiEnds(date){
+  const prev = (() => { const d = parseD(date); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; })();
+  const night = x => S.items.find(i => i.type === "stay" && i.date && i.endDate && i.date <= x && x < i.endDate);
+  const arr = S.items.find(i => i.type === "flight" && arrDateOf(i) === date && (i.data||{}).to);
+  const dep = S.items.find(i => i.type === "flight" && i.date === date && (i.data||{}).from && i !== arr);
+  const a = arr ? "สนามบิน " + arr.data.to : (night(prev) || {}).title, b = dep ? "สนามบิน " + dep.data.from : (night(date) || {}).title;
+  return [a ? "เริ่มที่ " + a : "", b && b !== a ? "จบที่ " + b : b ? "กลับ " + b : ""].filter(Boolean).join(" · ");
+}
+const aiStop = id => S.items.find(i => i.id === id);
 function vAiPlan(s){
   const wrap = inner => `<div class="ai-stack">${inner}</div>`;
   const dates = tripDates(S.trip);
-  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${s.revisingWish ? "กำลังปรับแผนตามที่ขอ…" : s.revisingN ? "กำลังหาตัวเลือกใหม่แทน " + s.revisingN + " รายการ…" : "กำลังจัดแผน " + (s.dates.length === dates.length ? "ทั้งทริป" : s.dates.length + " วัน") + "…"}</p><p class="muted small">ใช้เวลาประมาณ 20–90 วินาที ปิดหน้าจอระหว่างรอได้ กลับมาแล้วแผนจะขึ้นเอง</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${esc(s.loadMsg || "กำลังวางแผน…")}</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที ปิดหน้าจอระหว่างรอได้ กลับมาแล้วแผนจะขึ้นเอง</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "pick"){
+    const days = s.assign.days, shown = days.some(d => d.date === s.viewDay) ? s.viewDay : (days[0] || {}).date;
+    const d = days.find(x => x.date === shown) || {date:shown, ids:[]}, idx = dates.indexOf(d.date);
+    const used = new Set(days.flatMap(x => x.ids)), why = {}; (s.assign.left || []).forEach(x => why[x.id] = x.why);
+    const free = aiPool(s.dates).filter(i => !used.has(i.id));
+    const kind = it => (it.data||{}).kind || "ที่เที่ยว";
+    const tone = it => kind(it) !== "ที่เที่ยว" ? IDEA_TONE[kind(it)] : "t-place";
+    const rows = d.ids.map(aiStop).filter(Boolean).map((it, i, all) => `<li class="ai-prow"><span class="time">${i + 1}</span>
+      <span class="thumb-sm ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",16)}</span>
+      <span class="grow"><span class="ttl">${esc(it.title)}</span>${it.sub ? `<br><span class="muted small">${esc(it.sub)}</span>` : ""}</span>
+      <span class="ai-mv"><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="-1" ${i ? "" : "disabled"} aria-label="เลื่อนขึ้น">${ic("up",16)}</button><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="1" ${i < all.length - 1 ? "" : "disabled"} aria-label="เลื่อนลง">${ic("down",16)}</button><button type="button" data-act="ai-drop" data-k="${esc(it.id)}" aria-label="เอาออกจากวันนี้">${ic("close",16)}</button></span></li>`).join("");
+    const ends = aiEnds(d.date);
+    return wrap(`<p class="muted small" style="margin-top:-4px">AI ร่างให้แล้วว่าวันไหนไปที่ไหน ปรับได้เลย: ลูกศรสลับลำดับ, <b>×</b> เอาออก, แตะที่สนใจด้านล่างเพื่อใส่วันนี้ เสร็จแล้วกด <b>จัดเวลา</b> ให้ AI ใส่เวลาและการเดินทาง</p>
+      ${days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", days.map(x => x.date))}</div>` : ""}
+      <section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}${d.ids.length ? ` · ${d.ids.length} ที่` : ""}</b>${ends ? `<span class="muted small">${esc(ends)}</span>` : ""}${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
+        ${rows ? `<ul class="ai-list">${rows}</ul>` : `<p class="ai-empty">วันนี้ยังไม่มีสถานที่ แตะที่สนใจด้านล่างเพื่อใส่ หรือปล่อยว่างไว้ให้ AI แนะนำที่ใกล้ๆ เป็นโน้ต</p>`}
+        ${d.note ? `<p class="ai-attach small">${ic("spark",14)}<span>${esc(d.note)}</span></p>` : ""}</section>
+      ${free.length ? `<div class="ai-q"><b>ที่สนใจที่ยังไม่ได้ใส่ (${free.length})</b><div class="chips ai-free">${free.map(it => `<button type="button" data-act="ai-put" data-k="${esc(it.id)}" title="${esc(why[it.id] || "")}"><span class="thumb-xs ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",12)}</span>${esc(it.title)}${ic("plus",14)}</button>`).join("")}</div></div>` : ""}`);
+  }
   if(s.step === "review"){
-    const r = s.result || {days:[], tips:[]};
-    const n = Object.values(s.picks || {}).filter(Boolean).length;
+    const r = s.result || {days:[]};
     const row = (x, k) => {
       const isMove = x.type === "move", on = !!s.picks[k];
       const choose = isMove && (x.options || []).length > 1 && on ? `<div class="ai-modes" role="group" aria-label="เลือกวิธีเดินทาง">${x.options.map((o, oi) => `<button type="button" aria-pressed="${o.mode === x.mode && o.note === s_(x.note).slice(0, 60)}" data-act="ai-mode" data-k="${k}" data-o="${oi}">${ic(MODE_ICON[o.mode] || "move",14)}<span class="sr">${esc(o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "ขนส่งสาธารณะ" ? "ขนส่งสาธารณะ" : "เดิน")}</span><em>${esc(o.note.replace(/^(แท็กซี่|เดิน)\s*·?\s*/, "") || (o.mode === "ขับรถ" ? "แท็กซี่" : o.mode === "เดิน" ? "เดิน" : "สาธารณะ"))}</em></button>`).join("")}</div>` : "";
@@ -1390,48 +1434,46 @@ function vAiPlan(s){
       return `<li><button type="button" class="ai-row${on ? "" : " off"}" aria-pressed="${on}" data-act="ai-pick" data-k="${k}">
         <span class="ai-check" aria-hidden="true">${on ? ic("check",14) : ""}</span><span class="time">${esc(x.time || "--:--")}</span>
         <span class="thumb-sm ${tone}" aria-hidden="true">${ic(icon,16)}</span>
-        <span class="grow"><span class="ttl">${esc(title)}</span>${x._new ? ` <span class="ai-tag ai-new">ใหม่</span>` : ""}${x.ideaId ? ` <span class="ai-tag">สนใจ</span>` : ""}${x.note && !choose ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button>${choose}</li>`;
+        <span class="grow"><span class="ttl">${esc(title)}</span>${x.note && !choose ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></button>${choose}</li>`;
     };
     const shown = r.days.some(d => d.date === s.viewDay) ? s.viewDay : (r.days[0] || {}).date;
     const days = r.days.map((d, di) => {
       if(d.date !== shown) return "";
       const idx = dates.indexOf(d.date);
       return `<section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}</b>${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
-        ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : (d.attach || []).length ? "" : `<p class="muted small">วันนี้แผนเดิมเต็มแล้ว</p>`}
-        ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}</section>`;
+        ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : `<p class="muted small">วันนี้ไม่มีสถานที่และการเดินทาง</p>`}
+        ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}
+        ${(d.tips || []).length ? `<div class="ai-tips small"><b>${ic("spark",14)} คำแนะนำจาก AI</b><ul>${d.tips.map(v => `<li>${esc(v)}</li>`).join("")}</ul></div>` : ""}</section>`;
     }).join("");
-    const off = Object.keys(s.picks || {}).length - n;
-    const wish = `<label class="fld sm ai-note ai-wish"><span class="small${off ? "" : " muted"}">${off ? `อยากให้แก้ ${off} รายการที่เอาถูกออกยังไง (ไม่ใส่ก็ได้)` : "อยากให้ปรับวันนี้ยังไง พิมพ์บอกแล้วกด แก้ไข ได้เลย"}</span><textarea id="ai-wish" class="grow-area" rows="1" maxlength="400" placeholder="เช่น ขอร้านถูกลง, เที่ยวในร่ม, ใกล้โรงแรม" data-bind="ai:wish">${esc(s.wish || "")}</textarea></label>`;
-    const rm = (s.replacing || []).length;
-    return wrap(`<p class="muted small" style="margin-top:-4px">เอาเครื่องหมายถูกออกจากอันที่ไม่ชอบ แล้วกด <b>แก้ไข</b> ให้ AI หาอันใหม่มาแทน ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่เลือกจะถูกลบเมื่อกดเพิ่ม</b>` : "แผนเดิมของคุณไม่ถูกแตะต้อง"}</p>
+    const rm = ownOn(r.days.map(d => d.date)).length;
+    const wish = `<label class="fld sm ai-note ai-wish"><span class="small muted">อยากให้ปรับเวลาหรือการเดินทางวันนี้ยังไง พิมพ์แล้วกด แก้ไข</span><textarea id="ai-wish" class="grow-area" rows="1" maxlength="400" placeholder="เช่น ออกช้าลงหน่อย, ไม่อยากต่อรถไฟหลายต่อ" data-bind="ai:wish">${esc(s.wish || "")}</textarea></label>`;
+    return wrap(`<p class="muted small" style="margin-top:-4px">เลือกวิธีเดินทางได้ที่ปุ่มใต้แต่ละช่วง เอาเครื่องหมายถูกออกจากอันที่ไม่เอา ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่จัดจะถูกแทนที่เมื่อกดตกลง</b>` : ""}</p>
       ${r.days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", r.days.map(d => d.date))}</div>` : ""}
-      ${!r.days.some(d => d.items.length || (d.attach || []).length) ? `<p class="ai-empty">AI ไม่ได้เพิ่มอะไร${s.replace ? "" : " เพราะวันที่เลือกมีแผนอยู่แล้ว ถ้าอยากให้จัดใหม่ทั้งวัน กด <b>เริ่มใหม่</b> แล้วเลือก <b>ล้างแล้วจัดใหม่</b>"}</p>` : ""}
-      ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองปรับตัวเลือกแล้ววางแผนใหม่</p>`}${days ? wish : ""}
-`);
+      ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองใหม่อีกครั้ง</p>`}${days ? wish : ""}`);
   }
-  const ideas = S.items.filter(i => i.type === "idea" && !plannedFrom(i.id)).length;
   const all = s.dates.length === dates.length;
+  const ideas = aiPool(s.dates).filter(i => i.type === "idea").length;
   const hm = m => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
   const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="ai-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${s[k]}</output><button type="button" data-act="ai-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
   return wrap(`<form class="ai-form" id="ai-form" data-form="ai">
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     <div class="ai-q"><div class="ai-qh"><b>วันไหน</b><button type="button" class="ai-all" aria-pressed="${all}" data-act="ai-alldays">ทั้งทริป</button></div>${aiCal(dates, s.dates)}</div>
-    ${ownOn(s.dates).length ? `<div class="ai-q ai-row-q"><b>แผนเดิม (${ownOn(s.dates).length})</b>${aiChips("replace", [["","เก็บไว้ เพิ่มต่อ"],["1","ล้างแล้วจัดใหม่"]], s.replace)}</div>` : ""}
     <div class="ai-q"><b>ผู้เดินทาง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
     <div class="ai-q ai-row-q"><b>เริ่มวัน</b><input type="range" class="ai-range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"><output class="ai-time">${hm(s.start)}</output></div>
     <div class="ai-q ai-row-q ai-wrap"><b>สไตล์</b><div class="chips">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
     ${ideas ? `<div class="ai-q ai-row-q"><b>ที่สนใจ</b>${aiChips("useIdeas", [["all","ใส่ให้ครบ"],["fit","ใส่ที่เหมาะสม"]], s.useIdeas)}</div>` : ""}
     <div class="ai-q ai-row-q"><b>ร้านอาหาร</b>${aiChips("meals", [["1","แนะนำ"],["","ไม่ต้อง"]], s.meals ? "1" : "")}</div>
     <label class="fld sm ai-note"><span class="sr">อยากได้อะไรเพิ่ม</span><textarea id="ai-note" class="grow-area" rows="1" maxlength="400" placeholder="อยากได้อะไรเพิ่ม เช่น อยากเห็นฟูจิ" data-bind="ai:note">${esc(s.note)}</textarea></label>
+    <p class="muted small">AI จะร่างว่าวันไหนไปที่ไหนจากแท็บสนใจก่อน ให้คุณปรับ แล้วค่อยจัดเวลาและการเดินทาง</p>
   </form>`);
 }
 /* the planner's buttons sit under the panel's list, like "เพิ่ม" on the other tabs */
 function aiFoot(s){
   if(s.step === "ask") return `<div class="ai-bar"><button class="cat-add ai-grad" type="submit" form="ai-form" ${s.dates.length ? "" : "disabled"}>${ic("spark",16)}เริ่มวางแผน</button></div>`;
+  if(s.step === "pick") return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">เริ่มใหม่</button><button class="cat-add ai-grad" data-act="ai-route">${ic("spark",16)}จัดเวลา</button></div>`;
   if(s.step === "review"){
-    const n = Object.values(s.picks || {}).filter(Boolean).length, rm = (s.replacing || []).length;
-    const off = Object.keys(s.picks || {}).length - n;
-    return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">เริ่มใหม่</button><button class="cat-add ai-edit" data-act="ai-revise" ${off || s_(s.wish) ? "" : "disabled"}>${ic("spark",16)}แก้ไข</button><button class="cat-add ai-grad" data-act="ai-add" ${n || rm ? "" : "disabled"}>${ic("check",16)}ตกลง</button></div>`;
+    const n = Object.values(s.picks || {}).filter(Boolean).length;
+    return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-topick">กลับไปเลือก</button><button class="cat-add ai-edit" data-act="ai-revise" ${s_(s.wish) ? "" : "disabled"}>${ic("spark",16)}แก้ไข</button><button class="cat-add ai-grad" data-act="ai-add" ${n ? "" : "disabled"}>${ic("check",16)}ตกลง</button></div>`;
   }
   return "";
 }
@@ -1446,9 +1488,9 @@ function aiCal(dates, picked, act = "ai-day", only = null){
   }).join("")}${blank(trail)}</div></div>`;
 }
 /* planning can take a minute; if the phone drops the request meanwhile (screen locked, app in the background), pick the answer up from the server */
-async function planCall(s, body){
+async function planCall(s, action, body){
   const job = rid();
-  try { return await api("planTrip", {...body, job}, s.ctl.signal); }
+  try { return await api(action, {...body, job}, s.ctl.signal); }
   catch(e){
     if(!e || (e.code !== "offline" && e.code !== "server_error")) throw e;
     for(let i = 0; i < 45; i++){
@@ -1461,88 +1503,68 @@ async function planCall(s, body){
     throw e;
   }
 }
+const aiErr = e => e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไปตอนนี้ ลองใหม่อีกครั้งในอีกสักครู่" : e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "วางแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
+/* step 1: AI drafts which places go on which day */
 async function aiRun(){
   const s = S.ai, t = S.trip; if(!s || !t) return;
-  const dates = tripDates(t);
-  s.step = "loading"; s.err = ""; s.ctl = new AbortController(); render();
+  const dates = tripDates(t).filter(d => s.dates.includes(d));
+  s.err = ""; s.ctl = new AbortController();
+  const pool = aiPool(dates);
+  if(!pool.length){ s.assign = {days:dates.map(date => ({date, ids:[]})), left:[]}; s.viewDay = dates[0]; s.step = "pick"; render(); return; }
+  s.step = "loading"; s.loadMsg = "กำลังร่างว่าวันไหนไปที่ไหน…"; render();
   try{
-    s.replacing = s.replace ? ownOn(s.dates).map(i => i.id) : [];
-    s.rejected = [];
-    const res = await planCall(s, {tripId:t.id, dates:dates.filter(d => s.dates.includes(d)), replace:!!s.replace, prefs:aiPrefs(s)});
+    const res = await planCall(s, "planAssign", {tripId:t.id, dates, prefs:aiPrefs(s)});
     if(S.ai !== s) return;
-    s.result = res; s.picks = {}; s.viewDay = ((res.days || [])[0] || {}).date;
-    (res.days || []).forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
-    s.step = "review"; render();
+    s.assign = res; s.viewDay = dates[0]; s.step = "pick"; render();
   } catch(e){
     if(S.ai !== s) return;
-    s.step = "ask"; s.err = e && e.code === "cancelled" ? "" : e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไปตอนนี้ ลองใหม่อีกครั้งในอีกสักครู่" : e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "วางแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
-    render();
+    s.step = "ask"; s.err = e && e.code === "cancelled" ? "" : aiErr(e); render();
   }
 }
-const aiPrefs = s => ({adults:s.adults, children:s.children, elders:s.elders, pace:s.pace, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60),
+const aiPrefs = s => ({adults:s.adults, children:s.children, elders:s.elders, start:pad(Math.floor(s.start/60)) + ":" + pad(s.start%60),
   interests:s.interests, useIdeas:s.useIdeas, meals:s.meals, note:s_(s.note)});
-/* "แก้ไข": keep the ticked stops, ask for new ones only where something was unticked */
-async function aiRevise(){
-  const s = S.ai, t = S.trip; if(!s || !t || !s.result) return;
-  const keep = [], reject = [], days = new Set();
-  s.result.days.forEach((d, di) => d.items.forEach((x, xi) => {
-    const o = {date:d.date, ...x}; if(s.picks[di + "." + xi]) keep.push(o); else { reject.push(o); days.add(d.date); }
-  }));
-  if(!reject.length){
-    if(s_(s.wish)) return aiReviseAll();
-    toast("เอาเครื่องหมายถูกออก หรือบอกว่าอยากให้ปรับอะไรก่อนนะ"); return;
-  }
-  const prev = s.result; s.rejected = [...(s.rejected || []), ...reject];
-  s.step = "loading"; s.revisingN = reject.length; s.ctl = new AbortController(); render();
+/* step 2: times and travel for the places in the order chosen; wish = a request for the day being viewed */
+async function aiRoute(wish){
+  const s = S.ai, t = S.trip; if(!s || !t || !s.assign) return;
+  const prev = s.result, one = wish && prev ? (prev.days.some(d => d.date === s.viewDay) ? s.viewDay : (prev.days[0] || {}).date) : "";
+  const days = s.assign.days.filter(d => !one || d.date === one).map(d => ({date:d.date, ids:d.ids}));
+  s.step = "loading"; s.loadMsg = one ? "กำลังปรับตามที่ขอ…" : "กำลังจัดเวลาและการเดินทาง…"; s.ctl = new AbortController(); render();
   try{
-    const res = await planCall(s, {tripId:t.id, dates:[...days], replace:!!s.replace, prefs:aiPrefs(s), revise:{keep, reject:s.rejected, note:s_(s.wish)}});
+    const res = await planCall(s, "planRoute", {tripId:t.id, days, prefs:aiPrefs(s), ...(one ? {wish:s_(wish)} : {})});
     if(S.ai !== s) return;
-    const fresh = {}, freshNotes = {}; (res.days || []).forEach(d => { fresh[d.date] = d.items.map(x => ({...x, _new:true})); freshNotes[d.date] = d.attach || []; });
-    const merged = prev.days.map((d, di) => ({...d, attach:(d.attach || []).concat(freshNotes[d.date] || []), items: d.items.filter((x, xi) => s.picks[di + "." + xi]).map(x => ({...x, _new:false}))
-      .concat(fresh[d.date] || []).sort((a, b) => (a.time || "99") < (b.time || "99") ? -1 : 1)}));
-    s.result = {days:merged, tips:prev.tips}; s.picks = {};
-    merged.forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
-    s.wish = ""; s.step = "review"; s.revisingN = 0; render();
+    const fresh = res.days || [];
+    s.result = one ? {days:prev.days.map(d => fresh.find(x => x.date === d.date) || d)} : {days:fresh};
+    s.picks = {}; s.result.days.forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
+    if(!one) s.viewDay = (fresh.find(d => d.date === s.viewDay) || fresh[0] || {}).date;
+    s.wish = ""; s.step = "review"; render();
   } catch(e){
     if(S.ai !== s) return;
-    s.result = prev; s.step = "review"; s.revisingN = 0; render();
-    if(!(e && e.code === "cancelled")) toast(e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไป ลองใหม่อีกครั้ง" : "แก้ไขไม่สำเร็จ ลองใหม่อีกครั้ง");
+    s.step = prev && one ? "review" : "pick"; render();
+    if(!(e && e.code === "cancelled")) toast(aiErr(e));
   }
 }
-/* nothing unticked but a request typed: rework the whole draft for those days around it */
-async function aiReviseAll(){
-  const s = S.ai, t = S.trip, prev = s.result;
-  const day = prev.days.some(d => d.date === s.viewDay) ? s.viewDay : (prev.days[0] || {}).date;
-  const draft = prev.days.filter(d => d.date === day).flatMap(d => d.items.map(x => ({date:d.date, ...x})));
-  const dates = [day];
-  s.step = "loading"; s.revisingN = 0; s.revisingWish = true; s.ctl = new AbortController(); render();
-  try{
-    const res = await planCall(s, {tripId:t.id, dates, replace:!!s.replace, prefs:aiPrefs(s), revise:{draft, note:s_(s.wish)}});
-    if(S.ai !== s) return;
-    const had = new Set(draft.map(x => (x.type === "move" ? x.from + ">" + x.to : x.title).toLowerCase()));
-    const byDate = {}; (res.days || []).forEach(d => byDate[d.date] = d);
-    const days = prev.days.map(d => { const n = byDate[d.date]; if(!n) return d;
-      return {...d, summary:n.summary || d.summary, attach:n.attach || [], items:n.items.map(x => ({...x, _new:!had.has((x.type === "move" ? x.from + ">" + x.to : x.title).toLowerCase())}))}; });
-    s.result = {days, tips:prev.tips}; s.picks = {};
-    days.forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
-    s.wish = ""; s.revisingWish = false; s.step = "review"; render();
-  } catch(e){
-    if(S.ai !== s) return;
-    s.result = prev; s.revisingWish = false; s.step = "review"; render();
-    if(!(e && e.code === "cancelled")) toast(e && e.code === "rate_limited" ? "AI ใช้งานเยอะเกินไป ลองใหม่อีกครั้ง" : "แก้ไขไม่สำเร็จ ลองใหม่อีกครั้ง");
-  }
+function aiMoveStop(id, dir){
+  const d = S.ai.assign.days.find(x => x.date === S.ai.viewDay) || S.ai.assign.days[0]; if(!d) return;
+  const i = d.ids.indexOf(id), j = i + dir; if(i < 0 || j < 0 || j >= d.ids.length) return;
+  [d.ids[i], d.ids[j]] = [d.ids[j], d.ids[i]];
 }
 async function aiAdd(){
   const s = S.ai, t = S.trip; if(!s || !t || !s.result) return;
+  const dates = s.result.days.map(d => d.date);
   let n = 0, first = "";
-  for(const id of (s.replacing || [])) if(S.items.some(i => i.id === id)) await store.deleteItem(t.id, id);
-  if(s.replace) await clearNotes(t, s.dates);
+  const src = {}; S.items.forEach(i => src[i.id] = i);
+  /* the plan for these days is replaced: old places, travel legs and the notes on flights and stays go first */
+  for(const it of ownOn(dates)) await store.deleteItem(t.id, it.id);
+  await clearNotes(t, dates);
   for(const [di, d] of s.result.days.entries()){
     for(const [xi, x] of d.items.entries()){
       if(!s.picks[di + "." + xi]) continue;
       const base = {date:d.date, time:x.time || "", sub:x.note || "", createdBy:S.me, createdAt:Date.now() + n, source:"ai"};
       if(x.type === "move") await store.addItem(t.id, {...base, type:"move", title:moveTitle(x.from, x.to), data:{mode:x.mode, from:x.from, to:x.to}});
-      else await store.addItem(t.id, {...base, type:"place", title:x.title, data:{kind:x.kind, address:x.address || "", ...(x.ideaId ? {fromIdea:x.ideaId} : {})}});
+      else {
+        const sd = (src[x.ref] || {}).data || {};
+        await store.addItem(t.id, {...base, type:"place", title:x.title, data:{address:sd.address || x.address || "", lat:sd.lat, lon:sd.lon, placeId:sd.placeId || "", mapsUrl:sd.mapsUrl || "", kind:x.kind, ...(x.ideaId ? {fromIdea:x.ideaId} : {})}});
+      }
       if(!first) first = d.date; n++;
     }
   }
@@ -1553,8 +1575,8 @@ async function aiAdd(){
     await store.updateItem(t.id, it.id, {data:{...(it.data || {}), [a.field]:cur ? cur + " · " + a.note : a.note}});
     if(!first) first = d.date;
   }
-  const i = tripDates(t).indexOf(first); if(i >= 0) S.day = i;
-  S.ai = null; S.catTab = ""; render(); toast((s.replacing || []).length ? `จัดแผนใหม่แล้ว ${n} รายการ` : `เพิ่ม ${n} รายการลงแผนแล้ว`);
+  const i = tripDates(t).indexOf(first || dates[0]); if(i >= 0) S.day = i;
+  S.ai = null; S.catTab = ""; render(); toast(`จัดแผนแล้ว ${n} รายการ`);
 }
 /* ---------- day pages to keep or send: one picture per day, with a map ---------- */
 function loadScript(src){ return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("load")); document.head.appendChild(sc); }); }
@@ -2036,7 +2058,7 @@ document.addEventListener("input", e => {
   const [root, path] = b.split(":");
   if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); e.target.scrollIntoView({block:"nearest"}); }
-  if(b === "ai:wish"){ const btn = document.querySelector('[data-act="ai-revise"]'); const s = S.ai; if(btn && s) btn.disabled = !(s_(s.wish) || Object.values(s.picks || {}).some(v => !v)); }
+  if(b === "ai:wish"){ const btn = document.querySelector('[data-act="ai-revise"]'); const s = S.ai; if(btn && s) btn.disabled = !s_(s.wish); }
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
@@ -2345,14 +2367,19 @@ document.addEventListener("click", async e => {
     case "ai-multi": { const v = el.dataset.v, a = S.ai.interests; S.ai.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
     case "ai-num": { const k = el.dataset.k; S.ai[k] = Math.max(0, Math.min(20, S.ai[k] + Number(el.dataset.d))); if(S.ai.adults + S.ai.elders < 1) S.ai[k] = 1; render(); break; }
     case "ai-stop": if(S.ai.ctl) S.ai.ctl.abort(); break;
-    case "ai-back": S.ai.step = "ask"; S.ai.result = null; S.ai.rejected = []; render(); break;
+    case "ai-back": S.ai.step = "ask"; S.ai.result = null; S.ai.assign = null; render(); break;
+    case "ai-route": aiRoute(); break;
+    case "ai-topick": S.ai.step = "pick"; render(); break;
+    case "ai-move": aiMoveStop(el.dataset.k, Number(el.dataset.d)); render(); break;
+    case "ai-drop": { const d = S.ai.assign.days.find(x => x.date === S.ai.viewDay) || S.ai.assign.days[0]; if(d) d.ids = d.ids.filter(id => id !== el.dataset.k); render(); break; }
+    case "ai-put": { const a = S.ai.assign, d = a.days.find(x => x.date === S.ai.viewDay) || a.days[0]; if(d){ a.days.forEach(x => x.ids = x.ids.filter(id => id !== el.dataset.k)); d.ids.push(el.dataset.k); } render(); break; }
     case "ai-pick": S.ai.picks[el.dataset.k] = !S.ai.picks[el.dataset.k]; render(); break;
     case "ai-view": S.ai.viewDay = el.dataset.d; render(); break;
     case "ai-mode": {
       const [di, xi] = el.dataset.k.split(".").map(Number), x = S.ai.result.days[di].items[xi], o = x.options[Number(el.dataset.o)];
       if(o){ x.mode = o.mode; x.note = o.note; } render(); break; }
     case "ai-add": aiAdd(); break;
-    case "ai-revise": aiRevise(); break;
+    case "ai-revise": if(s_(S.ai.wish)) aiRoute(S.ai.wish); break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": {
@@ -2509,7 +2536,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30j";
+const BUILD = "2026-10-31a";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
