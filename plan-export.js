@@ -81,8 +81,9 @@
   function loadImg(src){ return new Promise(res => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; setTimeout(() => res(null), 12000); }); }
   async function drawMap(x, box, pts, opts){
     const {x:bx, y:by, w:bw, h:bh} = box, pad = 80;
-    let z = 15;
-    if(pts.length > 1) for(z = 16; z > 2; z--){
+    // never closer than a neighbourhood view, so a lone stop still shows its surroundings
+    let z = 14;
+    if(pts.length > 1) for(z = 15; z > 2; z--){
       const xs = pts.map(p => lon2x(p.lon, z)), ys = pts.map(p => lat2y(p.lat, z));
       if(Math.max(...xs) - Math.min(...xs) <= bw - pad * 2 && Math.max(...ys) - Math.min(...ys) <= bh - pad * 2) break;
     }
