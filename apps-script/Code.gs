@@ -484,20 +484,38 @@ function planTrip_(req) {
   const opts = { keepAirport: /สนามบิน|airport|ท่าอากาศยาน/i.test(wishes), keepHotel: /โรงแรม|ที่พัก|hotel/i.test(wishes) };
   let raw = parseJson_(ask(prompt));
   // check the draft: every move between two different places needs a travel leg; if some are missing, ask once more to fix just that
-  const gaps = planGaps_(cleanPlan_(raw, dates, items, { keepAirport: true, keepHotel: true }));
+  const gaps = planGaps_(cleanPlan_(raw, dates, items, { keepAirport: true, keepHotel: true }), items);
   if (gaps.length) {
     try {
       raw = parseJson_(ask(prompt + '\n\nYour draft:\n' + JSON.stringify(raw) + '\n\nFix these problems in the draft and reply with the full corrected JSON in the same format (change nothing else):\n' + gaps.map(g => '- ' + g).join('\n')));
     } catch (e) {}
   }
-  return cleanPlan_(raw, dates, items, opts);
+  const plan = cleanPlan_(raw, dates, items, opts);
+  // still no way back to the hotel at the end of a day: add the leg so the day ends where everyone sleeps
+  plan.days.forEach(d => {
+    const h = nightStay_(items, d.date), last = d.items[d.items.length - 1];
+    if (!h || !last || last.type !== 'place' || sameName_(last.title, h.title) || plannedOn_(items, d.date)) return;
+    const m = String(last.time || '').match(/^(\d\d):(\d\d)$/), at = m ? Math.min(23 * 60 + 30, +m[1] * 60 + +m[2] + 90) : -1;
+    d.items.push({ time: at < 0 ? '' : ('0' + Math.floor(at / 60)).slice(-2) + ':' + ('0' + at % 60).slice(-2), type: 'move', mode: 'ขนส่งสาธารณะ', from: last.title, to: h.title, note: 'กลับที่พัก', options: [] });
+  });
+  return plan;
 }
 
+const sameName_ = (a, b) => { const k = v => String(v || '').toLowerCase().replace(/[\s.,\-–·()'"]/g, ''); const x = k(a), y = k(b); return !!x && !!y && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
+/* the day already has the person's own stops (the new plan only adds to them) */
+const plannedOn_ = (items, date) => items.some(i => (i.type === 'place' || i.type === 'move') && i.date === date);
+/* where the group sleeps that night, if a stay covers it */
+function nightStay_(items, date) { return items.find(i => i.type === 'stay' && i.date && i.endDate && i.date <= date && date < i.endDate) || null; }
+
 /* places one after another with no travel leg between them */
-function planGaps_(plan) {
+function planGaps_(plan, items) {
   const out = [];
   (plan.days || []).forEach(d => {
     const xs = d.items;
+    // the day should end with a travel leg back to that night's hotel
+    const h = nightStay_(items || [], d.date), last = xs[xs.length - 1];
+    if (h && last && !plannedOn_(items || [], d.date) && !(last.type === 'move' && sameName_(last.to, h.title)) && !(last.type === 'place' && sameName_(last.title, h.title)))
+      out.push(`${d.date}: the day ends at "${last.type === 'move' ? last.to : last.title}" with no travel leg back to the hotel "${h.title}" — add one after the last stop, with options`);
     for (let i = 0; i + 1 < xs.length; i++) {
       const a = xs[i], b = xs[i + 1];
       if (a.type === 'place' && b.type === 'place' && String(a.title).toLowerCase() !== String(b.title).toLowerCase())
@@ -600,7 +618,7 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
     '- Hotel check-in, check-out and nights, and flight departures and arrivals, already show in the app: never add a hotel or an airport itself as a "place" stop just for being there. Travel legs to or from a hotel or airport are fine. Only when there is a useful tip about the hotel or airport itself (drop bags early, collect luggage, pre-register) add one "place" titled exactly with that hotel or airport name, the tip in "note"; the app turns it into a note on that stay or flight.',
     '- Arrival day: start activities no earlier than about 2 hours after the flight lands. Departure day: be heading to the airport about 3 hours before an international flight.',
     '- Each day stays near that night\'s hotel; group nearby places; respect usual opening hours; avoid back-tracking. On check-in days include going to the hotel; on check-out days start from it.',
-    '- Add a travel leg (type "move") before every stop that is in a different place from the one before it, even a short walk: from the hotel (or airport) to the first stop of the day, between stops, and back to the hotel after the last stop. Give each leg "options" so the person can choose: always one by taxi (mode ขับรถ) and one by public transport (mode ขนส่งสาธารณะ, note says which line or bus), plus walking (mode เดิน) when it is under about 20 minutes on foot, plus any special service you know for that exact journey, such as the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, or a theme-park monorail (mode ขนส่งสาธารณะ, note gives its name and duration, e.g. "Airport Limousine Bus ~60 นาที"). Each option\'s note is just the duration and the key detail (e.g. "~20 นาที", "JR Yamanote ~15 นาที"). Set the leg\'s own "mode" and "note" to the option you recommend (taxi when children or older people are coming and the ride is short).',
+    '- Add a travel leg (type "move") before every stop that is in a different place from the one before it, even a short walk: from the hotel (or airport) to the first stop of the day, between stops, and always a last leg back to that night\'s hotel after the final stop of the day. Give each leg "options" so the person can choose: always one by taxi (mode ขับรถ) and one by public transport (mode ขนส่งสาธารณะ, note says which line or bus), plus walking (mode เดิน) when it is under about 20 minutes on foot, plus any special service you know for that exact journey, such as the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, or a theme-park monorail (mode ขนส่งสาธารณะ, note gives its name and duration, e.g. "Airport Limousine Bus ~60 นาที"). Each option\'s note is just the duration and the key detail (e.g. "~20 นาที", "JR Yamanote ~15 นาที"). Set the leg\'s own "mode" and "note" to the option you recommend (taxi when children or older people are coming and the ride is short).',
     '- Exactly one travel leg for each journey: never add two legs with the same start or destination, and never a separate "leave early" or "get ready" item. Advice such as leaving 3 hours before a flight goes in that one leg\'s note together with the duration (e.g. "~45 นาที · ออกก่อน 3 ชม."). The time of the leg is when to set off.',
     '- Match the pace: relaxed ≈ 2-3 stops a day, balanced ≈ 3-4 (meals not counted). With children or older people keep walking moderate, keep stops near each other and add a rest.',
     '- When you schedule a wish-list item, copy its id into "ideaId" and use its title.',
