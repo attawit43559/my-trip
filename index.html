@@ -438,7 +438,7 @@ input,select,textarea{font-size:16px!important}
 .trip-bar svg.art{position:absolute;right:40px;bottom:0;left:auto;width:168px;height:92px;overflow:visible}
 .trip-bar .tb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3;gap:2px}
 .trip-bar h1{font-size:26px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trip-bar .tb-invite{position:relative;flex:none}
+.trip-bar .tb-invite,.trip-bar .tb-save{position:relative;flex:none}
 .trip-bar .tb-invite em{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-style:normal;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .fld input,.fld select{height:46px;border-radius:14px}
 .fld.sm input{height:42px}
@@ -1092,6 +1092,7 @@ function vTrip(){
     <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
+      ${dates.length ? `<button class="round tb-save" data-act="export-open" aria-label="บันทึกแผนเป็นรูป">${ic("image",20)}</button>` : ""}
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
     <section class="stack" style="gap:14px">
@@ -1099,7 +1100,6 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
-        ${S.clearAsk === d ? "" : `<button class="clear-btn" data-act="export-open">${ic("image",15)}บันทึกเป็นรูป</button>`}
         ${ownOn([d]).length ? (S.clearAsk === d
           ? `<span class="clear-ask"><button class="pill-btn" data-act="clear-no">ไม่ลบ</button><button class="pill-btn danger-soft" data-act="clear-yes" data-d="${d}">ลบ ${ownOn([d]).length} รายการ</button></span>`
           : `<button class="clear-btn" data-act="clear-ask" data-d="${d}">${ic("trash",15)}ล้างวันนี้</button>`) : ""}</div>
@@ -1504,7 +1504,6 @@ async function aiAdd(){
 /* ---------- day pages to keep or send: one picture per day, with a map ---------- */
 function loadScript(src){ return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("load")); document.head.appendChild(sc); }); }
 async function exportLibs(pdf){
-  if(!document.getElementById("mali-font")){ const l = document.createElement("link"); l.id = "mali-font"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap"; document.head.appendChild(l); }
   if(!window.PlanExport) await loadScript("plan-export.js?v=" + BUILD);
   if(pdf && !(window.jspdf && window.jspdf.jsPDF)) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
 }
@@ -1560,7 +1559,7 @@ async function exportRun(kind){
   exportReset(s); s.kind2 = kind; s.busy = "กำลังเตรียม…"; render();
   try{
     await exportLibs(kind === "pdf");
-    const days = pick.map(d => ({tripName:t.name, dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
+    const days = pick.map(d => ({tripName:t.name, tone:tone(t.id), dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
     s.busy = "กำลังหาตำแหน่งบนแผนที่…"; render();
     await exportPlaces(days);
     const blobs = [];
@@ -2393,7 +2392,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-29w";
+const BUILD = "2026-10-29x";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
