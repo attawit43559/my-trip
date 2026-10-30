@@ -1484,7 +1484,7 @@ function callGemini_(props, prompt, files, opts) {
     try {
       const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
         headers: { 'x-goog-api-key': key },
-        payload: { contents: [{ role: 'user', parts }], generationConfig: Object.assign({ temperature: opts.temperature || 0, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: opts.thinking || 'low' } }, opts.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}) }
+        payload: { contents: [{ role: 'user', parts }], generationConfig: Object.assign({ responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: opts.thinking || 'low' } }, opts.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}) }
       });
       const c = res.candidates && res.candidates[0];
       const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || '').join('');
@@ -1502,7 +1502,7 @@ function callGeminiMany_(props, prompts) {
   if (!key) throw new Error('missing_GEMINI_API_KEY');
   const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
   const reqs = prompts.map(p => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': key }, muteHttpExceptions: true,
-    payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { temperature: 0.5, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
+    payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
   const res = UrlFetchApp.fetchAll(reqs);
   return res.map((r, i) => {
     try {
