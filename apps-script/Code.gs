@@ -411,7 +411,7 @@ function replacePlan_(req) { return withLock_(() => {
   if(!Array.isArray(dates)||!dates.length||dates.some(d=>allowed.indexOf(d)<0)) throw new Error('no_dates');
   if(!Array.isArray(proposed)||proposed.length>500) throw new Error('bad_plan');
   const seen=new Set(), currentBy={};current.forEach(i=>currentBy[i.id]=i);
-  const docs=proposed.map(raw=>{
+  let docs=proposed.map(raw=>{
     const it=clean_(raw);
     if(!it.id||seen.has(it.id)||!['place','move'].includes(it.type)||dates.indexOf(it.date)<0) throw new Error('bad_plan');
     seen.add(it.id);
@@ -419,6 +419,7 @@ function replacePlan_(req) { return withLock_(() => {
     if(existing && existing.tripId!==id) throw new Error('item_trip_mismatch');
     return Object.assign(it,{tripId:id});
   });
+  if(!req.restore && !req.clear && !req.reason) docs=dedupeTravel_(docs);
   // Locked appointments cannot disappear or change their reservation time in an AI replacement.
   if(!req.restore && !req.clear) current.filter(i=>i.type==='place'&&dates.includes(i.date)&&i.data&&i.data.timeLocked).forEach(it=>{
     const next=docs.find(n=>n.id===it.id || (n.data||{}).originId===it.id);
@@ -900,6 +901,7 @@ function routeDay_(d, r, items, p) {
     if (!place.inside) parent = place;
   });
   if (gaps[d.stops.length]) legTo(gaps[d.stops.length]);
+  const unique = dedupeTravel_(out); out.splice(0,out.length,...unique);
   // Use departure times and leg durations, not just nondecreasing arrival times.
   const fmt = m => ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2);
   const duration = x => {
@@ -1207,6 +1209,40 @@ function planPrompt_(trip, items, dates, prefs, reject, wish, draft) {
   ].filter(Boolean).join('\n');
 }
 
+// Ignore cosmetic punctuation/duration differences while preserving named transit services.
+function travelOptionKey_(mode, note) {
+  if (mode === 'ขับรถ' || mode === 'เดิน') return mode;
+  const service = String(note || '').toLowerCase().replace(/(?:~|≈|ประมาณ|ราว)?\s*\d+(?:\.\d+)?\s*(?:นาที|minutes?|mins?|ชั่วโมง|ชม\.?|hours?|hrs?)/gi, '').replace(/[\s~≈·:.,;()\-–—]/g, '');
+  return mode + '|' + service;
+}
+// Collapse only the same uninterrupted journey, or the same journey at exactly the same time.
+// A later revisit after another stop/journey remains a separate leg. Never mutate source objects.
+function dedupeTravel_(list) {
+  const out = [], timed = new Map();
+  list.forEach(item => {
+    if (!item || item.type !== 'move') { out.push(item); return; }
+    const data = item.data || item;
+    if (!data.from || !data.to) { out.push(item); return; }
+    const same = other => other && other.type === 'move' && other.date === item.date && routeName_((other.data || other).from, data.from) && routeName_((other.data || other).to, data.to);
+    const key = JSON.stringify([String(item.date || ''),String(item.time || ''),String(data.from).toLowerCase().replace(/[\s.,\-–·()'"‘’]/g,''),String(data.to).toLowerCase().replace(/[\s.,\-–·()'"‘’]/g,'')]);
+    const previous = out[out.length - 1];
+    const kept = same(previous) ? previous : item.time ? timed.get(key) : null;
+    if (kept) {
+      const first = kept.data || kept, options = [], seen = new Set();
+      const add = o => {if(!o || !o.mode)return;const key=travelOptionKey_(o.mode,o.note);if(!seen.has(key)){seen.add(key);options.push({mode:o.mode,note:String(o.note||'').slice(0,60)});}};
+      add({mode:first.mode,note:kept.data?kept.sub:kept.note});
+      (first.options||[]).forEach(add);
+      add({mode:data.mode,note:item.data?item.sub:item.note});(data.options||[]).forEach(add);
+      const patch = { options: options.length > 1 ? options.slice(0,5) : [] };
+      if(kept.data) kept.data=Object.assign({},kept.data,patch);else Object.assign(kept,patch);
+      return;
+    }
+    const copy = Object.assign({}, item);
+    out.push(copy);if(item.time)timed.set(key,copy);
+  });
+  return out;
+}
+
 // keep only well-formed items on the requested dates; ids must point at real wish-list items;
 // drop repeats: a second leg to the same place, or anything already in the plan that day
 function moveOf_(x, t, hm, modes) {
@@ -1221,11 +1257,13 @@ function moveOf_(x, t, hm, modes) {
   (Array.isArray(x.options) ? x.options : []).slice(0, 5).forEach(o => {
     if (!o || options.length >= 4) return;
     const m = moveOf_({ mode: o.mode, note: o.note, time: '', from: '', to: '' }, t, hm, modes);
-    const k = m.mode + '|' + optKey_(m.note);
+    const k = travelOptionKey_(m.mode, m.note);
     if (seen[k]) return; seen[k] = true; seen[m.mode] = true;
     options.push({ mode: m.mode, note: m.note.slice(0, 60) });
   });
-  if (options.length && !options.some(o => o.mode === mode && optKey_(o.note) === optKey_(note))) options.unshift({ mode, note: note.slice(0, 60) });
+  const selected = options.findIndex(o => travelOptionKey_(o.mode,o.note) === travelOptionKey_(mode,note));
+  if (selected >= 0) options[selected] = { mode, note: note.slice(0,60) };
+  else if (options.length) options.unshift({ mode, note: note.slice(0,60) });
   return { time: hm(x.time), type: 'move', mode, from: t(x.from).slice(0, 80), to: t(x.to).slice(0, 80), note: note.slice(0, 120), options: options.length > 1 ? options : [] };
 }
 
@@ -1264,7 +1302,7 @@ function cleanPlan_(raw, dates, items, opts) {
     if (t(x.inside) && (!parent || parent.kind === 'ร้านอาหาร' || !sameName_(x.inside, parent.title))) x.inside = ''; if (!t(x.inside)) parent = x; }); return d; };
   const days = ((raw && raw.days) || []).filter(d => d && dates.indexOf(t(d.date)) >= 0).map(insideOk).map(d => ({
     date: t(d.date), summary: t(d.summary).slice(0, 80),
-    items: expand(d).slice(0, 30).map(x => x && x.type === 'move'
+    items: dedupeTravel_(expand(d)).slice(0, 30).map(x => x && x.type === 'move'
       ? moveOf_(x, t, hm, modes)
       : { time: hm(x && x.time), type: 'place', title: t(x && x.title).slice(0, 80), kind: kinds.indexOf(t(x && x.kind)) >= 0 ? t(x.kind) : 'ที่เที่ยว', address: t(x && x.address).slice(0, 160), note: t(x && x.note).slice(0, 60), ideaId: ideaIds[t(x && x.ideaId)] ? t(x.ideaId) : '', inside: t(x && x.inside).slice(0, 80) })
       .filter(x => x.type === 'move' ? (x.from || x.to) : x.title)
@@ -1284,10 +1322,10 @@ function cleanPlan_(raw, dates, items, opts) {
     d.items = d.items.filter(x => {
       if (x.type === 'move') {
         const to = key(x.to), leg = key(x.from) + '>' + to;
-        const kept = keptLeg[leg] || (lastKept && lastKept.type === 'move' && key(lastKept.to) === to ? lastKept : null);
+        const kept = lastKept && lastKept.type === 'move' && key(lastKept.from) === key(x.from) && key(lastKept.to) === to ? lastKept : null;
         if (kept) { if (x.note && kept.note.indexOf(x.note) < 0) kept.note = (kept.note ? kept.note + ' · ' : '') + x.note; return false; }
-        if (seenLeg[leg]) return false;
-        seenLeg[leg] = true; keptLeg[leg] = x; lastKept = x; return true;
+        if (had.some(i=>i.type==='move' && i.time===x.time && routeName_((i.data||{}).from,x.from) && routeName_((i.data||{}).to,x.to))) return false;
+        lastKept = x; return true;
       }
       const k = key(x.title);
       // a place appears once in the whole trip (restaurants inside a park are part of that visit)
