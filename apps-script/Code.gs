@@ -57,6 +57,7 @@ function json_(obj) {
 
 const ACTIONS = {
   ping: () => ({ pong: true }),
+  mapImage: (req) => mapImage_(req),
 
   // exchange a Google sign-in for a session; trips this phone made before sign-in move to the account
   login: (req) => {
@@ -1444,4 +1445,46 @@ function setup() {
   sheet_(TRIPS); sheet_(ITEMS); folder_();
   UrlFetchApp.fetch('https://www.google.com', { muteHttpExceptions: true });
   Logger.log('Ready. Now deploy as a web app.');
+}
+
+
+/* Google Maps images use the built-in Apps Script Maps quota, without a billing API key.
+ * Reserve under a shared lock BEFORE rendering; failed renders still consume a slot.
+ * This cap is shared by every account/trip, and resets at midnight Bangkok time.
+ */
+function reserveMapRender_() {
+  return withLock_(() => {
+    const props = PropertiesService.getScriptProperties();
+    const day = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+    const saved = props.getProperty('MAP_RENDER_DAY');
+    const count = saved === day ? Number(props.getProperty('MAP_RENDER_COUNT') || 0) : 0;
+    if (!Number.isFinite(count) || count < 0 || count >= 200) throw new Error('map_daily_limit');
+    props.setProperties({ MAP_RENDER_DAY: day, MAP_RENDER_COUNT: String(count + 1) });
+    return count + 1;
+  });
+}
+function mapImage_(req) {
+  mustBeMember_(req.tripId, req.me);
+  const points = req.points;
+  if (!Array.isArray(points) || !points.length || points.length > 35) throw new Error('bad_map_points');
+  const validDate = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  points.forEach(p => {
+    if (!p || typeof p.lat !== 'number' || typeof p.lon !== 'number' || !Number.isFinite(p.lat) || !Number.isFinite(p.lon) || Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180 || !/^0x[0-9a-f]{6}$/i.test(p.color || '') || !['plan','stay','idea'].includes(p.kind)) throw new Error('bad_map_points');
+    if (p.kind === 'plan' && !validDate(p.date)) throw new Error('bad_map_points');
+    for (const key of ['starts', 'ends']) if (p[key] !== undefined && (!Array.isArray(p[key]) || p[key].length > 366 || !p[key].every(validDate))) throw new Error('bad_map_points');
+  });
+  const used = reserveMapRender_();
+  const map = Maps.newStaticMap().setSize(640, 420).setLanguage('th');
+  points.forEach((p, i) => map.setMarkerStyle(Maps.StaticMap.MarkerSize.MID, p.color, '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]).addMarker(p.lat, p.lon));
+  const days = Array.from(new Set(points.flatMap(p => p.kind === 'plan' ? [p.date] : [...(p.starts || []), ...(p.ends || [])])));
+  days.forEach(date => {
+    const planned = points.filter(p => p.kind === 'plan' && p.date === date), start = points.find(p => (p.starts || []).includes(date)), end = points.find(p => (p.ends || []).includes(date));
+    const path = [start, ...planned, end].filter(Boolean);
+    if (path.length > 1 && (planned.length || start !== end)) {
+      map.setPathStyle(4, planned[0] ? planned[0].color : '0x374151', '0x00000000').beginPath();
+      path.forEach(p => map.addPoint(p.lat, p.lon));
+      map.endPath();
+    }
+  });
+  return { image: Utilities.base64Encode(map.getMapImage()), used, limit: 200 };
 }
