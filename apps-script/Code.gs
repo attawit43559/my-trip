@@ -7,7 +7,7 @@
  * Script properties (Project Settings → Script properties):
  *   AI_PROVIDER     gemini (default) | claude | openai
  *   GEMINI_API_KEY  key from Google AI Studio            (for gemini)
- *   GEMINI_MODEL    optional, default gemini-3.5-flash
+ *   GEMINI_MODEL    optional, default gemini-3.8-flash
  *   CLAUDE_API_KEY  key from Anthropic Console           (for claude)
  *   CLAUDE_MODEL    optional, default claude-haiku-5-5
  *   OPENAI_API_KEY  key from platform.openai.com          (for openai)
@@ -894,6 +894,12 @@ function routeName_(a, b) {
   const key = v => String(v || '').toLowerCase().replace(/[\s.,\-–·()'"‘’]/g, '');
   return !!key(a) && key(a) === key(b);
 }
+function routeDuration_(x){
+  if(Number.isFinite(+x.durationMinutes)&&+x.durationMinutes>0)return Math.round(+x.durationMinutes);
+  const text=String(x.note||x.sub||'');
+  const h=text.match(/(\d+(?:\.\d+)?)\s*(?:ชั่วโมง|ชม\.?|hours?|hrs?)/i),m=text.match(/(\d+)\s*(?:นาที|mins?|minutes?)/i);
+  return h||m?Math.max(1,Math.round((h?+h[1]*60:0)+(m?+m[1]:0))):null;
+}
 function routeMinute_(v) {
   const m = /^(\d{1,2})[:.](\d{2})$/.exec(String(v || '').trim());
   return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : -1;
@@ -965,8 +971,8 @@ function routeDay_(d, r, items, p) {
   // Use departure times and leg durations, not just nondecreasing arrival times.
   const fmt = m => ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2);
   const duration = x => {
-    const m = String(x.note || '').match(/(?:~|ประมาณ|ราว)?\s*(\d+)\s*(?:นาที|min)/i);
-    if (m) return Math.max(1, +m[1]);
+    const value=routeDuration_(x);
+    if(value!==null)return value;
     warnings.push('เผื่อเดินทาง 30 นาทีสำหรับ ' + x.from + ' → ' + x.to + ' กรุณาตรวจสอบเวลาจริง');
     return 30;
   };
@@ -1111,7 +1117,7 @@ function dayFrame_(items, date) {
     : slept ? { name: slept.title, text: `wakes up at "${slept.title}"` + (slept.endDate === date ? ` and checks out by ${slept.endTime || '11:00'}` : '') } : null;
   const end = dep ? { name: (dep.data.from || '') + ' airport', code: dep.data.from, text: `must reach ${dep.data.from} airport about 3 hours before the ${dep.time} flight` }
     : tonight ? { name: tonight.title, text: `sleeps at "${tonight.title}"` + (tonight.date === date ? ` (check in from ${tonight.time || '15:00'})` : '') } : null;
-  const moving = start && end && !sameName_(start.name, end.name);
+  const moving = start && end && !routeName_(start.name, end.name);
   const text = [start ? 'starts: ' + start.text : 'starts: (no booking)', end ? 'ends: ' + end.text : 'ends: (no booking)',
     moving ? `travel day: include the journey from "${start.name}" to "${end.name}" (with luggage) and plan the rest of the day around it` : ''].filter(Boolean).join(' · ');
   const blocked=flightDayBlocked_(items,date);
@@ -1470,8 +1476,8 @@ function callGemini_(props, prompt, files, opts) {
   opts = opts || {};
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
-  // the "latest" aliases can stall for minutes on the free tier, so name fast models and fall back to a lighter one
-  const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+  // Keep the selected model explicit; do not silently downgrade planning quality.
+  const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash'];
   const parts = [{ text: prompt }].concat([].concat.apply([], files.map((f, i) => [{ text: '[File ' + i + ']' }, { inline_data: { mime_type: f.mime, data: f.data } }])));
   let lastErr;
   for (const model of models.filter((m, i) => models.indexOf(m) === i)) {
@@ -1494,7 +1500,7 @@ function callGeminiMany_(props, prompts) {
   if (prompts.length === 1) return [callGemini_(props, prompts[0], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 })];
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
-  const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash';
+  const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
   const reqs = prompts.map(p => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': key }, muteHttpExceptions: true,
     payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { temperature: 0.5, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
   const res = UrlFetchApp.fetchAll(reqs);
@@ -1508,7 +1514,7 @@ function callGeminiMany_(props, prompts) {
     } catch (e) {}
     // busy (too many at once on the free tier): wait a moment, then ask on its own
     if (r.getResponseCode() === 429) Utilities.sleep(2000 + i * 1500);
-    try { return callGemini_(props, prompts[i], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 }); } catch (e) { return ''; }
+    return callGemini_(props, prompts[i], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
   });
 }
 
