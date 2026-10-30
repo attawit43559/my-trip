@@ -1687,9 +1687,10 @@ function overviewDay(date){
 }
 function geoDistance(a,b){const r=x=>x*Math.PI/180,h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lon-a.lon)/2)**2;return 12742*Math.asin(Math.min(1,Math.sqrt(h)));}
 const MAP_COLORS=['0x1958bd','0xb45309','0x15803d','0xb91c1c','0x7e22ce','0x0e7490','0xbe185d','0x4338ca','0x4d7c0f'];
-function staticMapPoints(items,dates,selected='all',source='both'){
+function staticMapPoints(items,dates,selected='all',source='both',resolved={}){
  const points=[],missing=[],planned=new Set(items.filter(i=>i.type==='place').map(i=>(i.data||{}).fromIdea).filter(Boolean));
- const coords=it=>{const d=it.data||{};return d.lat!=null&&d.lon!=null&&d.lat!==''&&d.lon!==''&&Number.isFinite(+d.lat)&&Number.isFinite(+d.lon)&&Math.abs(+d.lat)<=90&&Math.abs(+d.lon)<=180?{lat:+d.lat,lon:+d.lon}:null;};
+ const valid=d=>d&&d.lat!=null&&d.lon!=null&&d.lat!==''&&d.lon!==''&&Number.isFinite(+d.lat)&&Number.isFinite(+d.lon)&&Math.abs(+d.lat)<=90&&Math.abs(+d.lon)<=180?{lat:+d.lat,lon:+d.lon}:null;
+ const coords=it=>valid(it.data)||valid((items.find(i=>i.id===(it.data||{}).fromIdea)||{}).data)||valid(resolved[it.id]);
  const add=(it,date,kind,color)=>{const pos=coords(it);if(!pos){missing.push(it.title);return;}points.push({id:it.id,title:it.title,date,kind,color,time:it.time||'',...pos});};
  if(source!=='ideas')dates.filter(d=>selected==='all'||selected===d).forEach(date=>{
   const color=MAP_COLORS[dates.indexOf(date)%MAP_COLORS.length],prev=new Date(new Date(date+'T00:00:00Z').getTime()-86400000).toISOString().slice(0,10);
@@ -1704,7 +1705,7 @@ function staticMapPoints(items,dates,selected='all',source='both'){
 }
 function vOverview(s){
  const dates=tripDates(S.trip),chosen=s.date||'all',source=s.mapSource||'both';
- const data=staticMapPoints(S.items,dates,chosen,source),pages=Math.max(1,Math.ceil(data.points.length/35));
+ const data=staticMapPoints(S.items,dates,chosen,source,overviewGeo),pages=Math.max(1,Math.ceil(data.points.length/35));
  const page=Math.min(s.mapPage||0,pages-1),shown=data.points.slice(page*35,(page+1)*35),labels='123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
  const dayColor=d=>MAP_COLORS[dates.indexOf(d)%MAP_COLORS.length].replace('0x','#');
  return `<div class="scrim" data-act="close-sheet"><div class="sheet overview-sheet" role="dialog" aria-modal="true" aria-label="ภาพรวมทริป" data-stop="1"><div class="hd"><h2>แผนที่และภาพรวมทริป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>
@@ -1716,15 +1717,27 @@ function vOverview(s){
  ${shown.length?`<ol class="map-pin-list">${shown.map((p,i)=>`<li><span class="map-pin-label" style="background:${p.color.replace('0x','#')}">${labels[i]}</span><span><b>${esc(p.title)}</b><small>${p.kind==='idea'?'ที่สนใจ':p.kind==='stay'?'ที่พัก':`วันที่ ${dates.indexOf(p.date)+1} · ${esc(p.time)}`}</small></span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.lat+','+p.lon)}" target="_blank" rel="noopener">Google Maps ↗</a></li>`).join('')}</ol>`:''}
  ${dates.filter(d=>chosen==='all'||d===chosen).map(d=>{const x=overviewDay(d);return `<section class="card overview-day"><div class="hd"><b>วันที่ ${dates.indexOf(d)+1} · ${esc(dShort(d))}</b><button class="pill-btn" data-act="overview-day" data-d="${d}">ดูวันนี้</button></div><p>${x.places.length} สถานที่${x.warning?' · '+esc(x.warning):''}</p><ol>${x.entries.map(e=>`<li><b>${esc(e.time||'—')}</b> ${esc(e.title)}${(e.it.data||{}).timeLocked?' 🔒':''}</li>`).join('')||'<li>ยังไม่มีแผน</li>'}</ol></section>`;}).join('')}</div></div>`;
 }
-let overviewMapToken=0;
+let overviewMapToken=0,overviewGeo={},overviewGeoPending=null,overviewMapRequests=new Map();
 async function mountOverviewMap(){
  if(!S.sheet||S.sheet.kind!=='overview')return;
  const node=document.getElementById('trip-map'),status=document.getElementById('map-status'),token=++overviewMapToken;if(!node)return;
- const s=S.sheet,data=staticMapPoints(S.items,tripDates(S.trip),s.date||'all',s.mapSource||'both');
+ const needed=S.items.filter(i=>['place','stay','idea'].includes(i.type)&&!Object.prototype.hasOwnProperty.call(overviewGeo,i.id)&&staticMapPoints([i],tripDates(S.trip),'all',i.type==='idea'?'ideas':'plan').missing.length);
+ if(needed.length){
+  if(status)status.textContent='กำลังค้นหาพิกัดสถานที่จาก Google…';
+  if(!overviewGeoPending){
+   const queries=Array.from(new Set(needed.map(i=>[i.title,(i.data||{}).address||S.trip.destination||''].filter(Boolean).join(', '))));
+   overviewGeoPending=api('geocode',{q:queries.slice(0,60)}).then(result=>needed.forEach(i=>{const q=[i.title,(i.data||{}).address||S.trip.destination||''].filter(Boolean).join(', '),pos=result[queries.indexOf(q)];overviewGeo[i.id]=pos||null;})).catch(()=>needed.forEach(i=>overviewGeo[i.id]=null)).finally(()=>overviewGeoPending=null);
+  }
+  await overviewGeoPending;
+  if(token===overviewMapToken&&node.isConnected){render();}return;
+ }
+ const s=S.sheet,data=staticMapPoints(S.items,tripDates(S.trip),s.date||'all',s.mapSource||'both',overviewGeo);
  const page=Math.min(s.mapPage||0,Math.max(0,Math.ceil(data.points.length/35)-1)),points=data.points.slice(page*35,(page+1)*35);
  if(!points.length)return;
  try{
-  const result=await api('mapImage',{tripId:S.trip.id,points});
+  const requestKey=JSON.stringify([S.trip.id,points]);
+  if(!overviewMapRequests.has(requestKey))overviewMapRequests.set(requestKey,api('mapImage',{tripId:S.trip.id,points}).catch(e=>{overviewMapRequests.delete(requestKey);throw e;}));
+  const result=await overviewMapRequests.get(requestKey);
   if(token!==overviewMapToken||!node.isConnected)return;
   const blob=new Blob([Uint8Array.from(atob(result.image),c=>c.charCodeAt(0))],{type:'image/png'}),url=URL.createObjectURL(blob);
   const image=document.createElement('img');image.alt='แผนที่ Google หมุด '+points.map((p,i)=>'123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]+'. '+p.title).join(', ');image.className='static-map-image';
@@ -1992,7 +2005,7 @@ function render(){
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();
   if(S.sheet && S.sheet.kind === "overview") mountOverviewMap();
-  else {overviewMapToken++;overviewMapUrls.forEach(u=>URL.revokeObjectURL(u));overviewMapUrls=[];}
+  else {overviewMapToken++;overviewMapUrls.forEach(u=>URL.revokeObjectURL(u));overviewMapUrls=[];overviewMapRequests.clear();}
 }
 /* typing boxes that grow line by line so the whole message stays visible */
 function fitAreas(el){ (el ? [el] : document.querySelectorAll("textarea.grow-area")).forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }); }
@@ -2715,7 +2728,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-staticmaps1";
+const BUILD = "2026-10-30-staticmaps2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
