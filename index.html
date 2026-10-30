@@ -489,7 +489,9 @@ input,select,textarea{font-size:16px!important}
 html.lock,html.lock body{overflow:hidden}
 .sheet,.dock-body{overscroll-behavior:contain}
 .dock-panel.ai-panel{max-height:calc(var(--vvh,100vh) - 130px)}
-.ai-panel .dock-body{padding:2px 4px 0}
+.ai-panel .dock-body{padding:2px 4px 0;min-height:0;overflow-y:auto}
+.ai-panel>.ai-bar{flex-shrink:0;padding-top:10px;border-top:1px solid var(--line);background:var(--surface)}
+.ai-steps{display:flex;gap:8px;font-size:12px;color:var(--muted)}.ai-steps b{color:var(--ai)}
 .ai-stack{display:flex;flex-direction:column;gap:12px}
 .ai-form{gap:14px;padding-bottom:4px}
 .ai-q{gap:7px}
@@ -1557,9 +1559,10 @@ function aiEnds(date){
 }
 const aiStop = id => S.items.find(i => i.id === id);
 function vAiPlan(s){
-  const wrap = inner => `<div class="ai-stack">${inner}</div>`;
+  const phase=s.step==='review'?3:s.step==='pick'||(s.step==='loading'&&s.assign)?2:1;
+  const wrap = inner => `<div class="ai-stack"><div class="ai-steps" aria-label="ขั้นตอนจัดแผน">${['เลือกสถานที่','จัดเวลาทีละวัน','ยืนยันลงแผน'].map((label,i)=>i+1===phase?`<b aria-current="step">${i+1} ${label}</b>`:`<span>${i+1} ${label}</span>`).join('')}</div>${inner}</div>`;
   const dates = tripDates(S.trip);
-  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${esc(s.loadMsg || "กำลังวางแผน…")}</p><p class="muted small">ทริปหลายวันอาจใช้เวลาหลายนาที ย่อหน้าต่างนี้เพื่อดูส่วนอื่นระหว่างรอได้</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${esc(s.loadMsg || "กำลังวางแผน…")}</p><p class="muted small">รอบนี้ทำเฉพาะขั้นตอนที่เลือก เสร็จแล้วจะหยุดให้ตรวจ ไม่เริ่มขั้นถัดไปเอง ย่อหน้าต่างนี้เพื่อดูส่วนอื่นระหว่างรอได้</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
   if(s.step === "pick"){
     const days = s.assign.days, shown = days.some(d => d.date === s.viewDay) ? s.viewDay : (days[0] || {}).date;
     const d = days.find(x => x.date === shown) || {date:shown, ids:[]}, idx = dates.indexOf(d.date);
@@ -1572,12 +1575,12 @@ function vAiPlan(s){
       <span class="grow"><span class="ttl">${esc(briefName(it.title))}${aiRequired(s,it.id)?'<small class="ai-required-label">ต้องไป</small>':''}</span>${it.sub ? `<br><span class="muted small">${esc(it.sub)}</span>` : ""}</span>
       <span class="ai-mv"><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="-1" ${i ? "" : "disabled"} aria-label="เลื่อนขึ้น">${ic("up",16)}</button><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="1" ${i < all.length - 1 ? "" : "disabled"} aria-label="เลื่อนลง">${ic("down",16)}</button><button type="button" data-act="ai-drop" data-k="${esc(it.id)}" ${aiRequired(s,it.id)?"disabled":""} aria-label="${aiRequired(s,it.id)?"สถานที่ต้องไป":"เอาออกจากวันนี้"}">${ic("close",16)}</button></span></li>`).join("");
     const ends = aiEnds(d.date);
-    return wrap(`<p class="muted small" style="margin-top:-4px">แก้รายชื่อสถานที่ แล้วกด <b>จัดเวลาอีกครั้ง</b> เพื่อคำนวณเส้นทางให้ครบ</p>
+    return wrap(`<p class="muted small" style="margin-top:-4px">ตรวจและสลับสถานที่ได้ก่อน แล้วกด <b>จัดเวลาวันนี้</b> จัดทีละวัน ไม่ต้องรอทั้งทริป</p>
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:""}${days.length>1?aiDateSelect(days,shown):""}
       <section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}${d.ids.length ? ` · ${d.ids.length} ที่` : ""}</b>${ends ? `<span class="muted small">${esc(ends)}</span>` : ""}${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
         ${rows ? `<ul class="ai-list">${rows}</ul>` : `<p class="ai-empty">ยังไม่มีสถานที่ในวันนี้ วันบินก่อนถึงปลายทางจะเว้นไว้ให้</p>`}
         ${d.note ? `<p class="ai-attach small">${ic("spark",14)}<span>${esc(d.note)}</span></p>` : ""}</section>
-      ${free.length ? `<div class="ai-q"><b>ที่สนใจที่ยังไม่ได้ใส่ (${free.length})</b><div class="chips ai-free">${free.map(it => `<button type="button" data-act="ai-put" data-k="${esc(it.id)}" title="${esc(why[it.id] || "")}"><span class="thumb-xs ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",12)}</span>${esc(briefName(it.title))}${why[it.id] ? `<small class="muted"> · ${esc(why[it.id])}</small>` : ""}${ic("plus",14)}</button>`).join("")}</div></div>` : ""}`);
+      ${free.length ? `<details class="ai-q"><summary>เพิ่มจากที่สนใจ (${free.length})</summary><div class="chips ai-free">${free.map(it => `<button type="button" data-act="ai-put" data-k="${esc(it.id)}" title="${esc(why[it.id] || "")}"><span class="thumb-xs ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",12)}</span>${esc(briefName(it.title))}${why[it.id] ? `<small class="muted"> · ${esc(why[it.id])}</small>` : ""}${ic("plus",14)}</button>`).join("")}</div></details>` : ""}`);
   }
   if(s.step === "review"){
     const r = s.result || {days:[]};
@@ -1609,8 +1612,8 @@ function vAiPlan(s){
     const problems=r.days.filter(d=>(d.conflicts||[]).length);
     const blocked=problems.length?`<div class="err" role="alert"><b>ยังบันทึกไม่ได้ กรุณาตรวจวันเหล่านี้</b><div class="chips">${problems.map(d=>`<button data-act="ai-view" data-d="${esc(d.date)}">${esc(dShort(d.date))}</button>`).join('')}</div></div>`:'';
     const wish=s.showRefine?`<div class="ai-refine"><label class="fld sm ai-note"><span>อยากปรับอะไรในวันนี้?</span><textarea id="ai-wish" class="grow-area" rows="2" maxlength="400" placeholder="เช่น ออกช้าลง 1 ชั่วโมง หรือพักมากขึ้น" data-bind="ai:wish">${esc(s.wish||'')}</textarea></label>${((r.days.find(d=>d.date===shown)||{}).items||[]).length?`<div class="chips ai-quick"><button data-act="ai-quick" data-k="walking">เดินน้อยลง</button><button data-act="ai-quick" data-k="lighter">เที่ยวให้น้อยลง</button></div>`:''}<button class="text-action" data-act="ai-topick">แก้รายชื่อสถานที่</button></div>`:'';
-    return wrap(`<p class="muted small">ร่างนี้ยังไม่บันทึก${rm?' · จะแทนที่แผนเดิมเฉพาะวันที่จัด':''}</p>${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}${blocked}
-      ${r.days.length>1?aiDateSelect(r.days,shown):''}${days||'<p class="muted">ยังไม่มีร่างแผน</p>'}${days?wish:''}`);
+    return wrap(`<p class="muted small">ร่างนี้ยังไม่บันทึก · พร้อม ${r.days.length} จาก ${(s.assign?.days||r.days).length} วัน${rm?' · จะแทนที่แผนเดิมเฉพาะวันที่จัด':''}</p>${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}${blocked}
+      ${r.days.length>1?aiDateSelect(r.days,shown):''}${days||'<p class="muted">ยังไม่มีร่างแผน</p>'}${days?wish:''}${(s.assign?.days||[]).length>1?`<button class="text-action" data-act="ai-other-day">เลือกวันอื่นเพื่อจัดเวลาต่อ</button><p class="muted small">กดยืนยันเพื่อลงเฉพาะ ${r.days.length} วันที่จัดเวลาแล้ว วันอื่นยังคงเดิม</p>`:''}`);
 
   }
   const all = s.dates.length === dates.length;
@@ -1631,17 +1634,17 @@ function vAiPlan(s){
     <div class="ai-q"><b>สไตล์</b><div class="chips">${AI_INTERESTS.map(v=>`<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
     ${s.intent!=='improve'&&ideas?`<div class="ai-q"><b>ที่สนใจ</b>${aiChips('useIdeas',[['all','พยายามใส่ให้ครบ'],['fit','เลือกให้เหมาะกับเวลา']],s.useIdeas)}</div>`:''}
     <div class="ai-q"><b>ร้านอาหาร</b>${aiChips('meals',[['1','แนะนำ'],['','ไม่ต้อง']],s.meals?'1':'')}</div><p class="muted small">จำค่าผู้เดินทางและสไตล์ไว้ใช้ครั้งถัดไป</p></div>`:''}
-    <p class="muted small">${s.intent==='improve'?'ใช้สถานที่ที่มีอยู่ในวันที่เลือก แล้วร่างเวลาและการเดินทางใหม่':'AI จะเลือกสถานที่และจัดเวลาให้ ตรวจและสลับจุดได้ก่อนบันทึก'} แผนเดิมยังไม่เปลี่ยนจนกดบันทึก</p>
+    <p class="muted small">${s.intent==='improve'?'ใช้สถานที่ที่มีอยู่ในวันที่เลือก แล้วร่างเวลาและการเดินทางใหม่':'AI จะเลือกสถานที่ให้ก่อน คุณตรวจแล้วค่อยกดจัดเวลาทีละวัน'} แผนเดิมยังไม่เปลี่ยนจนกดบันทึก</p>
   </form>`);
 }
 /* the planner's buttons sit under the panel's list, like "เพิ่ม" on the other tabs */
 function aiFoot(s){
-  if(s.step === "ask" || s.step === "start") return `<div class="ai-bar"><button class="cat-add ai-grad" type="submit" form="ai-form" ${s.dates.length ? "" : "disabled"}>${ic("spark",16)}${s.intent==='improve'?'ปรับแผนเดิม':'ร่างแผนให้เลย'}</button></div>`;
-  if(s.step === "pick") return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">เริ่มใหม่</button><button class="cat-add ai-grad" data-act="ai-route">${ic("spark",16)}จัดเวลาอีกครั้ง</button></div>`;
+  if(s.step === "ask" || s.step === "start") return `<div class="ai-bar"><button class="cat-add ai-grad" type="submit" form="ai-form" ${s.dates.length ? "" : "disabled"}>${ic("spark",16)}${s.intent==='improve'?'ตรวจสถานที่ในแผนเดิม':'เลือกสถานที่ก่อน'}</button></div>`;
+  if(s.step === "pick") return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">เริ่มใหม่</button>${s.result?.days?.length?`<button class="cat-add ai-back" data-act="ai-show-draft">ดูร่างพร้อมบันทึก</button>`:""}<button class="cat-add ai-grad" data-act="ai-route">${ic("spark",16)}จัดเวลาวันนี้</button></div>`;
   if(s.step === "review"){
     const n = Object.values(s.picks || {}).filter(Boolean).length;
     const blocked=(s.result.days||[]).some(d=>(d.conflicts||[]).length);
-    return `<div class="ai-bar">${s.showRefine?`<button class="cat-add ai-edit" data-act="ai-revise" ${s_(s.wish)&&!s.saving?'':'disabled'}>ส่งให้ AI ปรับ</button>`:`<button class="cat-add ai-back" data-act="ai-refine" ${s.saving?'disabled':''}>ปรับร่างนี้</button>`}<button class="cat-add ai-grad" data-act="ai-add" ${n&&!blocked&&!s.saving?'':'disabled'}>${ic('check',16)}${s.saving?'กำลังบันทึก…':'บันทึกแผน'}</button></div>`;
+    return `<div class="ai-bar">${s.showRefine?`<button class="cat-add ai-edit" data-act="ai-revise" ${s_(s.wish)&&!s.saving?'':'disabled'}>ส่งให้ AI ปรับ</button>`:`<button class="cat-add ai-back" data-act="ai-refine" ${s.saving?'disabled':''}>ปรับร่างนี้</button>`}<button class="cat-add ai-grad" data-act="ai-add" ${n&&!blocked&&!s.saving?'':'disabled'}>${ic('check',16)}${s.saving?'กำลังบันทึก…':'ยืนยันลงแผน'}</button></div>`;
 
   }
   return "";
@@ -1690,24 +1693,24 @@ async function aiRun(){
   const dates=tripDates(t).filter(d=>s.dates.includes(d));if(!dates.length){s.err='เลือกวันที่ต้องการจัดแผนก่อน';render();return;}
   if(s.adults+s.elders<1){s.err='ต้องมีผู้ใหญ่หรือผู้สูงอายุอย่างน้อย 1 คน';render();return;}
   aiRemember(s);s.baseDays=dates.map(date=>({date,items:S.items.filter(i=>['place','move'].includes(i.type)&&i.date===date).map(i=>({...i,ref:i.id,ideaId:(i.data||{}).fromIdea,until:(i.data||{}).until||''}))}));
-  s.compareDays=null;s.err='';s.result=null;s.ctl=new AbortController();
+  s.compareDays=null;s.err='';s.result=null;s.assign=null;s.ctl=new AbortController();
   const pool=aiPool(dates);
   if(s.intent==='improve'){
-    s.assign={days:dates.map(date=>({date,ids:S.items.filter(i=>i.type==='place'&&i.date===date).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(i=>i.id)})),left:[]};s.viewDay=dates[0];await aiRoute(s_(s.note)||undefined);return;
+    s.assign={days:dates.map(date=>({date,ids:S.items.filter(i=>i.type==='place'&&i.date===date).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(i=>i.id)})),left:[]};s.viewDay=dates[0];s.step='pick';render();return;
   }
-  if(!pool.length){s.assign={days:dates.map(date=>({date,ids:[]})),left:[]};s.viewDay=dates[0];await aiRoute();return;}
+  if(!pool.length){s.assign={days:dates.map(date=>({date,ids:[]})),left:[]};s.viewDay=dates[0];s.step='pick';render();return;}
   s.step='loading';s.loadMsg='กำลังเลือกสถานที่ให้เหมาะกับวัน…';render();
   try{
     const res=await planCall(s,'planAssign',{tripId:t.id,dates,prefs:aiPrefs(s)});if(S.ai!==s)return;
-    s.assign=res;s.viewDay=dates[0];await aiRoute();
+    s.assign=res;s.viewDay=(res.days.find(d=>d.ids.length)||res.days[0]||{}).date;s.step='pick';render();
   }catch(e){if(S.ai!==s)return;s.step='ask';s.err=e&&e.code==='cancelled'?'':aiErr(e);render();}
 }
 const aiPrefs=s=>({adults:s.adults,children:s.children,elders:s.elders,start:pad(Math.floor(s.start/60))+':'+pad(s.start%60),interests:s.interests,useIdeas:s.useIdeas,meals:s.meals,note:s_(s.note),requiredIds:(s.requiredIds||[]).filter(id=>aiPriorityPool(s).some(i=>i.id===id))});
 
 /* step 2: times and travel for the places in the order chosen; wish = a request for the day being viewed */
-async function aiRoute(wish){
-  const s = S.ai, t = S.trip; if(!s || !t || !s.assign) return;
-  const prev = s.result, one = wish && prev ? (prev.days.some(d => d.date === s.viewDay) ? s.viewDay : (prev.days[0] || {}).date) : "";
+async function aiRoute(wish,dayOnly=false){
+  const s = S.ai, t = S.trip; if(!s || !t || !s.assign || s.step==='loading') return;
+  const prev = s.result, one = dayOnly ? s.viewDay : wish && prev ? (prev.days.some(d => d.date === s.viewDay) ? s.viewDay : (prev.days[0] || {}).date) : "";
   const days = s.assign.days.filter(d => !one || d.date === one).map(d => ({date:d.date, ids:d.ids}));
   s.err="";s.step = "loading"; s.loadMsg = one ? "กำลังปรับตามที่ขอ…" : "กำลังจัดเวลาและการเดินทาง…"; s.ctl = new AbortController(); render();
   try{
@@ -1716,7 +1719,7 @@ async function aiRoute(wish){
     for(let at=0;at<days.length;at+=2){
       const batch=days.slice(at,at+2);
       if(days.length>2){s.loadMsg='กำลังจัดเวลา '+(at+1)+'–'+Math.min(at+2,days.length)+' จาก '+days.length+' วัน…';render();}
-      const part=await planCall(s,'planRoute',{tripId:t.id,days:batch,prefs:aiPrefs(s),...((wish||one)?{wish:s_(wish),draft:one?prev.days.filter(d=>d.date===one):[]}:{} )});
+      const part=await planCall(s,'planRoute',{tripId:t.id,days:batch,prefs:aiPrefs(s),...((wish||one)?{wish:s_(wish),draft:one&&prev?prev.days.filter(d=>d.date===one):[]}:{} )});
       if(S.ai!==s)return;
       if(s.ctl.signal.aborted)throw {code:'cancelled'};
       if(res.revision&&part.revision&&res.revision!==part.revision)throw {code:'plan_changed'};
@@ -1724,7 +1727,7 @@ async function aiRoute(wish){
       res.revision=part.revision||res.revision;res.days.push(...part.days);
     }
     const fresh = res.days;
-    if(one&&s.baseRevision&&res.revision&&s.baseRevision!==res.revision)throw {code:"plan_changed"};
+    if(prev&&s.baseRevision&&res.revision&&s.baseRevision!==res.revision)throw {code:"plan_changed"};
     if(days.some(d => !fresh.some(x => x.date === d.date))) throw {code:"plan_place_missing"};
     for(const d of days){
       const got = fresh.find(x => x.date === d.date);
@@ -1732,7 +1735,7 @@ async function aiRoute(wish){
       if(refs.length !== d.ids.length || refs.some((id, i) => id !== d.ids[i])) throw {code:"plan_place_missing"};
     }
     s.baseRevision=res.revision;s.saveOperation=null;s.compareDays=prev?JSON.parse(JSON.stringify(prev.days)):null;
-    s.result = one ? {days:prev.days.map(d => fresh.find(x => x.date === d.date) || d)} : {days:fresh};
+    s.result = one && prev ? {days:[...prev.days.filter(d=>!fresh.some(x=>x.date===d.date)),...fresh].sort((a,b)=>a.date.localeCompare(b.date))} : {days:fresh};
     s.picks = {}; s.result.days.forEach((d, di) => d.items.forEach((x, xi) => s.picks[di + "." + xi] = true));
     if(!one) s.viewDay = (fresh.find(d => d.date === s.viewDay) || fresh[0] || {}).date;
     s.wish = ""; s.showRefine=false; s.step = "review"; render();return true;
@@ -1742,9 +1745,17 @@ async function aiRoute(wish){
     if(!(e && e.code === "cancelled")) toast(e.code==='plan_changed'?featureError(e):aiErr(e));return false;
   }
 }
+function aiInvalidateDraft(dates){
+  const s=S.ai;if(!s?.result)return;
+  s.result.days=s.result.days.filter(d=>!dates.includes(d.date));
+  if(!s.result.days.length)s.result=null;
+  s.picks={};s.result?.days.forEach((d,di)=>d.items.forEach((x,xi)=>s.picks[di+'.'+xi]=true));
+  s.saveOperation=null;
+}
 function aiMoveStop(id, dir){
   const d = S.ai.assign.days.find(x => x.date === S.ai.viewDay) || S.ai.assign.days[0]; if(!d) return;
   const i = d.ids.indexOf(id), j = i + dir; if(i < 0 || j < 0 || j >= d.ids.length) return;
+  aiInvalidateDraft([d.date]);
   [d.ids[i], d.ids[j]] = [d.ids[j], d.ids[i]];
 }
 async function aiAdd(){
@@ -2709,12 +2720,14 @@ document.addEventListener("click", async e => {
     case "ai-multi": { const v = el.dataset.v, a = S.ai.interests; S.ai.interests = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); break; }
     case "ai-num": { const k = el.dataset.k; S.ai[k] = Math.max(0, Math.min(20, S.ai[k] + Number(el.dataset.d))); if(S.ai.adults + S.ai.elders < 1) S.ai[k] = 1; render(); break; }
     case "ai-stop": if(S.ai.ctl) S.ai.ctl.abort(); break;
-    case "ai-back": S.ai.step = "ask"; S.ai.result = null; S.ai.assign = null; render(); break;
-    case "ai-route": aiRoute(); break;
+    case "ai-back": S.ai.step = "ask"; S.ai.result = null; S.ai.assign = null; S.ai.err=""; render(); break;
+    case "ai-route": aiRoute(undefined,true); break;
+    case "ai-show-draft": S.ai.step="review";S.ai.viewDay=S.ai.result.days[0].date;S.ai.err="";render();break;
+    case "ai-other-day": S.ai.viewDay=(S.ai.assign.days.find(d=>!S.ai.result.days.some(r=>r.date===d.date))||S.ai.assign.days[0]).date;S.ai.step="pick";S.ai.err="";render();break;
     case "ai-topick": S.ai.step = "pick"; render(); break;
     case "ai-move": aiMoveStop(el.dataset.k, Number(el.dataset.d)); render(); break;
-    case "ai-drop": { const d = S.ai.assign.days.find(x => x.date === S.ai.viewDay) || S.ai.assign.days[0]; if(d&&!aiRequired(S.ai,el.dataset.k)) d.ids = d.ids.filter(id => id !== el.dataset.k); render(); break; }
-    case "ai-put": { const a = S.ai.assign, d = a.days.find(x => x.date === S.ai.viewDay) || a.days[0]; if(d){ a.days.forEach(x => x.ids = x.ids.filter(id => id !== el.dataset.k)); d.ids.push(el.dataset.k); } render(); break; }
+    case "ai-drop": { const d = S.ai.assign.days.find(x => x.date === S.ai.viewDay) || S.ai.assign.days[0]; if(d&&!aiRequired(S.ai,el.dataset.k)){aiInvalidateDraft([d.date]);d.ids = d.ids.filter(id => id !== el.dataset.k);} render(); break; }
+    case "ai-put": { const a = S.ai.assign, d = a.days.find(x => x.date === S.ai.viewDay) || a.days[0]; if(d){ aiInvalidateDraft(a.days.filter(x=>x===d||x.ids.includes(el.dataset.k)).map(x=>x.date));a.days.forEach(x => x.ids = x.ids.filter(id => id !== el.dataset.k)); d.ids.push(el.dataset.k); } render(); break; }
     case "ai-pick": toast("กลับไปเลือกสถานที่ แล้วจัดเวลาใหม่เพื่อให้เส้นทางต่อเนื่อง"); break;
     case "ai-view": S.ai.viewDay = el.dataset.d; render(); break;
     case "ai-mode": {
@@ -2873,7 +2886,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-leanai15";
+const BUILD = "2026-10-31-stepai16";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
