@@ -1666,6 +1666,8 @@ async function planCall(s, action, body){
   }
 }
 const aiErr = e => ({
+  plan_outside_flight_window:"วันนี้ยังไม่ถึงปลายทางหรือเดินทางกลับแล้ว กรุณาย้ายสถานที่ไปวันที่อยู่ที่ปลายทาง",
+  plan_before_arrival:"แผนเริ่มก่อนผ่านขั้นตอนหลังลงเครื่อง กรุณาย้ายเวลาจองหรือเลือกวันอื่น",
   plan_day_overflow:"สถานที่แน่นเกินหนึ่งวัน ลองลดสถานที่หรือแบ่งไปวันอื่น",
   too_many_stops:"เลือกได้ไม่เกิน 60 จุดต่อวัน กรุณาแบ่งไปวันอื่น",
   plan_place_missing:"ข้อมูลสถานที่ไม่ครบ ลองกลับไปเลือกสถานที่แล้วจัดเวลาใหม่",
@@ -1818,7 +1820,7 @@ async function historyOpen(){
   try{await flush(); if(C.outbox.length)throw {code:'pending_sync'};const entries=await api('planHistory',{tripId:S.trip.id});if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',entries};render();}}
   catch(e){if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',err:featureError(e)};render();}}
 }
-function featureError(e){return ({plan_changed:'ทริปมีการแก้ไขจากอีกเครื่องแล้ว โหลดข้อมูลล่าสุดแล้วจัดแผนใหม่',pending_sync:'ยังมีข้อมูลรอบันทึก กรุณารอให้บันทึกครบหรือลองส่งอีกครั้ง',locked_booking_conflict:'แผนนี้เปลี่ยนหรือลืมนัดที่ล็อกเวลาไว้ กรุณาจัดแผนใหม่',offline:'ไม่มีอินเทอร์เน็ต แผนเดิมยังอยู่ กรุณาลองใหม่เมื่อเชื่อมต่อ',history_not_found:'ไม่พบแผนฉบับนี้',history_incomplete:'สำรองแผนนี้ไม่ครบ กรุณาเลือกฉบับอื่น'})[e&&e.code]||'บันทึกไม่สำเร็จ แผนเดิมยังอยู่ กรุณาลองใหม่';}
+function featureError(e){return ({plan_changed:'ทริปมีการแก้ไขจากอีกเครื่องแล้ว โหลดข้อมูลล่าสุดแล้วจัดแผนใหม่',pending_sync:'ยังมีข้อมูลรอบันทึก กรุณารอให้บันทึกครบหรือลองส่งอีกครั้ง',plan_outside_flight_window:'บันทึกไม่ได้: มีสถานที่ก่อนถึงปลายทางหรือหลังเดินทางกลับ กรุณาจัดแผนใหม่',plan_before_arrival:'บันทึกไม่ได้: เวลาท่องเที่ยวอยู่ก่อนพร้อมออกจากสนามบิน กรุณาจัดแผนใหม่',locked_booking_conflict:'แผนนี้เปลี่ยนหรือลืมนัดที่ล็อกเวลาไว้ กรุณาจัดแผนใหม่',offline:'ไม่มีอินเทอร์เน็ต แผนเดิมยังอยู่ กรุณาลองใหม่เมื่อเชื่อมต่อ',history_not_found:'ไม่พบแผนฉบับนี้',history_incomplete:'สำรองแผนนี้ไม่ครบ กรุณาเลือกฉบับอื่น'})[e&&e.code]||'บันทึกไม่สำเร็จ แผนเดิมยังอยู่ กรุณาลองใหม่';}
 function vHistory(s){return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ประวัติแผน" data-stop="1"><div class="hd"><h2>ประวัติแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เก็บฉบับก่อนใช้ AI หรือล้างแผน การย้อนกลับจะสำรองแผนปัจจุบันไว้อีกฉบับ</p>${s.loading?'<p>กำลังโหลด…</p>':s.err?`<p class="err">${esc(s.err)}</p>`:!(s.entries||[]).length?'<p>ยังไม่มีประวัติ จะเริ่มเก็บเมื่อใช้แผน AI ครั้งถัดไป</p>':s.entries.map(h=>`<section class="card history-row"><b>${esc(h.label)}</b><span class="muted small">${esc(new Date(h.createdAt).toLocaleString('th-TH'))} · ${h.dates.length} วัน</span>${s.confirm===h.id?`<p>ย้อนแผนของวันที่ ${h.dates.map(dShort).map(esc).join(', ')} กลับเป็นฉบับนี้?</p><button class="btn primary" data-act="history-restore" data-id="${esc(h.id)}" ${s.busy?'disabled':''}>${s.busy?'กำลังย้อนแผน…':'ยืนยันย้อนแผน'}</button>`:`<button class="pill-btn" data-act="history-confirm" data-id="${esc(h.id)}">ย้อนเป็นฉบับนี้</button>`}</section>`).join('')}</div></div>`;}
 async function restoreHistory(id){
   const s=S.sheet;if(!s||s.busy)return;s.busy=true;render();
@@ -2843,7 +2845,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-maplinks11";
+const BUILD = "2026-10-30-flightguard12";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
