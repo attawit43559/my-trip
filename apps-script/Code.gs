@@ -677,14 +677,27 @@ function prefLines_(p) {
   ].filter(Boolean).join('\n');
 }
 
+function requirePlaces_(days, requiredIds, candidates){
+  const out=days.map(d=>Object.assign({},d,{ids:d.ids.slice()})),used=new Set(out.flatMap(d=>d.ids));
+  if(!out.length)return out;
+  requiredIds.forEach(id=>{
+    if(used.has(id))return;
+    const place=candidates.find(i=>i.id===id);if(!place)return;
+    const target=out.reduce((a,b)=>a.ids.length<=b.ids.length?a:b);
+    target.ids.push(id);used.add(id);
+    target.note=(target.note?target.note+' · ':'')+'ใส่สถานที่ต้องไปเพิ่ม กรุณาตรวจความแน่นของวัน';
+  });return out;
+}
+
 function planAssignRun_(req) {
   const c = planCtx_(req), trip = c.trip, items = c.items, p = req.prefs || {};
+  const required=new Set((Array.isArray(p.requiredIds)?p.requiredIds:[]).slice(0,60).map(String));
   const dates = (req.dates || []).map(String).filter(d => c.all.indexOf(d) >= 0);
   if (!dates.length) throw new Error('no_dates');
   const s = v => String(v == null ? '' : v).slice(0, 200), t = v => String(v == null ? '' : v).trim();
   const placeOf = {}; items.forEach(i => { if (i.type === 'place' && i.data && i.data.fromIdea) placeOf[i.data.fromIdea] = i; });
   // wish-list places still free: never planned, or planned on one of these days (the draft may move them)
-  const ideas = items.filter(i => i.type === 'idea' && (!placeOf[i.id] || (dates.indexOf(placeOf[i.id].date) >= 0 && !(placeOf[i.id].data||{}).timeLocked))).slice(0, 60);
+  const ideas = items.filter(i => i.type === 'idea' && (!placeOf[i.id] || (dates.indexOf(placeOf[i.id].date) >= 0 && !(placeOf[i.id].data||{}).timeLocked))).sort((a,b)=>Number(required.has(b.id))-Number(required.has(a.id))).slice(0, 60);
   const isIdea = {}; ideas.forEach(i => { isIdea[i.id] = true; });
   // places the person added by hand on these days stay on their day
   const fixed = items.filter(i => i.type === 'place' && dates.indexOf(i.date) >= 0 && !(i.data && isIdea[i.data.fromIdea]));
@@ -704,6 +717,7 @@ function planAssignRun_(req) {
     ideas.map(i => `- id=${i.id} · ${s((i.data || {}).kind) || 'ที่เที่ยว'} · "${s(i.title)}"${(i.data || {}).address ? ' (' + s(i.data.address) + ')' : ''}${at_(where[i.id])}${i.sub ? ' · note: ' + s(i.sub) : ''}`).join('\n') || '- none',
     'Preferences:', prefLines_(p),
     `- wish list: ${p.useIdeas === 'all' ? 'fit in every wish-list place if at all possible' : 'only use wish-list places where they fit well'}`,
+    '- required places (must include these ids, other places are optional): '+Array.from(required).join(', '),
     'TRIP>>>',
     'Rules:',
     '- Use only ids from the wish list and the "already fixed" places; each id at most once. Fixed places stay on their own day: include their ids there.',
@@ -736,10 +750,11 @@ function planAssignRun_(req) {
     return { date: d, ids, summary: t(r.summary).slice(0, 60), note: t(r.note).slice(0, 100) };
   });
   const why = {}; ((raw && raw.left) || []).forEach(x => { if (x && x.id) why[t(x.id)] = t(x.why).slice(0, 60); });
-  return { days: out, left: ideas.filter(i => !used[i.id]).map(i => ({ id: i.id, why: why[i.id] || 'AI ยังไม่ได้จัดลงวัน กรุณาเลือกวันเพิ่มเอง' })) };
+  const complete=requirePlaces_(out,Array.from(required),ideas),assigned=new Set(complete.flatMap(d=>d.ids));
+  return { days: complete, left: ideas.filter(i => !assigned.has(i.id)).map(i => ({ id: i.id, why: why[i.id] || 'ยังไม่ได้ใส่ เพื่อให้วันไม่แน่นเกินไป' })) };
 }
 
-function planRoutePrompt_(trip, items, days, p, others, wish) {
+function planRoutePrompt_(trip, items, days, p, others, wish, draft) {
   const s = v => String(v == null ? '' : v).slice(0, 200);
   const kmTo = (a, b) => a && b ? ` · ~${Math.max(0.1, Math.round(kmBetween_(a, b) * 10) / 10)} km straight line from the point before` : '';
   const dayText = d => {
@@ -766,6 +781,7 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     'Bookings:', bookingLines_(items),
     'Preferences:', prefLines_(p),
     'The days:', days.map(dayText).join('\n'),
+    draft&&draft.length?'Current unsaved draft (use its times and transport as the starting point; change only what the person asks, keep fixed bookings):\n'+JSON.stringify(draft):'',
     others.length ? 'Other days of the trip (only for advice on moving a place):\n' + others.join('\n') : '',
     wish ? 'What the person asks for these days (follow it, it overrides the rules below, but still never add or remove places): ' + s(wish) : '',
     'TRIP>>>',
@@ -780,9 +796,10 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     '  · free time: when the day has more than about 2 hours with nothing planned, or ends before about 17:00, suggest 1-2 real places near that part of the route that match the interests and can really be reached in time (e.g. "บ่ายว่าง แวะ Nakamise เดิน 5 นาที").',
     '  · meals: when meals are wanted and no restaurant is planned around lunch or dinner, name a real restaurant near where the group is then.',
     '  · grouping: when a place is far from the rest of the day, say so and name a better day from the other days if one is near it.',
+    '- "reason": one short Thai sentence explaining the grouping or timing from the supplied geography and bookings. Do not claim live timetable or opening-hours verification. Times are estimates, except locked bookings.',
     '- "summary": the theme of the day in Thai, a few words. Notes in Thai. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน (a taxi is ขับรถ with "แท็กซี่" in its note).',
     'Reply with only this JSON:',
-    '{"days":[{"date":"YYYY-MM-DD","summary":"","legs":[{"from":"","to":"","time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"id":"source-id","time":"HH:MM","until":"HH:MM","inside":false,"insideOf":"","note":""}],"startNote":"","endNote":"","tips":[""]}]}'
+    '{"days":[{"date":"YYYY-MM-DD","summary":"","reason":"","legs":[{"from":"","to":"","time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"id":"source-id","time":"HH:MM","until":"HH:MM","inside":false,"insideOf":"","note":""}],"startNote":"","endNote":"","tips":[""]}]}'
   ].filter(Boolean).join('\n');
 }
 
@@ -970,7 +987,7 @@ function routeDay_(d, r, items, p) {
     const km = kmBetween_(h, g), near = d.g.stops.some((o, j) => j !== i && o && kmBetween_(h, o) < 15);
     if (km > 40 && near && !tips.some(v => v.indexOf(it.title) >= 0)) tips.push(`"${it.title}" อยู่ห่างจากที่พัก ~${Math.round(km)} กม. ไกลกว่าที่อื่นในวันนี้ ลองย้ายไปวันอื่น`);
   });
-  return { date: d.date, summary: t(r.summary).slice(0, 80), items: out, attach, tips, warnings: Array.from(new Set(warnings)), conflicts, frame: d.fr, deadline: departure ? routeMinute_(departure.time)-180 : null };
+  return { date: d.date, summary: t(r.summary).slice(0, 80), reason:t(r.reason).slice(0,160), items: out, attach, tips, warnings: Array.from(new Set(warnings)), conflicts, frame: d.fr, deadline: departure ? routeMinute_(departure.time)-180 : null };
 }
 
 function planRouteRun_(req) {
@@ -1008,7 +1025,8 @@ function planRouteRun_(req) {
     if (last && last.length < 3 && last.reduce((n, v) => n + v.stops.length, 0) + d.stops.length <= 12) last.push(d);
     else chunks.push([d]);
   });
-  const prompts = chunks.map(ds => planRoutePrompt_(trip, items, ds, p, others, String(req.wish || '').slice(0, 300)));
+  const draft=(Array.isArray(req.draft)?req.draft:[]).slice(0,31).filter(d=>d&&dates.includes(String(d.date))).map(d=>({date:String(d.date),items:(Array.isArray(d.items)?d.items:[]).slice(0,200).map(x=>Object.fromEntries(['type','ref','title','time','until','from','to','mode','note'].map(k=>[k,String(x&&x[k]||'').slice(0,160)])))}));
+  const prompts = chunks.map(ds => planRoutePrompt_(trip, items, ds, p, others, String(req.wish || '').slice(0, 400),draft.filter(d=>ds.some(day=>day.date===d.date))));
   const many = ps => callGeminiMany_(c.props, ps);
   const parse = (text, prompt) => { try { return parseJson_(text); } catch (e) { try { return parseJson_(many([prompt])[0]); } catch (e2) { return { days: [] }; } } };
   const raws = many(prompts).map((text, i) => parse(text, prompts[i]));
