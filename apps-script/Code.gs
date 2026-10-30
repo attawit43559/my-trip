@@ -420,6 +420,7 @@ function replacePlan_(req) { return withLock_(() => {
     return Object.assign(it,{tripId:id});
   });
   if(!req.restore && !req.clear && !req.reason) docs=dedupeTravel_(docs);
+  if(!req.restore&&!req.clear&&!req.reason)validateFlightPlan_(current,docs);
   // Locked appointments cannot disappear or change their reservation time in an AI replacement.
   if(!req.restore && !req.clear) current.filter(i=>i.type==='place'&&dates.includes(i.date)&&i.data&&i.data.timeLocked).forEach(it=>{
     const next=docs.find(n=>n.id===it.id || (n.data||{}).originId===it.id);
@@ -689,11 +690,46 @@ function requirePlaces_(days, requiredIds, candidates){
   });return out;
 }
 
+/* Flight dates are local to each airport. Infer an omitted overnight arrival date. */
+function flightArrivalDate_(flight){
+  const d=flight.data||{};
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d.arrDate||''))return d.arrDate;
+  if(d.arrTime&&flight.time&&d.arrTime<flight.time)return Utilities.formatDate(new Date(Date.parse(flight.date+'T00:00:00Z')+864e5),'UTC','yyyy-MM-dd');
+  return flight.date;
+}
+function tripFlightWindow_(items){
+  const flights=items.filter(i=>i.type==='flight'&&i.date&&i.data&&i.data.from&&i.data.to).slice().sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  const first=flights[0];if(!first)return null;
+  // A lone flight after the booked stay is a flight home, not an outbound flight.
+  if(items.some(i=>i.type==='stay'&&i.date<first.date))return null;
+  let arrival=first;
+  for(const next of flights.slice(1)){
+    const at=flightArrivalDate_(arrival);
+    if(next.date!==at||String(next.data.from).toUpperCase()!==String(arrival.data.to).toUpperCase()||nightStay_(items,at))break;
+    arrival=next;
+  }
+  const same=(a,b)=>!!a&&!!b&&String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
+  const back=flights.find(f=>f!==first&&f.date>=flightArrivalDate_(arrival)&&(same(f.data.to,first.data.from)||same(f.data.toCity,first.data.fromCity)));
+  return {start:flightArrivalDate_(arrival),end:back?back.date:null,arrival,departure:back||null};
+}
+function flightDayBlocked_(items,date){
+  const w=tripFlightWindow_(items);return !!w&&(date<w.start||!!w.end&&date>w.end);
+}
+function validateFlightPlan_(items,docs){
+  docs.forEach(it=>{
+    if(flightDayBlocked_(items,it.date))throw new Error('plan_outside_flight_window');
+    const arrival=flightsOn_(items,it.date).arr;
+    if(arrival&&routeMinute_((arrival.data||{}).arrTime)>=0&&routeMinute_(it.time)<routeMinute_(arrival.data.arrTime)+120)throw new Error('plan_before_arrival');
+  });
+}
+
 function planAssignRun_(req) {
   const c = planCtx_(req), trip = c.trip, items = c.items, p = req.prefs || {};
   const required=new Set((Array.isArray(p.requiredIds)?p.requiredIds:[]).slice(0,60).map(String));
   const dates = (req.dates || []).map(String).filter(d => c.all.indexOf(d) >= 0);
+  const eligible=dates.filter(d=>!flightDayBlocked_(items,d));
   if (!dates.length) throw new Error('no_dates');
+  if(!eligible.length)return {days:dates.map(date=>({date,ids:[],summary:'วันเดินทาง · ยังไม่อยู่ที่ปลายทาง',note:'ไม่จัดสถานที่เที่ยวในวันนี้'})),left:[]};
   const s = v => String(v == null ? '' : v).slice(0, 200), t = v => String(v == null ? '' : v).trim();
   const placeOf = {}; items.forEach(i => { if (i.type === 'place' && i.data && i.data.fromIdea) placeOf[i.data.fromIdea] = i; });
   // wish-list places still free: never planned, or planned on one of these days (the draft may move them)
@@ -701,6 +737,7 @@ function planAssignRun_(req) {
   const isIdea = {}; ideas.forEach(i => { isIdea[i.id] = true; });
   // places the person added by hand on these days stay on their day
   const fixed = items.filter(i => i.type === 'place' && dates.indexOf(i.date) >= 0 && !(i.data && isIdea[i.data.fromIdea]));
+  if(fixed.some(i=>!eligible.includes(i.date)))throw new Error('plan_outside_flight_window');
   const where = {}; ideas.concat(fixed).forEach(i => { where[i.id] = spotOf_(i, trip); });
   const days = dates.map(d => {
     const f = dayFrame_(items, d), h = nightStay_(items, d), mine = fixed.filter(i => i.date === d);
@@ -723,6 +760,7 @@ function planAssignRun_(req) {
     '- Use only ids from the wish list and the "already fixed" places; each id at most once. Fixed places stay on their own day: include their ids there.',
     '- A note from the person is binding: if it names a date, a day, a time, a booking or a meal (e.g. "มื้อค่ำตามจอง", "วันที่ 3", "เปิดเฉพาะเสาร์"), put the place on a day that matches.',
     '- Group by area using the positions: each day\'s places close to each other and to that night\'s hotel; never put far-apart places on one day when another day fits better.',
+    '- Never assign destination places before the outbound flight has landed or after the return flight has left. Days marked unavailable must have an empty ids list.',
     '- Respect each day\'s start and end: on an arrival day only what fits after landing, on a departure day only what fits before heading to the airport; on a day moving between hotels pick places near either hotel or along the way, and fewer of them.',
     '- How many: about 2 sights a day when children or older people are coming, otherwise about 3 (meals not counted). A theme park or a big day trip fills the day on its own (restaurants inside it or next to it can join).',
     '- Restaurants (kind ร้านอาหาร): when meals are wanted give each day out up to one lunch and one dinner from the wish list that are near that day\'s sights (a restaurant inside a theme park goes on that park\'s day). Never invent places.',
@@ -739,7 +777,7 @@ function planAssignRun_(req) {
   const used = {};
   const out = dates.map(d => {
     const r = ((raw && raw.days) || []).find(x => x && t(x.date) === d) || {};
-    const ids = (Array.isArray(r.ids) ? r.ids : []).map(t).filter(id => okOn[id] && !used[id] && (okOn[id] === '*' || okOn[id] === d));
+    const ids = (eligible.includes(d)&&Array.isArray(r.ids) ? r.ids : []).map(t).filter(id => okOn[id] && !used[id] && (okOn[id] === '*' || okOn[id] === d));
     ids.forEach(id => { used[id] = true; });
     // a fixed place the draft forgot goes back in by its time
     fixed.filter(i => i.date === d && !used[i.id]).forEach(i => {
@@ -747,10 +785,11 @@ function planAssignRun_(req) {
       const k = ids.findIndex(id => { const o = fixed.find(f => f.id === id); return o && o.time && i.time && o.time > i.time; });
       if (k < 0) ids.push(i.id); else ids.splice(k, 0, i.id);
     });
-    return { date: d, ids, summary: t(r.summary).slice(0, 60), note: t(r.note).slice(0, 100) };
+    return { date: d, ids, summary: eligible.includes(d)?t(r.summary).slice(0,60):'วันเดินทาง · ยังไม่อยู่ที่ปลายทาง', note: eligible.includes(d)?t(r.note).slice(0,100):'ไม่จัดสถานที่เที่ยวในวันนี้' };
   });
   const why = {}; ((raw && raw.left) || []).forEach(x => { if (x && x.id) why[t(x.id)] = t(x.why).slice(0, 60); });
-  const complete=requirePlaces_(out,Array.from(required),ideas),assigned=new Set(complete.flatMap(d=>d.ids));
+  const valid=requirePlaces_(out.filter(d=>eligible.includes(d.date)),Array.from(required),ideas);
+  const complete=out.map(d=>valid.find(x=>x.date===d.date)||d),assigned=new Set(complete.flatMap(d=>d.ids));
   return { days: complete, left: ideas.filter(i => !assigned.has(i.id)).map(i => ({ id: i.id, why: why[i.id] || 'ยังไม่ได้ใส่ เพื่อให้วันไม่แน่นเกินไป' })) };
 }
 
@@ -886,6 +925,10 @@ function routeGaps_(d, r, items) {
 }
 
 function routeDay_(d, r, items, p) {
+  if(flightDayBlocked_(items,d.date)){
+    if(d.stops.length)throw new Error('plan_outside_flight_window');
+    return {date:d.date,summary:'วันเดินทาง · ยังไม่อยู่ที่ปลายทาง',reason:'คงเที่ยวบินเดิมไว้ ไม่จัดสถานที่เที่ยวก่อนถึงหรือหลังออกจากปลายทาง',items:[],attach:[],tips:[],warnings:[],conflicts:[],frame:d.fr,deadline:null};
+  }
   const t = v => String(v == null ? '' : v).trim();
   const hm = v => { const m = t(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? ('0' + Math.min(23, +m[1])).slice(-2) + ':' + m[2] : ''; };
   const modes = ['ขับรถ', 'ขนส่งสาธารณะ', 'เดิน'], kinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
@@ -932,6 +975,7 @@ function routeDay_(d, r, items, p) {
   if (flStart && routeMinute_(flStart.data.arrTime) >= 0) ready = Math.max(ready, routeMinute_(flStart.data.arrTime) + 120);
   const fixedDay=flightsOn_(items,d.date).dep || out.some(x=>x.lockedTime);
   if(fixedDay && out.length && routeMinute_(out[0].time)>=0)ready=Math.min(ready,routeMinute_(out[0].time));
+  if(flStart&&routeMinute_(flStart.data.arrTime)>=0)ready=Math.max(ready,routeMinute_(flStart.data.arrTime)+120);
   let parentEnd = ready;
   out.forEach(x => {
     let at = routeMinute_(x.time), until = routeMinute_(x.until);
@@ -944,7 +988,7 @@ function routeDay_(d, r, items, p) {
     if (x.lockedTime) {
       const fixed=routeMinute_(x.lockedTime);
       if(fixed<0) conflicts.push('เวลาจองของ '+x.title+' ไม่ถูกต้อง');
-      else { if(ready>fixed) conflicts.push('ไปไม่ทัน '+x.title+' ที่จองไว้ '+x.lockedTime+' กรุณาลดสถานที่ก่อนหน้า'); at=fixed; }
+      else { if(flStart&&fixed<routeMinute_(flStart.data.arrTime)+120)throw new Error('plan_before_arrival'); if(ready>fixed) conflicts.push('ไปไม่ทัน '+x.title+' ที่จองไว้ '+x.lockedTime+' กรุณาลดสถานที่ก่อนหน้า'); at=fixed; }
     }
     if (at > 1439) throw new Error('plan_day_overflow');
     if (x.type === 'move') ready = at + duration(x);
@@ -1003,6 +1047,7 @@ function planRouteRun_(req) {
   const days = want.map(w => {
     const date = String(w.date), fr = dayFrame_(items, date);
     const ids = (Array.isArray(w.ids) ? w.ids : []).map(String);
+    if(ids.length&&flightDayBlocked_(c.items,date))throw new Error('plan_outside_flight_window');
     // Never silently truncate or drop the person's selected places.
     if (ids.length > 60) throw new Error('too_many_stops');
     const stops = ids.map(id => {
@@ -1020,14 +1065,14 @@ function planRouteRun_(req) {
   }).filter(Boolean).concat(days.length > 1 ? days.map(d => d.stops.length ? `- ${d.date}: ` + d.stops.map(i => String(i.title).slice(0, 60)).join(', ') : '').filter(Boolean) : []);
   // Keep dense days separate so a long response cannot crowd out later stops.
   const chunks = [];
-  days.forEach(d => {
+  days.filter(d=>!flightDayBlocked_(items,d.date)).forEach(d => {
     const last = chunks[chunks.length - 1];
     if (last && last.length < 3 && last.reduce((n, v) => n + v.stops.length, 0) + d.stops.length <= 12) last.push(d);
     else chunks.push([d]);
   });
   const draft=(Array.isArray(req.draft)?req.draft:[]).slice(0,31).filter(d=>d&&dates.includes(String(d.date))).map(d=>({date:String(d.date),items:(Array.isArray(d.items)?d.items:[]).slice(0,200).map(x=>Object.fromEntries(['type','ref','title','time','until','from','to','mode','note'].map(k=>[k,String(x&&x[k]||'').slice(0,160)])))}));
   const prompts = chunks.map(ds => planRoutePrompt_(trip, items, ds, p, others, String(req.wish || '').slice(0, 400),draft.filter(d=>ds.some(day=>day.date===d.date))));
-  const many = ps => callGeminiMany_(c.props, ps);
+  const many = ps => ps.length?callGeminiMany_(c.props, ps):[];
   const parse = (text, prompt) => { try { return parseJson_(text); } catch (e) { try { return parseJson_(many([prompt])[0]); } catch (e2) { return { days: [] }; } } };
   const raws = many(prompts).map((text, i) => parse(text, prompts[i]));
   const pick = (raw, d) => ((raw && raw.days) || []).find(x => x && String(x.date) === d.date) || null;
@@ -1038,9 +1083,12 @@ function planRouteRun_(req) {
     const texts = many(redo.map(i => prompts[i] + '\n\nYour answer:\n' + JSON.stringify(raws[i]) + '\n\nFix these problems and reply with the full corrected JSON in the same format (change nothing else):\n' + fixes[i].map(g => '- ' + g).join('\n')));
     redo.forEach((i, k) => { try { const f = parseJson_(texts[k]); if (f && f.days && f.days.length) raws[i] = f; } catch (e) {} });
   }
-  if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
+  if (chunks.length&&!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
   const plan = { days: [], tips: [], revision: planRevision_(c.items) };
   chunks.forEach((ds, i) => ds.forEach(d => plan.days.push(routeDay_(d, pick(raws[i], d), items, p))));
+  days.filter(d=>flightDayBlocked_(items,d.date)).forEach(d=>plan.days.push(routeDay_(d,null,items,p)));
+  plan.days.sort((a,b)=>dates.indexOf(a.date)-dates.indexOf(b.date));
+  validateFlightPlan_(items,plan.days.flatMap(d=>d.items.map(x=>Object.assign({date:d.date},x))));
   if (req.debug) plan.debug = { fixes, redo, raws: raws.map(r => JSON.stringify(r).slice(0, 6000)) };
   return plan;
 }
@@ -1066,14 +1114,16 @@ function dayFrame_(items, date) {
   const moving = start && end && !sameName_(start.name, end.name);
   const text = [start ? 'starts: ' + start.text : 'starts: (no booking)', end ? 'ends: ' + end.text : 'ends: (no booking)',
     moving ? `travel day: include the journey from "${start.name}" to "${end.name}" (with luggage) and plan the rest of the day around it` : ''].filter(Boolean).join(' · ');
-  return { start, end, moving, text };
+  const blocked=flightDayBlocked_(items,date);
+  return { start, end, moving, blocked, text:blocked?'UNAVAILABLE for destination sightseeing: not yet arrived or already left. Keep this day empty. '+text:text };
 }
 /* the flight that brings the group in on a day (the day starts at that airport) and the one that takes it away (the day ends there).
    A flight that leaves and lands on the same day ends the day when nobody sleeps anywhere that night (flying home), otherwise it starts it. */
 function flightsOn_(items, date) {
   const fs = items.filter(i => i.type === 'flight' && i.data);
   const tonight = nightStay_(items, date);
-  const arr = fs.find(i => (i.data.arrDate || i.date) === date && i.data.to && (i.date < date || tonight)) || null;
+  const window=tripFlightWindow_(items);
+  const arr = fs.find(i => flightArrivalDate_(i) === date && i.data.to && (i.date < date || tonight || window&&window.arrival===i)) || null;
   const dep = fs.find(i => i.date === date && i.data.from && i !== arr) || null;
   return { arr, dep };
 }
