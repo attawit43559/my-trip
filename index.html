@@ -572,6 +572,24 @@ html.lock,html.lock body{overflow:hidden}
 .ai-foot,.ai-bar>*{min-width:0}
 .ai-foot .btn{height:auto;min-height:48px;padding:10px 12px}
 @media(max-width:360px){.ai-modes{padding-left:0}.ai-row-q{flex-wrap:wrap}.map-pin-list li{flex-wrap:wrap}}
+/* Minimal trip shell: daily plan first, bookings and secondary tools one level deeper. */
+.hero .cover{height:72px;background:var(--tile)}.hero .cover svg{display:none}
+.trip-bar{min-height:68px;background:transparent;padding:4px 0;border-radius:0;gap:10px}
+.trip-bar h1{font-size:23px}.trip-bar .round{background:transparent}
+.plan-actions{display:flex;gap:8px}.plan-actions .pill-btn{background:var(--tile);height:40px;font-weight:500}
+.plan-actions .pill-btn:last-child{margin-left:auto}
+.entry .thumb{background:transparent;color:var(--muted);border:0}
+.entry-copy .ttl{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry-sub{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;margin-top:3px}
+.sync-state{font-size:11px;max-width:55%;text-align:right}.sync-state.sync-ok{background:transparent;padding:0;min-height:24px;cursor:default}
+.dock{border-radius:18px;box-shadow:0 2px 16px rgba(0,0,0,.09),0 0 0 1px var(--line)}
+.seg button{color:var(--muted);background:transparent}.seg button[aria-selected="true"]{background:var(--tile);color:var(--ink);box-shadow:none}
+.booking-group{padding:8px 0 14px}.booking-group+.booking-group{border-top:1px solid var(--line)}
+.booking-group h3{font:500 14px var(--body)}.text-action{border:0;background:transparent;min-height:40px;padding:0 8px;color:var(--ink);font-size:13px}
+.item-edit-visible{border:1px solid var(--line);height:44px;font:500 14px var(--body)}
+.advanced-options summary{min-height:44px;cursor:pointer;padding:12px 0;font-weight:500}.advanced-options .share-box{margin-top:8px}
+.ai-go,.ai-grad{background:var(--ink);color:var(--bg);box-shadow:none}
+.ai-bar .cat-add.ai-grad{background:var(--ink);color:var(--bg)}
 </style>
 </head>
 <body>
@@ -616,6 +634,8 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
@@ -962,6 +982,16 @@ function vTripMenu(s){
   </div></div>`;
 }
 
+function vTripMore(){
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
+    <button data-act="export-open">ส่งออกแผนเป็นรูป / PDF</button>
+    <button data-act="history-open">ประวัติ / ย้อนแผน</button>
+    <button data-act="invite">ผู้ร่วมทริป / ชวนเพื่อน</button>
+    <button data-act="account">บัญชีและคำสั่งลัด</button>
+    ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?'<button class="danger" data-act="clear-open">ล้างแผน…</button>':''}
+  </div></div></div>`;
+}
+
 function stepRow(label, sub, key, min, max){
   const v = S.newTrip[key];
   return `<div class="step-row"><span><span style="font-weight:500">${label}</span>${sub ? `<br><span class="muted small">${sub}</span>` : ""}</span>
@@ -1067,13 +1097,19 @@ function swipeItem(it, key, inner){
       : `<button class="sw-btn sw-edit" data-act="entry-edit" data-id="${esc(it.id)}" aria-label="แก้ไข ${esc(it.title)}">${ic("edit",18)}</button><button class="sw-btn sw-del" data-act="entry-del" data-id="${esc(it.id)}" data-key="${esc(key)}" aria-label="ลบ ${esc(it.title)}">${ic("trash",18)}</button>`}</div>
     <div class="trow-slide">${inner}</div></li>`;
 }
+function briefName(value){
+  const name=String(value||''),comma=name.indexOf(',');
+  return comma>0 && /\d|〒/.test(name.slice(comma)) ? name.slice(0,comma).trim() : name;
+}
 function entryHtml(e){
+  const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.time||"--:--")}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow"><span class="ttl">${esc(e.title)}</span>${e.sub?`<br><span class="muted small">${esc(e.sub)}</span>`:""}${e.note?`<br><span class="muted small">${esc(e.note)}</span>`:""}</span></button>`);
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
-  const tabs = [["flight","เที่ยวบิน"],["stay","ที่พัก"],["idea","สนใจ"]];
+  const tabs = [["plan","แผน"],["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
+  const info = ["info","flight","stay"].includes(tab);
   const list = tab === "idea"
     ? S.items.filter(i => i.type === "idea").sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
     : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
@@ -1092,22 +1128,23 @@ function catCard(){
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
   const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง", idea:"จดร้านอาหารหรือที่ที่อยากไปไว้ก่อน ยังไม่ต้องระบุวัน"}[tab];
+  const bookingGroup = (kind,label) => {
+    const bookings = S.items.filter(i=>i.type===kind).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+    return `<section class="booking-group"><div class="sec-h"><h3>${label}</h3><button class="text-action" data-act="upload" data-k="${kind}">เพิ่ม</button></div>${bookings.length?`<ul class="cat-list">${bookings.map(row).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`;
+  };
   /* the open animation plays once, when a tab is tapped; later re-renders (sync, toasts) must not replay it */
   const anim = S.dockAnim ? " anim" : ""; S.dockAnim = false;
-  return `<nav class="dock${S.dockHidden && !tab ? " hide" : ""}${tab ? " open" : ""}${anim}" aria-label="ข้อมูลทริป">
+  return `<nav class="dock${tab ? " open" : ""}${anim}" aria-label="ข้อมูลทริป">
     ${tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">ช่วยวางแผน</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
       ${aiFoot(S.ai)}
-    </div>` : tab ? `<div class="dock-panel t-${tab}">
-      <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic(tab,16)}</span><b class="grow${/^[A-Za-z]/.test(Object.fromEntries(tabs)[tab]) ? " latin" : ""}">${esc(Object.fromEntries(tabs)[tab])}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
-      <div class="dock-body" data-k="${tab}">${list.length ? `<ul class="cat-list">${list.map(row).join("")}</ul>` : `<p class="muted small" style="padding:6px 4px 2px">${empty}</p>`}</div>
-      ${add}
+    </div>` : tab ? `<div class="dock-panel">
+      <div class="dock-hd"><b class="grow">${info?'ข้อมูลทริป':'ที่สนใจ'}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
+      <div class="dock-body" data-k="${info?'info':tab}">${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">จดสถานที่ที่อยากไปไว้ก่อน</p>`)}</div>
+      ${info?'':add}
     </div>` : ""}
-    <div class="seg" role="tablist" aria-label="หมวด">${tabs.map(([k,l]) => {
-      const n = S.items.filter(i => i.type === k).length;
-      return `<button class="t-${k}" role="tab" aria-selected="${k===tab}" data-act="cat" data-k="${k}">${ic(k,16)}<span${/^[A-Za-z]/.test(l) ? ' class="latin"' : ""}>${l}</span>${n ? `<em>${n}</em>` : ""}</button>`;
-    }).join("")}${tripDates(S.trip).length ? `<button class="t-ai" role="tab" aria-selected="${tab === "ai"}" data-act="ai-open">${ic("spark",16)}<span>ช่วยวางแผน</span></button>` : ""}</div>
+    <div class="seg" role="tablist" aria-label="เมนูทริป">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${k==='plan'?!tab||tab==='ai':k==='info'?info:k===tab}" data-act="${k==='plan'?'plan-nav':'cat'}" data-k="${k}">${ic(k==='plan'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -1137,19 +1174,18 @@ function vTrip(){
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   return `<main class="screen has-dock">
-    <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
+    <section class="trip-bar">
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
-      <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
+      <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
     <section class="stack" style="gap:14px">
-      <div class="trip-tools"><button class="pill-btn" data-act="overview-open">ภาพรวมและแผนที่</button><button class="pill-btn" data-act="history-open">ประวัติ / ย้อนแผน</button></div>${vSync()}
-      <div class="sec-h"><h2>แผนรายวัน</h2></div>
+      <div class="sec-h"><h2>แผนรายวัน</h2>${vSync()}</div>
+      <div class="plan-actions"><button class="pill-btn" data-act="overview-open">${ic("pin",17)}แผนที่</button>${dates.length?`<button class="pill-btn" data-act="ai-open">${ic("spark",17)}ช่วยจัดแผน</button>`:""}</div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
-        <button class="clear-btn" data-act="export-open">${ic("image",15)}บันทึก</button>
-        ${ownOn(dates).length || planNotes(dates).length ? `<button class="clear-btn" data-act="clear-open">${ic("trash",15)}ล้าง</button>` : ""}</div>
+</div>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <div class="add-row">
         <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
@@ -1262,7 +1298,7 @@ function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
-    ${shareSection()}
+    <details class="advanced-options"><summary>เชื่อมคำสั่งลัด Google Maps</summary>${shareSection()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -1480,7 +1516,7 @@ function vAiPlan(s){
     }).join("");
     const rm = ownOn(r.days.map(d => d.date)).length;
     const wish = `<label class="fld sm ai-note ai-wish"><span class="small muted">อยากให้ปรับเวลาหรือการเดินทางวันนี้ยังไง พิมพ์แล้วกด แก้ไข</span><textarea id="ai-wish" class="grow-area" rows="1" maxlength="400" placeholder="เช่น ออกช้าลงหน่อย, ไม่อยากต่อรถไฟหลายต่อ" data-bind="ai:wish">${esc(s.wish || "")}</textarea></label>`;
-    return wrap(`<p class="muted small" style="margin-top:-4px">บันทึกสถานที่พร้อมการเดินทางทั้งขาไปและขากลับ เลือกวิธีเดินทางได้ใต้แต่ละช่วง หากจะเพิ่มหรือลดสถานที่ให้กด กลับไปเลือก แล้วจัดเวลาใหม่ ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่จัดจะถูกแทนที่เมื่อกดตกลง</b>` : ""}</p>
+    return wrap(`<p class="muted small" style="margin-top:-4px">ตรวจแผนและเลือกวิธีเดินทางก่อนบันทึก ${rm ? `<b class="ai-warn">แผนเดิม ${rm} รายการในวันที่จัดจะถูกแทนที่เมื่อกดตกลง</b>` : ""}</p>
       ${r.days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", r.days.map(d => d.date))}</div>` : ""}
       ${days || `<p class="muted">ยังไม่ได้แผนที่ใช้ได้ ลองใหม่อีกครั้ง</p>`}${days ? wish : ""}`);
   }
@@ -1680,8 +1716,8 @@ function syncCopy(){
   if(C.outbox.length)return !navigator.onLine?'ออฟไลน์ · รอส่ง '+C.outbox.length+' รายการ':flushing?'กำลังบันทึก '+C.outbox.length+' รายการ…':'รอส่ง '+C.outbox.length+' รายการ';
   return S.directSaving?'กำลังบันทึกแผน…':!navigator.onLine?'ออฟไลน์ · ข้อมูลที่บันทึกแล้วอยู่ในเครื่อง':'บันทึกแล้ว';
 }
-function updateSync(){const el=document.getElementById('sync-state');if(el){el.textContent=syncCopy();el.classList.toggle('sync-error',!!S.localSaveError||C.outbox.some(o=>o.error));}}
-function vSync(){return `<button id="sync-state" class="sync-state" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`;}
+function updateSync(){const el=document.getElementById('sync-state');if(el){el.textContent=syncCopy();el.classList.toggle('sync-error',!!S.localSaveError||C.outbox.some(o=>o.error));el.classList.toggle('sync-ok',syncCopy()==='บันทึกแล้ว');}}
+function vSync(){return `<button id="sync-state" class="sync-state${syncCopy()==='บันทึกแล้ว'?' sync-ok':''}" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`;}
 async function historyOpen(){
   S.sheet={kind:'history',loading:true};render();
   try{await flush(); if(C.outbox.length)throw {code:'pending_sync'};const entries=await api('planHistory',{tripId:S.trip.id});if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',entries};render();}}
@@ -1945,6 +1981,7 @@ function vSheet(){
   if(s.kind === "overview") return vOverview(s);
   if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
+  if(s.kind === "trip-more") return vTripMore();
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
@@ -1968,7 +2005,7 @@ function vSheet(){
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
       ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
-      <p class="muted small">เพิ่มโดย ${esc(nameOf(it.createdBy))}</p>
+      <button class="btn ghost item-edit-visible" data-act="item-edit">${ic("edit",17)}แก้ไขรายละเอียด</button>
     </div></div>`;
   }
   const isMove = s.kind === "move";
@@ -2524,7 +2561,7 @@ document.addEventListener("click", async e => {
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
     case "map-page": S.sheet.mapPage=+el.dataset.page;render();break;
-    case "overview-open": S.sheet={kind:'overview',date:'all'};render();break;
+    case "overview-open": S.catTab='';S.sheet={kind:'overview',date:tripDates(t)[S.day]||'all',mapSource:'plan'};render();break;
     case "overview-day": S.day=tripDates(t).indexOf(el.dataset.d);S.sheet=null;render();break;
     case "history-open": historyOpen();break;
     case "history-confirm": S.sheet.confirm=el.dataset.id;render();break;
@@ -2540,6 +2577,8 @@ document.addEventListener("click", async e => {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
     case "day": S.day = Number(el.dataset.i); S.clearAsk = null; render(); break;
+    case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
+    case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
     case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
@@ -2745,7 +2784,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-layout3";
+const BUILD = "2026-10-30-minimal4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
