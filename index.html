@@ -591,7 +591,7 @@ html.lock,html.lock body{overflow:hidden}
 .ai-intents{display:flex;flex-direction:column;gap:10px}.ai-intents>button{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:18px;padding:14px;background:var(--ai-soft);text-align:left}.ai-intents>button:disabled{opacity:.45}.ai-intents>button>span{flex:1;min-width:0}.ai-intents b,.ai-intents small{display:block}.ai-intents small{font-size:12px;color:var(--muted);margin-top:3px}
 .ai-intent-head,.ai-section-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px}.ai-section-toggle{border:0;background:var(--tile);border-radius:12px;padding:10px 12px;min-height:44px;text-align:left;font-size:14px;width:100%}.ai-settings,.ai-priorities{display:flex;flex-direction:column;gap:12px}.ai-priority{display:flex;align-items:center;gap:10px;text-align:left;background:var(--tile);border:1px solid transparent;border-radius:12px;padding:10px;width:100%;font-size:13px}.ai-priority>span{flex:1;min-width:0;overflow-wrap:anywhere}.ai-priority small{flex:none;color:var(--muted)}.ai-priority[aria-pressed="true"]{background:var(--ai-soft);border-color:var(--ai-mid)}.ai-required-label{display:inline-block;margin-left:5px;color:var(--ai);font-size:11px}
 .ai-overview{display:flex;flex-direction:column;gap:5px;border-radius:16px;padding:12px 14px;background:var(--ai-soft);font-size:13px;overflow-wrap:anywhere}.ai-overview ul{margin:8px 0 0;padding-left:18px}.ai-overview summary{cursor:pointer;padding-top:5px}.ai-quick{padding:8px 0}.ai-row .time{width:52px;font-size:12px}
-.entry-map{display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:0 16px 10px;color:var(--muted);font-size:12px;min-height:36px;text-decoration:none}.entry-map:focus-visible,.route-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.route-link-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.route-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--tile);border-radius:16px;text-decoration:none;color:var(--ink);min-width:0}.route-link .grow{min-width:0;overflow-wrap:anywhere}.route-link b{font-size:14px}.route-link small{display:block;color:var(--muted);margin-top:5px}.route-number{background:var(--flight-soft,#e3eeff);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex-shrink:0}.route-link>svg{flex-shrink:0}
+.route-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.route-link-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.route-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--tile);border-radius:16px;text-decoration:none;color:var(--ink);min-width:0}.route-link .grow{min-width:0;overflow-wrap:anywhere}.route-link b{font-size:14px}.route-link small{display:block;color:var(--muted);margin-top:5px}.route-number{background:var(--flight-soft,#e3eeff);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex-shrink:0}.route-link>svg{flex-shrink:0}
 .ai-stops{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:10px}.ai-stops li{display:flex;gap:10px;align-items:baseline}.ai-stops .time{flex:none;font-size:12px;width:48px}.ai-stops li>span:last-child{min-width:0;overflow-wrap:anywhere}.ai-scope{display:flex;gap:6px}.ai-scope button{flex:1;min-width:0;padding:10px 6px}.ai-refine{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--tile);border-radius:16px}
 </style>
 </head>
@@ -1125,7 +1125,7 @@ function briefName(value){return mapNameParts(value).name;}
 function entryHtml(e){
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${entryMapLink(e.it)}`);
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -1857,10 +1857,6 @@ async function restoreHistory(id){
   catch(e){s.busy=false;s.err=featureError(e);render();}
 }
 function applyPlanResponse(id,res){C.items[id]=Object.fromEntries(res.items.map(i=>[i.id,i]));(C.revisions ||= {})[id]=res.revision;emit();}
-function entryMapLink(it){
-  const href=it.type==='move'?routeLink(it):['place','stay'].includes(it.type)?mapsLink(it):'';
-  return href?`<a class="entry-map" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${it.type==='move'?'นำทาง':'ดูใน Google Maps'} ${esc(briefName(it.title))}">${ic('pin',15)}${it.type==='move'?'นำทาง':'ดูใน Google Maps'} ${ic('ext',13)}</a>`:'';
-}
 function dayRouteLinks(date){
   const entries=dayEntries(date).filter(e=>!e.night),moves=entries.filter(e=>e.it.type==='move'&&routeLink(e.it)).map(e=>e.it);
   if(moves.length)return moves.map(it=>({title:moveTitle(it.data.from,it.data.to),mode:it.data.mode||'',href:routeLink(it),time:it.time||''}));
@@ -2886,7 +2882,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-stepai16";
+const BUILD = "2026-10-31-cleanrows17";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
