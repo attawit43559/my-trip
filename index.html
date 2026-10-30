@@ -553,6 +553,7 @@ html.lock,html.lock body{overflow:hidden}
 .ai-wrap{align-items:flex-start}
 .ai-wrap>b{padding-top:7px}
 .ai-wrap .chips{flex-wrap:wrap;overflow:visible}
+.trip-tools{display:flex;gap:8px;flex-wrap:wrap}.sync-state{border:0;background:var(--tile);color:var(--muted);padding:8px 12px;border-radius:10px;text-align:left;font-size:12px}.sync-error{color:var(--danger)}.history-row,.overview-day{padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}.overview-sheet{max-width:780px!important}.trip-map{height:300px;min-height:300px;flex-shrink:0;border-radius:14px;background:var(--tile);z-index:0}.overview-day ol{padding-left:24px;line-height:1.8}.lock-field{display:flex;gap:8px;align-items:center;font-size:14px}.lock-field input{width:20px;height:20px}.leaflet-container{font-family:var(--body);color:#222}.leaflet-popup-content{line-height:1.6}.leaflet-popup-content a{color:#1958bd}
 </style>
 </head>
 <body>
@@ -671,10 +672,14 @@ let unsubTrips=null, unsubTrip=null, unsubItems=null;
 const CONNECTED = /^https:\/\/script\.google\.com\//.test(API_URL);
 const KEY = "mytrip-v1";
 const C = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(_) { return {}; } })();
-C.trips ||= {}; C.items ||= {}; C.myTrips ||= []; C.outbox ||= [];
+C.trips ||= {}; C.items ||= {}; C.myTrips ||= []; C.outbox ||= []; C.revisions ||= {};
 const subs = new Set();
 let saveT = null;
-function persist(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(C)); } catch(_){} }, 150); }
+function persist(){
+  try { localStorage.setItem(KEY, JSON.stringify(C)); S.localSaveError=false; }
+  catch(_){ S.localSaveError=true; }
+  updateSync();
+}
 function emit(){ persist(); subs.forEach(f => f()); }
 const sub = f => { subs.add(f); f(); return () => subs.delete(f); };
 const genId = () => { const a="ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s=""; for(let i=0;i<6;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; };
@@ -702,23 +707,26 @@ async function api(action, body={}, signal){
   return j.data;
 }
 /* writes wait in an outbox and are sent in order; a failed send is retried later */
-let flushing = false;
-function queue(action, body){ C.outbox.push({action, body}); persist(); flush(); }
-async function flush(){
-  if(flushing || !CONNECTED || !S.token) return;
-  flushing = true;
-  try {
+let flushing = false, flushPromise = null;
+function queue(action, body){ C.outbox.push({action, body}); persist(); updateSync(); flush(); }
+function flush(){
+  if(flushPromise)return flushPromise;
+  flushPromise=flushRun().finally(()=>{flushPromise=null;});return flushPromise;
+}
+async function flushRun(){
+  if(!CONNECTED || !S.token || !navigator.onLine){updateSync();return;}
+  flushing=true;updateSync();
+  try{
     while(C.outbox.length){
-      const op = C.outbox[0];
-      try { await api(op.action, op.body); C.outbox.shift(); persist(); }
+      const op=C.outbox[0];
+      if(op.error)break;
+      try{await api(op.action,op.body);C.outbox.shift();persist();}
       catch(e){
-        if(e.code === "auth_required") break;   // kept until the person signs in again
-        if(e.code === "offline" || e.code === "server_error"){ setTimeout(flush, 8000); break; }
-        C.outbox.shift(); persist();   // the server refused it; retrying cannot help
-        toast("บันทึกไม่สำเร็จ (" + (e.code || "error") + ") ลองใหม่อีกครั้ง");
+        if(e.code==='offline'||e.code==='server_error'){setTimeout(flush,8000);break;}
+        op.error=e.code||'error';persist();break;
       }
     }
-  } finally { flushing = false; S.pending = C.outbox.length; }
+  }finally{flushing=false;S.pending=C.outbox.length;updateSync();}
 }
 const pendingIds = () => new Set(C.outbox.flatMap(o => o.action === "saveItems" ? (o.body.items||[]).map(i => i.id) : o.action === "deleteItem" ? [o.body.id] : []));
 const itemList = id => Object.values(C.items[id] || {});
@@ -807,7 +815,7 @@ async function refreshTrip(id){
     const keep = pendingIds(), local = C.items[id] || {}, next = {};
     r.items.forEach(it => { if(!keep.has(it.id)) next[it.id] = it; });
     Object.values(local).forEach(it => { if(keep.has(it.id)) next[it.id] = it; });
-    C.items[id] = next; emit();
+    C.items[id] = next; C.revisions[id]=r.revision; emit();
   } catch(_) { S.tripLoading = false; emit(); }
 }
 function fail(e){ toast(e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : e && e.code === "not_connected" ? "ยังไม่ได้เชื่อม Google Sheet" : "เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง"); }
@@ -1117,6 +1125,7 @@ function vTrip(){
       <button class="round tb-invite" data-act="invite" aria-label="ชวนเพื่อน · ${(t.memberIds||[]).length} คนในทริป">${ic("users",20)}<em>${(t.memberIds||[]).length}</em></button>
     </section>
     <section class="stack" style="gap:14px">
+      <div class="trip-tools"><button class="pill-btn" data-act="overview-open">ภาพรวมและแผนที่</button><button class="pill-btn" data-act="history-open">ประวัติ / ย้อนแผน</button></div>${vSync()}
       <div class="sec-h"><h2>แผนรายวัน</h2></div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
@@ -1265,18 +1274,18 @@ function editFromItem(it){
     let from = d.from || "", to = d.to || "";
     if(!from && !to){ const t = String(it.title||"").replace(/^[^·]*·\s*/, ""); const m = t.split(/\s*→\s*/); if(m.length === 2){ from = m[0]; to = m[1]; } else from = t; }
     const mode = d.mode || (MOVE_MODES.includes(String(it.title||"").split(" · ")[0]) ? String(it.title).split(" · ")[0] : "ขับรถ");
-    return {mode, from, to, date:it.date||"", time:it.time||"", note:it.sub||""};
+    return {mode, from, to, date:it.date||"", time:it.time||"", note:it.sub||"",durationMinutes:travelMinutes({note:it.sub,durationMinutes:d.durationMinutes})};
   }
   if(it.type === "idea") return {title:it.title||"", kind:d.kind||"ที่เที่ยว", note:it.sub||""};
-  return {title:it.title||"", date:it.date||"", time:it.time||"", note:it.sub||""};
+  return {title:it.title||"", date:it.date||"", time:it.time||"", note:it.sub||"", until:d.until||"", timeLocked:!!d.timeLocked};
 }
 function patchFromEdit(it, e){
   if(it.type === "flight"){ const doc = makeFlightDoc({...e, depTime:e.depTime}); doc.data = {...(it.data||{}), ...doc.data, note:s_(e.note), arrNote:s_(e.arrNote)}; return doc; }
   if(it.type === "stay") return {date:e.checkInDate, time:e.checkInTime, endDate:e.checkOutDate, endTime:e.checkOutTime, title:s_(e.name) || "ที่พัก",
     data:{...(it.data||{}), address:e.address, rooms:e.rooms, guests:e.guests, bookingRef:e.bookingRef, phone:s_(e.phone), website:cleanUrl(e.website), mapsUrl:cleanUrl(e.mapsUrl), inNote:s_(e.inNote), outNote:s_(e.outNote)}};
-  if(it.type === "move") return {title:moveTitle(s_(e.from), s_(e.to)), date:e.date, time:e.time, sub:s_(e.note), data:{...(it.data||{}), mode:e.mode, from:s_(e.from), to:s_(e.to)}};
+  if(it.type === "move") return {title:moveTitle(s_(e.from), s_(e.to)), date:e.date, time:e.time, sub:s_(e.note), data:{...(it.data||{}), mode:e.mode, from:s_(e.from), to:s_(e.to),durationMinutes:Number(e.durationMinutes)||30}};
   if(it.type === "idea") return {title:s_(e.title) || it.title, sub:s_(e.note), data:{...(it.data||{}), kind:e.kind}};
-  return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note)};
+  return {title:s_(e.title) || it.title, date:e.date, time:e.time, sub:s_(e.note),data:{...(it.data||{}),until:e.until||"",timeLocked:!!e.timeLocked}};
 }
 /* booking files are added and removed while editing; the detail view only opens them */
 function editFiles(it){
@@ -1307,12 +1316,15 @@ function vItemEdit(it, e){
   else if(it.type === "move") body = `<label class="fld sm full" for="ed-mode">เดินทางด้วย<select id="ed-mode" data-bind="sheet:edit.mode">${MOVE_MODES.map(m => `<option ${m===e.mode?"selected":""}>${esc(m)}</option>`).join("")}</select></label>
     ${efld("จาก","from",e.from,"text","full")}${efld("ไป","to",e.to,"text","full")}
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
+    ${efld("เวลาเดินทาง (นาที)","durationMinutes",e.durationMinutes,"number","full")}
+    ${(it.data?.options||[]).length ? `<div class="chips full">${it.data.options.map((o,i)=>`<button type="button" data-act="saved-move-option" data-o="${i}">${esc(o.mode)} · ${esc(o.note)}</button>`).join("")}</div>` : ""}
     ${efld("โน้ต","note",e.note,"text","full")}`;
   else if(it.type === "idea") body = `${efld("ชื่อ","title",e.title,"text","full")}
     <label class="fld sm full" for="ed-kind">ประเภท<select id="ed-kind" data-bind="sheet:edit.kind">${IDEA_KINDS.map(k => `<option ${k===e.kind?"selected":""}>${esc(k)}</option>`).join("")}</select></label>
     ${efld("โน้ต","note",e.note,"text","full")}`;
   else body = `${efld("ชื่อสถานที่","title",e.title,"text","full")}
     ${efld("วันที่","date",e.date,"date")}${efld("เวลา","time",e.time,"time")}
+    ${efld("เวลาออกจากสถานที่","until",e.until,"time")}<label class="lock-field full"><input type="checkbox" data-bind="sheet:edit.timeLocked" ${e.timeLocked?"checked":""}> 🔒 ล็อกเวลาเข้าตามการจอง (AI ห้ามเลื่อน)</label>
     ${efld("โน้ต","note",e.note,"text","full")}`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไข ${esc(it.title)}" data-stop="1">
     <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>แก้ไข</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
@@ -1385,7 +1397,7 @@ function aiChips(key, opts, cur){
 }
 /* what the planner may place on the chosen days: wish-list places not planned on other days, and places already on these days */
 function aiPool(dates){
-  const ideas = S.items.filter(i => i.type === "idea" && (!plannedFrom(i.id) || dates.includes(plannedFrom(i.id).date)));
+  const ideas = S.items.filter(i => i.type === "idea" && (!plannedFrom(i.id) || (dates.includes(plannedFrom(i.id).date) && !(plannedFrom(i.id).data||{}).timeLocked)));
   const free = new Set(ideas.map(i => i.id));
   const fixed = S.items.filter(i => i.type === "place" && dates.includes(i.date) && !free.has((i.data||{}).fromIdea));
   return ideas.concat(fixed);
@@ -1415,7 +1427,7 @@ function vAiPlan(s){
     const rows = d.ids.map(aiStop).filter(Boolean).map((it, i, all) => `<li class="ai-prow"><span class="time">${i + 1}</span>
       <span class="thumb-sm ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",16)}</span>
       <span class="grow"><span class="ttl">${esc(it.title)}</span>${it.sub ? `<br><span class="muted small">${esc(it.sub)}</span>` : ""}</span>
-      <span class="ai-mv"><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="-1" ${i ? "" : "disabled"} aria-label="เลื่อนขึ้น">${ic("up",16)}</button><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="1" ${i < all.length - 1 ? "" : "disabled"} aria-label="เลื่อนลง">${ic("down",16)}</button><button type="button" data-act="ai-drop" data-k="${esc(it.id)}" aria-label="เอาออกจากวันนี้">${ic("close",16)}</button></span></li>`).join("");
+      <span class="ai-mv"><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="-1" ${i ? "" : "disabled"} aria-label="เลื่อนขึ้น">${ic("up",16)}</button><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="1" ${i < all.length - 1 ? "" : "disabled"} aria-label="เลื่อนลง">${ic("down",16)}</button><button type="button" data-act="ai-drop" data-k="${esc(it.id)}" ${(it.data||{}).timeLocked?"disabled":""} aria-label="${(it.data||{}).timeLocked?"นัดที่ล็อกเวลา":"เอาออกจากวันนี้"}">${ic("close",16)}</button></span></li>`).join("");
     const ends = aiEnds(d.date);
     return wrap(`<p class="muted small" style="margin-top:-4px">AI ร่างให้แล้วว่าวันไหนไปที่ไหน ปรับได้เลย: ลูกศรสลับลำดับ, <b>×</b> เอาออก, แตะที่สนใจด้านล่างเพื่อใส่วันนี้ เสร็จแล้วกด <b>จัดเวลา</b> ให้ AI ใส่เวลาและการเดินทาง</p>
       ${days.length > 1 ? `<div class="ai-q ai-view">${aiCal(dates, [shown], "ai-view", days.map(x => x.date))}</div>` : ""}
@@ -1435,7 +1447,7 @@ function vAiPlan(s){
       return `<li><div class="ai-row" aria-label="${esc(title)}">
         <span class="time">${esc(x.time || "--:--")}</span>
         <span class="thumb-sm ${tone}" aria-hidden="true">${ic(icon,16)}</span>
-        <span class="grow"><span class="ttl">${esc(title)}</span>${x.note && !choose ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></div>${choose}</li>`;
+        <span class="grow"><span class="ttl">${esc(title)}${x.lockedTime?" 🔒 "+esc(x.lockedTime):""}</span>${x.note && !choose ? `<br><span class="muted small">${esc(x.note)}</span>` : ""}</span></div>${choose}</li>`;
     };
     const shown = r.days.some(d => d.date === s.viewDay) ? s.viewDay : (r.days[0] || {}).date;
     const days = r.days.map((d, di) => {
@@ -1443,6 +1455,7 @@ function vAiPlan(s){
       const idx = dates.indexOf(d.date);
       return `<section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}</b>${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
         ${d.items.length ? `<ul class="ai-list">${d.items.map((x, xi) => row(x, di + "." + xi)).join("")}</ul>` : `<p class="muted small">วันนี้ไม่มีสถานที่และการเดินทาง</p>`}
+        ${(d.conflicts || []).length ? `<div class="err" role="alert"><b>ต้องปรับแผนก่อนบันทึก</b><ul>${d.conflicts.map(v=>`<li>${esc(v)}</li>`).join("")}</ul></div>` : ""}
         ${(d.warnings || []).length ? `<div class="err small" role="status"><b>จุดที่ต้องตรวจสอบ</b><ul>${d.warnings.map(v => `<li>${esc(v)}</li>`).join("")}</ul></div>` : ""}
         ${(d.attach || []).map(a => `<p class="ai-attach small">${ic("edit",14)}<span><b>โน้ต${esc(a.label)}</b> ${esc(a.note)}</span></p>`).join("")}
         ${(d.tips || []).length ? `<div class="ai-tips small"><b>${ic("spark",14)} คำแนะนำจาก AI</b><ul>${d.tips.map(v => `<li>${esc(v)}</li>`).join("")}</ul></div>` : ""}</section>`;
@@ -1475,7 +1488,8 @@ function aiFoot(s){
   if(s.step === "pick") return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-back">เริ่มใหม่</button><button class="cat-add ai-grad" data-act="ai-route">${ic("spark",16)}จัดเวลา</button></div>`;
   if(s.step === "review"){
     const n = Object.values(s.picks || {}).filter(Boolean).length;
-    return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-topick">กลับไปเลือก</button><button class="cat-add ai-edit" data-act="ai-revise" ${s_(s.wish) ? "" : "disabled"}>${ic("spark",16)}แก้ไข</button><button class="cat-add ai-grad" data-act="ai-add" ${n ? "" : "disabled"}>${ic("check",16)}ตกลง</button></div>`;
+    const blocked=(s.result.days||[]).some(d=>(d.conflicts||[]).length);
+    return `<div class="ai-bar"><button class="cat-add ai-back" data-act="ai-topick">กลับไปเลือก</button><button class="cat-add ai-edit" data-act="ai-revise" ${s_(s.wish) ? "" : "disabled"}>${ic("spark",16)}แก้ไข</button><button class="cat-add ai-grad" data-act="ai-add" ${n && !blocked && !s.saving ? "" : "disabled"}>${ic("check",16)}${s.saving?"กำลังบันทึก…":"ตกลง"}</button></div>`;
   }
   return "";
 }
@@ -1543,7 +1557,7 @@ async function aiRoute(wish){
   try{
     const res = await planCall(s, "planRoute", {tripId:t.id, days, prefs:aiPrefs(s), ...(one ? {wish:s_(wish)} : {})});
     if(S.ai !== s) return;
-    const fresh = res.days || [];
+    const fresh = res.days || []; s.baseRevision=res.revision; s.saveOperation=null;
     if(days.some(d => !fresh.some(x => x.date === d.date))) throw {code:"plan_place_missing"};
     for(const d of days){
       const got = fresh.find(x => x.date === d.date);
@@ -1566,43 +1580,139 @@ function aiMoveStop(id, dir){
   [d.ids[i], d.ids[j]] = [d.ids[j], d.ids[i]];
 }
 async function aiAdd(){
-  const s = S.ai, t = S.trip; if(!s || !t || !s.result) return;
-  if(s.saving) return;
-  // Validate before deleting any current plan; never save a partially selected route.
-  if(s.result.days.some((d, di) => d.items.some((x, xi) => !s.picks[di + "." + xi]))){
-    toast("กลับไปเลือกสถานที่ แล้วจัดเวลาใหม่เพื่อให้การเดินทางต่อเนื่อง"); return;
-  }
-  s.saving = true;
-  try {
-  const dates = s.result.days.map(d => d.date);
-  let n = 0, first = "";
-  const src = {}; S.items.forEach(i => src[i.id] = i);
-  /* the plan for these days is replaced: old places, travel legs and the notes on flights and stays go first */
-  for(const it of ownOn(dates)) await store.deleteItem(t.id, it.id);
-  await clearNotes(t, dates);
-  for(const [di, d] of s.result.days.entries()){
-    for(const [xi, x] of d.items.entries()){
-      if(!s.picks[di + "." + xi]) continue;
-      const base = {date:d.date, time:x.time || "", sub:x.note || "", createdBy:S.me, createdAt:Date.now() + n, source:"ai"};
-      if(x.type === "move") await store.addItem(t.id, {...base, type:"move", title:moveTitle(x.from, x.to), data:{mode:x.mode, from:x.from, to:x.to}});
-      else {
-        const sd = (src[x.ref] || {}).data || {};
-        await store.addItem(t.id, {...base, type:"place", title:x.title, data:{address:sd.address || x.address || "", lat:sd.lat, lon:sd.lon, placeId:sd.placeId || "", mapsUrl:sd.mapsUrl || "", kind:x.kind, until:x.until || "", inside:x.inside || "", ...(x.ideaId ? {fromIdea:x.ideaId} : {})}});
+  const s=S.ai,t=S.trip;if(!s||!t||!s.result||s.saving)return;
+  if(s.result.days.some((d,di)=>(d.conflicts||[]).length||d.items.some((x,xi)=>!s.picks[di+'.'+xi]))){toast('ปรับแผนให้ครบและแก้เวลาจองที่ไม่ทันก่อนบันทึก');return;}
+  s.saving=true;S.directSaving=true;render();
+  try{
+    await flush();if(C.outbox.length)throw {code:'pending_sync'};
+    const docs=[],notes=[];const dates=s.result.days.map(d=>d.date);
+    for(const d of s.result.days){
+      for(const x of d.items){
+        const src=S.items.find(i=>i.id===x.ref),sd=(src||{}).data||{};
+        const base={id:rid(),tripId:t.id,date:d.date,time:x.time||'',sub:x.note||'',createdBy:S.me,createdAt:Date.now()+docs.length,source:'ai'};
+        docs.push(x.type==='move'?{...base,type:'move',title:moveTitle(x.from,x.to),data:{mode:x.mode,from:x.from,to:x.to,options:x.options||[],durationMinutes:travelMinutes(x)}}:
+          {...base,type:'place',title:x.title,data:{...sd,address:sd.address||x.address||'',until:x.until||'',inside:x.inside||'',originId:x.ref||'',timeLocked:!!x.lockedTime,...(x.ideaId?{fromIdea:x.ideaId}:{})}});
       }
-      if(!first) first = d.date; n++;
     }
-  }
-  /* hotel and airport tips go onto that stay or flight as its note */
-  for(const d of s.result.days) for(const a of (d.attach || [])){
-    const it = S.items.find(i => i.id === a.id); if(!it) continue;
-    const cur = s_((it.data || {})[a.field]); if(cur.includes(a.note)) continue;
-    await store.updateItem(t.id, it.id, {data:{...(it.data || {}), [a.field]:cur ? cur + " · " + a.note : a.note}});
-    if(!first) first = d.date;
-  }
-  const i = tripDates(t).indexOf(first || dates[0]); if(i >= 0) S.day = i;
-  S.ai = null; S.catTab = ""; render(); toast(`จัดแผนแล้ว ${n} รายการ`);
-  } catch(e){ fail(e); } finally { s.saving = false; }
+    const noteBy={};for(const n of planNotes(dates))noteBy[n.it.id]={...n.patch};
+    for(const d of s.result.days)for(const a of d.attach||[]){const it=S.items.find(i=>i.id===a.id);if(!it)continue;const val=(noteBy[a.id]||{})[a.field]??(it.data||{})[a.field]??'';(noteBy[a.id]||={})[a.field]=val?val+' · '+a.note:a.note;}
+    for(const [id,data] of Object.entries(noteBy))notes.push({id,data});
+    s.saveOperation ||= rid();
+    const res=await api('replacePlan',{tripId:t.id,revision:s.baseRevision||C.revisions[t.id],dates,items:docs,notes,operation:s.saveOperation});
+    applyPlanResponse(t.id,res);const i=tripDates(t).indexOf(dates[0]);if(i>=0)S.day=i;
+    S.ai=null;S.catTab='';toast('บันทึกแผนแล้ว · ย้อนกลับได้ในประวัติแผน');
+  }catch(e){toast(featureError(e));if(e.code==='plan_changed')refreshTrip(t.id);}
+  finally{s.saving=false;S.directSaving=false;render();}
 }
+
+/* Travel time changes keep reservations fixed and absorb spare time before them. */
+function travelMinutes(x){
+  if(Number.isFinite(+x.durationMinutes) && +x.durationMinutes>0)return +x.durationMinutes;
+  const note=String(x.note||x.sub||'');
+  const h=note.match(/(\d+(?:\.\d+)?)\s*(?:ชั่วโมง|ชม\.?|hours?|hrs?)/i),m=note.match(/(\d+)\s*(?:นาที|mins?|minutes?)/i);
+  return h||m ? Math.round((h?+h[1]*60:0)+(m?+m[1]:0)) : 30;
+}
+function minute(v){const m=/^(\d{1,2}):(\d{2})$/.exec(v||'');return m&&+m[1]<24&&+m[2]<60?+m[1]*60 + +m[2]:-1;}
+function clockTime(n){return pad(Math.floor(n/60))+':'+pad(n%60);}
+function changeTravel(day,index,option){
+  const items=JSON.parse(JSON.stringify(day.items)),old=items[index];
+  if(!old||old.type!=='move')return {error:'ไม่พบช่วงเดินทาง'};
+  const before=travelMinutes(old),after=travelMinutes(option);
+  old.mode=option.mode;old.note=option.note;old.durationMinutes=after;
+  let shift=after-before,ready=minute(old.time)+after;
+  for(let i=index+1;i<items.length;i++){
+    const x=items[i],was=minute(x.time),end=minute(x.until),duration=x.type==='move'?travelMinutes(x):Math.max(1,end>was?end-was:60);
+    let at=was+shift;
+    if(x.inside){at=Math.max(0,at);}else at=Math.max(ready,at);
+    if(x.lockedTime){
+      const lock=minute(x.lockedTime);
+      if(lock<0||ready>lock)return {error:'ไปไม่ทัน '+x.title+' ที่ล็อกไว้ '+x.lockedTime+' ลองเลือกการเดินทางที่เร็วขึ้นหรือลดจุดก่อนหน้า'};
+      at=lock;shift=0;
+    }else shift=at-was;
+    if(at<0||at+duration>1439)return {error:'ตารางเกินหนึ่งวัน กรุณาลดสถานที่หรือเปลี่ยนวิธีเดินทาง'};
+    x.time=clockTime(at);if(x.type==='place')x.until=clockTime(at+duration);
+    ready=Math.max(ready,at+duration);
+  }
+  if(day.deadline!=null&&day.deadline>=0&&ready>day.deadline)return {error:'ไปสนามบินไม่ทันเวลาเผื่อ 3 ชั่วโมง ลองเลือกการเดินทางที่เร็วขึ้น'};
+  let previous=-1;
+  for(const x of items){
+    const at=minute(x.time);
+    if(x.lockedTime && at!==minute(x.lockedTime))return {error:'เวลาจองถูกเปลี่ยน กรุณาจัดแผนใหม่'};
+    if(!x.inside && at<previous)return {error:'ตารางยังทับกันก่อนช่วงที่เลือก กรุณาปรับช่วงเดินทางก่อนหน้า'};
+    if(!x.inside)previous=at+(x.type==='move'?travelMinutes(x):Math.max(1,minute(x.until)-at));
+  }
+  return {items,conflicts:[]};
+}
+async function saveTravelEdit(it,e){
+ const t=S.trip;await flush();if(C.outbox.length)throw {code:'pending_sync'};
+ const fresh=await api('getTrip',{id:t.id});
+ const source=fresh.items.filter(x=>x.date===it.date&&['place','move'].includes(x.type)).sort((a,b)=>String(a.time).localeCompare(String(b.time))||(a.createdAt||0)-(b.createdAt||0));
+ const raw=source.find(x=>x.id===it.id);if(!raw||JSON.stringify(raw)!==JSON.stringify(it))throw {code:'plan_changed'};
+ const items=source.map(x=>({...x,note:x.sub||'',until:(x.data||{}).until||'',lockedTime:(x.data||{}).timeLocked?x.time:'',inside:(x.data||{}).inside||'',mode:(x.data||{}).mode,from:(x.data||{}).from,to:(x.data||{}).to,durationMinutes:(x.data||{}).durationMinutes}));
+ const flight=fresh.items.find(x=>x.type==='flight'&&x.date===it.date&&x.data&&x.data.from&&!(x.data.arrDate===it.date&&fresh.items.some(h=>h.type==='stay'&&h.date<=it.date&&it.date<h.endDate)));
+ const d={items,deadline:flight?minute(flight.time)-180:null},index=items.findIndex(x=>x.id===it.id);
+ const changed=changeTravel(d,index,{mode:e.mode,note:e.note,durationMinutes:Number(e.durationMinutes)});if(changed.error)throw {code:'timing_conflict',message:changed.error};
+ const docs=changed.items.map(x=>{const old=source.find(o=>o.id===x.id);return {...old,time:x.time,sub:x.note,data:{...(old.data||{}),...(x.type==='place'?{until:x.until}:{mode:x.mode,durationMinutes:travelMinutes(x)})}};});
+ const res=await api('replacePlan',{tripId:t.id,revision:fresh.revision,dates:[it.date],items:docs,notes:[],reason:'travel',operation:rid()});applyPlanResponse(t.id,res);
+}
+
+function syncCopy(){
+  if(S.localSaveError)return 'เก็บข้อมูลในเครื่องไม่สำเร็จ กรุณาเปิดพื้นที่จัดเก็บ';
+  if(C.outbox.some(o=>o.error))return 'บันทึกไม่สำเร็จ · แตะเพื่อลองใหม่';
+  if(C.outbox.length)return !navigator.onLine?'ออฟไลน์ · รอส่ง '+C.outbox.length+' รายการ':flushing?'กำลังบันทึก '+C.outbox.length+' รายการ…':'รอส่ง '+C.outbox.length+' รายการ';
+  return S.directSaving?'กำลังบันทึกแผน…':!navigator.onLine?'ออฟไลน์ · ข้อมูลที่บันทึกแล้วอยู่ในเครื่อง':'บันทึกแล้ว';
+}
+function updateSync(){const el=document.getElementById('sync-state');if(el){el.textContent=syncCopy();el.classList.toggle('sync-error',!!S.localSaveError||C.outbox.some(o=>o.error));}}
+function vSync(){return `<button id="sync-state" class="sync-state" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`;}
+async function historyOpen(){
+  S.sheet={kind:'history',loading:true};render();
+  try{await flush(); if(C.outbox.length)throw {code:'pending_sync'};const entries=await api('planHistory',{tripId:S.trip.id});if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',entries};render();}}
+  catch(e){if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',err:featureError(e)};render();}}
+}
+function featureError(e){return ({plan_changed:'ทริปมีการแก้ไขจากอีกเครื่องแล้ว โหลดข้อมูลล่าสุดแล้วจัดแผนใหม่',pending_sync:'ยังมีข้อมูลรอบันทึก กรุณารอให้บันทึกครบหรือลองส่งอีกครั้ง',locked_booking_conflict:'แผนนี้เปลี่ยนหรือลืมนัดที่ล็อกเวลาไว้ กรุณาจัดแผนใหม่',offline:'ไม่มีอินเทอร์เน็ต แผนเดิมยังอยู่ กรุณาลองใหม่เมื่อเชื่อมต่อ',history_not_found:'ไม่พบแผนฉบับนี้',history_incomplete:'สำรองแผนนี้ไม่ครบ กรุณาเลือกฉบับอื่น'})[e&&e.code]||'บันทึกไม่สำเร็จ แผนเดิมยังอยู่ กรุณาลองใหม่';}
+function vHistory(s){return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ประวัติแผน" data-stop="1"><div class="hd"><h2>ประวัติแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เก็บฉบับก่อนใช้ AI หรือล้างแผน การย้อนกลับจะสำรองแผนปัจจุบันไว้อีกฉบับ</p>${s.loading?'<p>กำลังโหลด…</p>':s.err?`<p class="err">${esc(s.err)}</p>`:!(s.entries||[]).length?'<p>ยังไม่มีประวัติ จะเริ่มเก็บเมื่อใช้แผน AI ครั้งถัดไป</p>':s.entries.map(h=>`<section class="card history-row"><b>${esc(h.label)}</b><span class="muted small">${esc(new Date(h.createdAt).toLocaleString('th-TH'))} · ${h.dates.length} วัน</span>${s.confirm===h.id?`<p>ย้อนแผนของวันที่ ${h.dates.map(dShort).map(esc).join(', ')} กลับเป็นฉบับนี้?</p><button class="btn primary" data-act="history-restore" data-id="${esc(h.id)}" ${s.busy?'disabled':''}>${s.busy?'กำลังย้อนแผน…':'ยืนยันย้อนแผน'}</button>`:`<button class="pill-btn" data-act="history-confirm" data-id="${esc(h.id)}">ย้อนเป็นฉบับนี้</button>`}</section>`).join('')}</div></div>`;}
+async function restoreHistory(id){
+  const s=S.sheet;if(!s||s.busy)return;s.busy=true;render();
+  try{await flush();if(C.outbox.length)throw {code:'pending_sync'};const r=await api('getTrip',{id:S.trip.id});const res=await api('replacePlan',{tripId:S.trip.id,revision:r.revision,restore:id,operation:rid()});applyPlanResponse(S.trip.id,res);S.sheet=null;render();toast('ย้อนแผนแล้ว และสำรองแผนก่อนย้อนให้แล้ว');}
+  catch(e){s.busy=false;s.err=featureError(e);render();}
+}
+function applyPlanResponse(id,res){C.items[id]=Object.fromEntries(res.items.map(i=>[i.id,i]));(C.revisions ||= {})[id]=res.revision;emit();}
+function overviewDay(date){
+  const entries=dayEntries(date).filter(e=>!e.night),places=S.items.filter(i=>i.date===date&&i.type==='place');
+  const coords=places.filter(i=>Number.isFinite(+(i.data||{}).lat)&&Number.isFinite(+(i.data||{}).lon)&&(i.data||{}).lat!==''&&(i.data||{}).lat!=null&&(i.data||{}).lon!=null);
+  let km=0;for(let i=1;i<coords.length;i++)km+=geoDistance(coords[i-1].data,coords[i].data);
+  const times=entries.map(e=>minute(e.time)).filter(v=>v>=0),span=times.length?Math.max(...times)-Math.min(...times):0;
+  return {entries,places,coords,km,warning:places.length>5||span>720?'วันนี้ค่อนข้างแน่น':km>50?'สถานที่อยู่ห่างกันมาก':!places.length?'ยังไม่มีสถานที่ในแผน':''};
+}
+function geoDistance(a,b){const r=x=>x*Math.PI/180,h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lon-a.lon)/2)**2;return 12742*Math.asin(Math.min(1,Math.sqrt(h)));}
+function vOverview(s){
+ const dates=tripDates(S.trip),chosen=s.date||'all';
+ return `<div class="scrim" data-act="close-sheet"><div class="sheet overview-sheet" role="dialog" aria-modal="true" aria-label="ภาพรวมทริป" data-stop="1"><div class="hd"><h2>ภาพรวมทั้งทริป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><label class="fld">ดูเส้นทาง<select id="overview-date"><option value="all">ทั้งทริป</option>${dates.map((d,i)=>`<option value="${d}" ${chosen===d?'selected':''}>วันที่ ${i+1} · ${dShort(d)}</option>`).join('')}</select></label><div id="trip-map" class="trip-map" role="region" aria-label="แผนที่สถานที่ในทริป">กำลังโหลดแผนที่…</div><p id="map-status" class="muted small" role="status"></p><p class="muted small">เส้นเชื่อมแสดงลำดับสถานที่ ไม่ใช่เส้นทางถนนหรือเวลาเดินทางจริง แตะหมุดเพื่อเปิด Google Maps</p>${dates.filter(d=>chosen==='all'||d===chosen).map(d=>{const x=overviewDay(d);return `<section class="card overview-day"><div class="hd"><b>วันที่ ${dates.indexOf(d)+1} · ${esc(dShort(d))}</b><button class="pill-btn" data-act="overview-day" data-d="${d}">ดูวันนี้</button></div><p>${x.places.length} สถานที่${x.km?' · ระยะเชื่อมจุด ~'+Math.round(x.km)+' กม.':''}${x.warning?' · '+esc(x.warning):''}</p><ol>${x.entries.map(e=>`<li><b>${esc(e.time||'—')}</b> ${esc(e.title)}${(e.it.data||{}).timeLocked?' 🔒':''}</li>`).join('')||'<li>ยังไม่มีแผน</li>'}</ol></section>`;}).join('')}</div></div>`;
+}
+let overviewMap=null,overviewMapToken=0;
+async function mountOverviewMap(){
+ if(!S.sheet||S.sheet.kind!=='overview')return;
+ const node=document.getElementById('trip-map'),token=++overviewMapToken;if(!node)return;
+ try{
+  if(!window.L){if(!document.getElementById('leaflet-css')){const css=document.createElement('link');css.id='leaflet-css';css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.append(css);}await (window.leafletLoading ||= loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js').catch(e=>{window.leafletLoading=null;throw e;}));}
+  if(token!==overviewMapToken||!node.isConnected)return;
+  if(overviewMap){overviewMap.remove();overviewMap=null;}node.textContent='';
+  const map=overviewMap=L.map(node).setView([20,0],2);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+  const all=[],dates=tripDates(S.trip),selected=S.sheet.date||'all',colors=['#1958bd','#b45309','#15803d','#b91c1c','#7e22ce','#0e7490'];let missing=0;
+  dates.filter(d=>selected==='all'||d===selected).forEach(d=>{
+   const pts=[];let n=0;
+   dayEntries(d).filter(e=>!e.night&&['place','stay'].includes(e.it.type)).forEach(e=>{
+    const it=e.it,data=it.data||{},lat=data.lat,lon=data.lon;
+    if(lat==null||lon==null||lat===''||lon===''||!Number.isFinite(+lat)||!Number.isFinite(+lon)){missing++;return;}
+    const pos=[+lat,+lon];pts.push(pos);all.push(pos);n++;
+    const box=document.createElement('div'),label=document.createElement('b'),link=document.createElement('a');label.textContent=`วันที่ ${dates.indexOf(d)+1} · ${n}. ${e.title}`;link.textContent='เปิด Google Maps';link.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lon);link.target='_blank';link.rel='noopener';box.append(label,document.createElement('br'),link);
+    L.marker(pos).addTo(map).bindPopup(box);
+   });if(pts.length>1)L.polyline(pts,{color:colors[dates.indexOf(d)%colors.length],weight:3}).addTo(map);
+  });if(all.length)map.fitBounds(all,{padding:[25,25],maxZoom:14});
+  document.getElementById('map-status').textContent=all.length?`แสดง ${all.length} จุด`+(missing?` · อีก ${missing} รายการยังไม่มีพิกัด`:''):'ยังไม่มีพิกัดสถานที่ในแผน เปิดรายการเพื่อเพิ่มหรือเลือกสถานที่จาก Google Maps';
+ }catch(e){if(node.isConnected)node.textContent='โหลดแผนที่ไม่ได้ ตรวจอินเทอร์เน็ต รายการแผนด้านล่างยังดูได้';}
+}
+
 /* ---------- day pages to keep or send: one picture per day, with a map ---------- */
 function loadScript(src){ return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("load")); document.head.appendChild(sc); }); }
 async function exportLibs(pdf){
@@ -1779,6 +1889,8 @@ function addFromLink(url){
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
+  if(s.kind === "overview") return vOverview(s);
+  if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
@@ -1833,6 +1945,7 @@ function vSheet(){
           : `<label class="fld">วัน<input id="sh-date" type="date" value="${esc(s.date||"")}" data-bind="sheet:date"></label>`}
         <label class="fld">เวลา<input id="sh-time" type="time" value="${esc(s.time)}" data-bind="sheet:time"></label>
       </div>
+      ${!isMove ? `<label class="lock-field"><input type="checkbox" data-bind="sheet:timeLocked" ${s.timeLocked?"checked":""}> 🔒 ล็อกเวลาเข้าตามการจอง</label>` : ""}
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="${isMove?"เช่น ประมาณ 30 นาที":"เช่น เด็กๆ ชอบ, ใช้เวลา 2 ชม."}" value="${esc(s.note)}" data-bind="sheet:note"></label>
       <button class="btn primary" type="submit">ตกลง</button>
     </form>
@@ -1854,7 +1967,9 @@ function render(){
   document.body.style.overflow = S.sheet ? "hidden" : "";
   document.documentElement.classList.toggle("lock", !!(S.sheet || (S.view === "trip" && S.catTab)));
   if(S.view === "login") mountGoogleButton();
-  fitAreas();
+  fitAreas(); updateSync();
+  if(S.sheet && S.sheet.kind === "overview") mountOverviewMap();
+  else {overviewMapToken++;if(overviewMap){overviewMap.remove();overviewMap=null;}}
 }
 /* typing boxes that grow line by line so the whole message stays visible */
 function fitAreas(el){ (el ? [el] : document.querySelectorAll("textarea.grow-area")).forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }); }
@@ -2081,7 +2196,7 @@ document.addEventListener("input", e => {
   }
   const b = e.target.dataset && e.target.dataset.bind; if(!b) return;
   const [root, path] = b.split(":");
-  if(root === "root") S[path] = e.target.value; else if(S[root]) setPath(S[root], path, e.target.value);
+  if(root === "root") S[path] = (e.target.type === "checkbox" ? e.target.checked : e.target.value); else if(S[root]) setPath(S[root], path, e.target.type === "checkbox" ? e.target.checked : e.target.value);
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); e.target.scrollIntoView({block:"nearest"}); }
   if(b === "ai:wish"){ const btn = document.querySelector('[data-act="ai-revise"]'); const s = S.ai; if(btn && s) btn.disabled = !s_(s.wish); }
   if(e.target.dataset.rerender) render();
@@ -2229,6 +2344,7 @@ document.addEventListener("focusout", e => {
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
 });
 document.addEventListener("change", e => {
+  if(e.target.id === "overview-date" && S.sheet){S.sheet.date=e.target.value;render();return;}
   if(e.target.id === "sh-trip" && S.sheet){ const keep = S.sheet; openTrip(e.target.value); S.sheet = keep; render(); return; }
   if(e.target.id === "attach-in"){
     const fl = Array.from(e.target.files || []); e.target.value = "";
@@ -2301,9 +2417,12 @@ document.addEventListener("submit", async e => {
   if(f === "review") return saveReview(false);
   if(f === "item-edit"){
     const s = S.sheet, it = s && S.items.find(i => i.id === s.id); if(!it) return;
+    if(it.type==="move" && (!Number.isFinite(+s.edit.durationMinutes)||+s.edit.durationMinutes<=0||+s.edit.durationMinutes>1440)){toast("ระบุเวลาเดินทาง 1–1440 นาที");return;}
+    if(s.edit.until && minute(s.edit.until)<=minute(s.edit.time)){toast("เวลาออกจากสถานที่ต้องอยู่หลังเวลาเข้า");return;}
+    if(s.edit.timeLocked && !s.edit.time){toast("ระบุเวลาจองก่อนล็อกเวลา");return;}
     S.saving = true; render();
-    try { await store.updateItem(S.trip.id, it.id, patchFromEdit(it, s.edit)); S.saving = false; S.sheet = s.fromSwipe ? null : {kind:"item", id:it.id, confirm:false}; render(); toast("แก้ไขแล้ว"); }
-    catch(err){ S.saving = false; render(); fail(err); }
+    try { if(it.type==="move" && (s.edit.mode!==(it.data||{}).mode || s.edit.note!==(it.sub||"") || +s.edit.durationMinutes!==travelMinutes({note:it.sub,durationMinutes:(it.data||{}).durationMinutes}))){ if(s.edit.time!==it.time || s.edit.date!==it.date || s.edit.from!==(it.data||{}).from || s.edit.to!==(it.data||{}).to){toast("เปลี่ยนวิธีเดินทางแยกจากการแก้วันหรือเวลา เพื่อคำนวณตารางต่อเนื่อง");S.saving=false;render();return;} await saveTravelEdit(it,s.edit); } else await store.updateItem(S.trip.id, it.id, patchFromEdit(it, s.edit)); S.saving = false; S.sheet = s.fromSwipe ? null : {kind:"item", id:it.id, confirm:false}; render(); toast("แก้ไขแล้ว"); }
+    catch(err){ S.saving = false; render(); toast(err.message || featureError(err)); }
     return;
   }
   if(f === "new"){
@@ -2332,10 +2451,11 @@ document.addEventListener("submit", async e => {
       } catch(err){ fail(err); }
       return;
     }
+    if(s.timeLocked && !s.time){toast("ระบุเวลาจองก่อนล็อกเวลา");return;}
     const from = s_(s.from), to = s_(s.to);
     const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : (s.address || s.lat || s.placeId ? {data:{address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||""}} : {})), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : {data:{address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"",timeLocked:!!s.timeLocked}}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -2347,6 +2467,13 @@ document.addEventListener("click", async e => {
   if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
   const a = el.dataset.act, t = S.trip;
   switch(a){
+    case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
+    case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
+    case "overview-open": S.sheet={kind:'overview',date:'all'};render();break;
+    case "overview-day": S.day=tripDates(t).indexOf(el.dataset.d);S.sheet=null;render();break;
+    case "history-open": historyOpen();break;
+    case "history-confirm": S.sheet.confirm=el.dataset.id;render();break;
+    case "history-restore": restoreHistory(el.dataset.id);break;
     case "home": go("home"); break;
     case "new": go("new"); break;
     case "open":
@@ -2402,17 +2529,19 @@ document.addEventListener("click", async e => {
     case "ai-view": S.ai.viewDay = el.dataset.d; render(); break;
     case "ai-mode": {
       const [di, xi] = el.dataset.k.split(".").map(Number), x = S.ai.result.days[di].items[xi], o = x.options[Number(el.dataset.o)];
-      if(o){ x.mode = o.mode; x.note = o.note; } render(); break; }
+      if(o){const d=S.ai.result.days[di],result=changeTravel(d,xi,o);if(result.error)toast(result.error);else {d.items=result.items;d.conflicts=result.conflicts;S.ai.saveOperation=null;toast("ปรับเวลาแผนตามวิธีเดินทางแล้ว");}} render(); break; }
     case "ai-add": aiAdd(); break;
     case "ai-revise": if(s_(S.ai.wish)) aiRoute(S.ai.wish); break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": {
-      const dates = tripDates(t), days = S.sheet.scope === "all" ? dates : [dates[S.day]], list = ownOn(days);
-      S.sheet = null;
-      for(const it of list) await store.deleteItem(t.id, it.id);
-      const nn = await clearNotes(t, days);
-      render(); toast(`ลบ ${[list.length ? list.length + " รายการ" : "", nn ? "โน้ต " + nn + " อัน" : ""].filter(Boolean).join(" กับ ")} แล้ว`); break; }
+      const dates=tripDates(t),days=S.sheet.scope==='all'?dates:[dates[S.day]];
+      try{await flush();if(C.outbox.length)throw {code:'pending_sync'};const r=await api('getTrip',{id:t.id});
+        const notes=planNotes(days).map(n=>({id:n.it.id,data:n.patch}));
+        const res=await api('replacePlan',{tripId:t.id,revision:r.revision,dates:days,items:[],notes,clear:true,operation:rid()});
+        applyPlanResponse(t.id,res);S.sheet=null;render();toast('ล้างแผนแล้ว · ย้อนกลับได้ในประวัติแผน');
+      }catch(e){toast(featureError(e));}break;
+    }
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-scope": if(!S.sheet.busy){ S.sheet.scope = el.dataset.k; exportReset(S.sheet); render(); } break;
     case "export-run": exportRun(el.dataset.k); break;
@@ -2561,7 +2690,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-continuity1";
+const BUILD = "2026-10-30-planner2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -2579,7 +2708,8 @@ async function checkUpdate(){
   unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
   const refresh = () => { checkUpdate(); if(!S.token) return; flush(); if(S.view !== "home" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
   document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
-  window.addEventListener("online", flush);
+  window.addEventListener("online", () => {updateSync();flush();});
+  window.addEventListener("offline", updateSync);
   setInterval(refresh, 60000);
   flush();
   checkUpdate();
