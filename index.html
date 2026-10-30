@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>
+// Installed iPhone apps reserve the system status area before the first paint.
+if(navigator.standalone === true){
+  document.querySelector('meta[name="viewport"]').setAttribute('content','width=device-width,initial-scale=1,viewport-fit=contain');
+}
+</script>
 <meta name="theme-color" content="#FFFDF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -52,8 +58,8 @@ body{margin:0}
 @media (display-mode:standalone){
   :root{background:var(--bg)}
   @supports (-webkit-touch-callout:none){
-    :root{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
-    body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(env(safe-area-inset-top,0px) + 8px);background:var(--bg);pointer-events:none;z-index:40}
+    :root{padding-top:calc(env(safe-area-inset-top,0px) + 24px)}
+    body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(env(safe-area-inset-top,0px) + 24px);background:var(--bg);pointer-events:none;z-index:40}
   }
 }
 [hidden]{display:none!important}
@@ -2786,7 +2792,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-safeedge6";
+const BUILD = "2026-10-30-safeedge7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
