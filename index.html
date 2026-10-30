@@ -573,23 +573,16 @@ html.lock,html.lock body{overflow:hidden}
 .ai-foot .btn{height:auto;min-height:48px;padding:10px 12px}
 @media(max-width:360px){.ai-modes{padding-left:0}.ai-row-q{flex-wrap:wrap}.map-pin-list li{flex-wrap:wrap}}
 /* Minimal trip shell: daily plan first, bookings and secondary tools one level deeper. */
-.hero .cover{height:72px;background:var(--tile)}.hero .cover svg{display:none}
-.trip-bar{min-height:68px;background:transparent;padding:4px 0;border-radius:0;gap:10px}
-.trip-bar h1{font-size:23px}.trip-bar .round{background:transparent}
-.plan-actions{display:flex;gap:8px}.plan-actions .pill-btn{background:var(--tile);height:40px;font-weight:500}
+.plan-actions{display:flex;gap:8px}.plan-actions .pill-btn{background:var(--soft);color:var(--deep);height:40px;font-weight:500}
 .plan-actions .pill-btn:last-child{margin-left:auto}
-.entry .thumb{background:transparent;color:var(--muted);border:0}
 .entry-copy .ttl{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .entry-sub{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;margin-top:3px}
 .sync-state{font-size:11px;max-width:55%;text-align:right}.sync-state.sync-ok{background:transparent;padding:0;min-height:24px;cursor:default}
 .dock{border-radius:18px;box-shadow:0 2px 16px rgba(0,0,0,.09),0 0 0 1px var(--line)}
-.seg button{color:var(--muted);background:transparent}.seg button[aria-selected="true"]{background:var(--tile);color:var(--ink);box-shadow:none}
 .booking-group{padding:8px 0 14px}.booking-group+.booking-group{border-top:1px solid var(--line)}
 .booking-group h3{font:500 14px var(--body)}.text-action{border:0;background:transparent;min-height:40px;padding:0 8px;color:var(--ink);font-size:13px}
 .item-edit-visible{border:1px solid var(--line);height:44px;font:500 14px var(--body)}
 .advanced-options summary{min-height:44px;cursor:pointer;padding:12px 0;font-weight:500}.advanced-options .share-box{margin-top:8px}
-.ai-go,.ai-grad{background:var(--ink);color:var(--bg);box-shadow:none}
-.ai-bar .cat-add.ai-grad{background:var(--ink);color:var(--bg)}
 </style>
 </head>
 <body>
@@ -1144,7 +1137,7 @@ function catCard(){
       <div class="dock-body" data-k="${info?'info':tab}">${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">จดสถานที่ที่อยากไปไว้ก่อน</p>`)}</div>
       ${info?'':add}
     </div>` : ""}
-    <div class="seg" role="tablist" aria-label="เมนูทริป">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${k==='plan'?!tab||tab==='ai':k==='info'?info:k===tab}" data-act="${k==='plan'?'plan-nav':'cat'}" data-k="${k}">${ic(k==='plan'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
+    <div class="seg" role="tablist" aria-label="เมนูทริป">${tabs.map(([k,l])=>`<button class="t-${k==='plan'?'place':k==='info'?'flight':'idea'}" role="tab" aria-selected="${k==='plan'?!tab||tab==='ai':k==='info'?info:k===tab}" data-act="${k==='plan'?'plan-nav':'cat'}" data-k="${k}">${ic(k==='plan'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -1174,14 +1167,14 @@ function vTrip(){
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   return `<main class="screen has-dock">
-    <section class="trip-bar">
+    <section class="trip-bar t-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
     <section class="stack" style="gap:14px">
       <div class="sec-h"><h2>แผนรายวัน</h2>${vSync()}</div>
-      <div class="plan-actions"><button class="pill-btn" data-act="overview-open">${ic("pin",17)}แผนที่</button>${dates.length?`<button class="pill-btn" data-act="ai-open">${ic("spark",17)}ช่วยจัดแผน</button>`:""}</div>
+      <div class="plan-actions"><button class="pill-btn t-flight" data-act="overview-open">${ic("pin",17)}แผนที่</button>${dates.length?`<button class="pill-btn t-ai" data-act="ai-open">${ic("spark",17)}ช่วยจัดแผน</button>`:""}</div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
@@ -2784,7 +2777,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-minimal4";
+const BUILD = "2026-10-30-colors5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
