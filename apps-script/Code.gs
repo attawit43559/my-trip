@@ -163,10 +163,17 @@ const ACTIONS = {
   saveItems: (req) => withLock_(() => {
     const tripId = String(req.tripId);
     mustBeMember_(tripId, req.me);
-    (req.items || []).forEach(it => {
-      it = clean_(it);
+    const batch = (req.items || []).map(clean_);
+    // Validate the whole batch before the first write. An id cannot move between trips.
+    batch.forEach(it => {
       if (!it.id) throw new Error('item_without_id');
       const old = find_(ITEMS, it.id);
+      if (old && old.tripId !== tripId) throw new Error('item_trip_mismatch');
+      if (it.tripId && it.tripId !== tripId) throw new Error('item_trip_mismatch');
+    });
+    batch.forEach(it => {
+      const old = find_(ITEMS, it.id);
+      it.tripId = tripId;
       upsert_(ITEMS, it.id, tripId, old ? deepMerge_(old.obj, it) : it);
     });
     return true;
@@ -639,7 +646,7 @@ function planAssignRun_(req) {
     return { date: d, ids, summary: t(r.summary).slice(0, 60), note: t(r.note).slice(0, 100) };
   });
   const why = {}; ((raw && raw.left) || []).forEach(x => { if (x && x.id) why[t(x.id)] = t(x.why).slice(0, 60); });
-  return { days: out, left: ideas.filter(i => !used[i.id]).map(i => ({ id: i.id, why: why[i.id] || '' })) };
+  return { days: out, left: ideas.filter(i => !used[i.id]).map(i => ({ id: i.id, why: why[i.id] || 'AI ยังไม่ได้จัดลงวัน กรุณาเลือกวันเพิ่มเอง' })) };
 }
 
 function planRoutePrompt_(trip, items, days, p, others, wish) {
@@ -652,7 +659,7 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     else lines.push('  start: (no booking — legs[0] is null)');
     d.stops.forEach((it, i) => {
       const k = (it.data || {}).kind || 'ที่เที่ยว', g = d.g.stops[i];
-      lines.push(`  ${i + 1}. "${s(it.title)}" · ${s(k)}${(it.data || {}).address ? ' · ' + s(it.data.address) : ''}${it.sub ? ' · note from the person (binding): ' + s(it.sub) : ''}${it.time ? ' · the person set the time ' + s(it.time) : ''}${at_(g)}${kmTo(last, g)}`);
+      lines.push(`  ${i + 1}. id=${s(it.id)} "${s(it.title)}" · ${s(k)}${(it.data || {}).address ? ' · ' + s(it.data.address) : ''}${it.sub ? ' · note from the person (binding): ' + s(it.sub) : ''}${it.time ? ' · the person set the time ' + s(it.time) : ''}${at_(g)}${kmTo(last, g)}`);
       if (g) last = g;
     });
     if (d.fr.end) lines.push(`  end: "${s(d.fr.end.name)}"${at_(d.g.end)}${kmTo(last, d.g.end)}`);
@@ -676,7 +683,7 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     '- "legs" lists every journey of the day in order, each with "from" and "to" written exactly as the places are named above: from the start to place 1, from place 1 to place 2, … and from the last place to the end. Leave out the journey to a place that is inside the place before it, and the first or last journey when there is no start or end booking. Only when the group really has to pass by its hotel on the way (e.g. drop luggage before check-in on an arrival day) you may split that journey in two through the hotel (one leg to the hotel, one from it).',
     '- For every leg look at exactly where the group is at that moment and where it goes next, and work out the real route (which line, station or road) and a realistic duration from the distance.',
     '- Each leg: {"from", "to", "time" (when to set off, HH:MM), "mode", "note", "options"}. options: always one by taxi (mode ขับรถ, note "แท็กซี่ ~N นาที"), one by public transport (mode ขนส่งสาธารณะ, note gives the line or bus and duration, e.g. "JR Yamanote ~15 นาที"), walking (mode เดิน) when under about 20 minutes on foot, plus any special service you know for that exact journey (the hotel\'s own shuttle or limousine bus, the Airport Limousine Bus, an airport express train, a theme-park monorail; mode ขนส่งสาธารณะ, note gives its name and duration). Set the leg\'s own mode and note to the option you recommend (short taxi rides when children or older people are coming; walking when very close).',
-    '- "stops" has one entry per place, same order: {"time" (arrival, HH:MM), "until" (when the group leaves, HH:MM), "inside" (true only when this place is inside the place before it, e.g. a restaurant inside Tokyo DisneySea; it then has no journey), "note" (Thai, max ~35 characters, only when useful, e.g. "ซื้อตั๋วล่วงหน้า")}.',
+    '- "stops" has one entry per place, same order, with its exact source id: {"id", "time" (arrival, HH:MM), "until" (when the group leaves, HH:MM), "inside" (true only when physically inside the previous outer place), "insideOf" (the exact id of that outer place; otherwise empty). Nearby places, the same neighbourhood, or another branch are NOT inside. Include even short walks between separate places, "note" (Thai, max ~35 characters, only when useful, e.g. "ซื้อตั๋วล่วงหน้า")}.',
     '- Times: start the day around the preferred time; on an arrival day about 2 hours after landing; on a departure day set off so the group reaches the airport about 3 hours before an international flight (say so in that leg\'s note, e.g. "~60 นาที · ถึงก่อน 3 ชม."). Follow times and bookings in the person\'s notes exactly. Leave realistic time at each place (a theme park the whole day, a museum 1.5-2 hours, a meal about 1 hour; lunch around 11:30-13:00, dinner around 18:00-19:30). Everything in order with no overlaps: a leg sets off when the place before it is left, the next place starts when the leg arrives.',
     '- "startNote" / "endNote": a short Thai tip about the hotel or airport at the start or end of the day (e.g. "ฝากกระเป๋าก่อนเช็กอิน", "รับกระเป๋าแล้วซื้อ Suica"), or "".',
     '- "tips": 0-3 short Thai tips (max ~80 characters each, real names only), only when there is something worth saying:',
@@ -685,37 +692,65 @@ function planRoutePrompt_(trip, items, days, p, others, wish) {
     '  · grouping: when a place is far from the rest of the day, say so and name a better day from the other days if one is near it.',
     '- "summary": the theme of the day in Thai, a few words. Notes in Thai. "mode" is one of ขับรถ, ขนส่งสาธารณะ, เดิน (a taxi is ขับรถ with "แท็กซี่" in its note).',
     'Reply with only this JSON:',
-    '{"days":[{"date":"YYYY-MM-DD","summary":"","legs":[{"from":"","to":"","time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"time":"HH:MM","until":"HH:MM","inside":false,"note":""}],"startNote":"","endNote":"","tips":[""]}]}'
+    '{"days":[{"date":"YYYY-MM-DD","summary":"","legs":[{"from":"","to":"","time":"HH:MM","mode":"ขนส่งสาธารณะ","note":"","options":[{"mode":"ขับรถ","note":""},{"mode":"ขนส่งสาธารณะ","note":""}]}],"stops":[{"id":"source-id","time":"HH:MM","until":"HH:MM","inside":false,"insideOf":"","note":""}],"startNote":"","endNote":"","tips":[""]}]}'
   ].filter(Boolean).join('\n');
 }
 
 /* the gaps of a day (start → place 1 → … → end) and the AI's legs for each. Legs are matched by where they go ("to");
    a leg that first passes by a hotel (dropping bags before a park) comes back as a detour on that gap. */
+function routeStopData_(d, r) {
+  const raw = Array.isArray(r && r.stops) ? r.stops : [];
+  // Old responses without ids are only safe when the full positional array exists.
+  const named = raw.some(x => x && x.id);
+  return d.stops.map((it, i) => named ? raw.find(x => x && String(x.id) === String(it.id)) || {} :
+    (raw.length === d.stops.length && raw[i] && typeof raw[i] === 'object' ? raw[i] : {}));
+}
+function routeInside_(d, st, i, parent) {
+  const x = st[i] || {}, it = d.stops[i];
+  if (parent < 0 || x.inside !== true || String(x.insideOf || '') !== String(d.stops[parent].id)) return false;
+  if (((it.data || {}).kind || '') !== 'ร้านอาหาร' || ((d.stops[parent].data || {}).kind || '') === 'ร้านอาหาร') return false;
+  const a = d.g.stops[parent], b = d.g.stops[i];
+  // Coordinates can disprove containment; proximity alone never proves it.
+  return !(a && b && kmBetween_(a, b) > 1.5);
+}
 function routeLegs_(d, r, items) {
-  const n = d.stops.length, legs = (Array.isArray(r && r.legs) ? r.legs : []).filter(l => l && typeof l === 'object' && l.mode);
-  const st = Array.isArray(r && r.stops) ? r.stops : [];
-  const isStay = name => items.some(i => i.type === 'stay' && sameName_(i.title, name));
+  const n = d.stops.length, raw = Array.isArray(r && r.legs) ? r.legs : [];
+  const legs = raw.filter(l => l && typeof l === 'object' && l.mode);
+  const st = routeStopData_(d, r);
+  const isStay = name => items.some(i => i.type === 'stay' && routeName_(i.title, name));
   const named = legs.some(l => String(l.to || '').trim());
-  const raw = Array.isArray(r && r.legs) ? r.legs : [];
-  let cur = 0, parentKind = null, prev = d.fr.start ? d.fr.start.name : '';
-  const gaps = [];
-  const take = (i, to) => {
+  const used = new Set();
+  let parent = -1, prev = d.fr.start ? d.fr.start.name : '';
+  const take = (i, from, to) => {
     if (!named) { const l = raw[i]; return { main: l && typeof l === 'object' && l.mode ? l : null, via: [] }; }
-    for (let k = cur; k < legs.length; k++) if (sameName_(legs[k].to, to)) {
-      const via = legs.slice(cur, k).filter(x => isStay(x.to) && !sameName_(x.to, to));
-      cur = k + 1; return { main: legs[k], via };
+    // Match BOTH endpoints; a hotel return cannot be consumed as the outbound leg.
+    const k = legs.findIndex((l, k) => !used.has(k) && routeName_(l.from, from) && routeName_(l.to, to));
+    if (k >= 0) { used.add(k); return { main: legs[k], via: [] }; }
+    for (let a = 0; a < legs.length; a++) {
+      const v = legs[a];
+      if (used.has(a) || !routeName_(v.from, from) || !isStay(v.to) || routeName_(v.to, to)) continue;
+      const b = legs.findIndex((l, k) => k !== a && !used.has(k) && routeName_(l.from, v.to) && routeName_(l.to, to));
+      if (b >= 0) { used.add(a); used.add(b); return { main: legs[b], via: [v] }; }
     }
     return { main: null, via: [] };
   };
+  const gaps = [];
   d.stops.forEach((it, i) => {
-    const x = st[i] && typeof st[i] === 'object' ? st[i] : {};
-    const inside = !!(parentKind && x.inside === true && parentKind !== 'ร้านอาหาร');
-    if (!inside && prev) gaps.push(Object.assign({ i, from: prev, to: it.title }, take(i, it.title)));
-    else gaps.push(null);
-    if (!inside) { prev = it.title; parentKind = (it.data || {}).kind || 'ที่เที่ยว'; }
+    const inside = routeInside_(d, st, i, parent);
+    gaps.push(!inside && prev && !routeName_(prev, it.title) ? Object.assign({ i, from: prev, to: it.title }, take(i, prev, it.title)) : null);
+    if (!inside) { prev = it.title; parent = i; }
   });
-  if (d.fr.end && prev && !sameName_(prev, d.fr.end.name)) gaps.push(Object.assign({ i: n, from: prev, to: d.fr.end.name }, take(n, d.fr.end.name)));
+  if (d.fr.end && prev && !routeName_(prev, d.fr.end.name)) gaps[n] = Object.assign({ i: n, from: prev, to: d.fr.end.name }, take(n, prev, d.fr.end.name));
   return gaps;
+}
+// Exact normalized identity: partial names (Disneyland / Disneyland Hotel) are distinct.
+function routeName_(a, b) {
+  const key = v => String(v || '').toLowerCase().replace(/[\s.,\-–·()'"‘’]/g, '');
+  return !!key(a) && key(a) === key(b);
+}
+function routeMinute_(v) {
+  const m = /^(\d{1,2})[:.](\d{2})$/.exec(String(v || '').trim());
+  return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : -1;
 }
 
 /* what is wrong with the AI's answer for one day (so it can be asked once more) */
@@ -723,7 +758,23 @@ function routeGaps_(d, r, items) {
   if (!r) return [`${d.date}: the day is missing — give its legs and stops`];
   const out = [], st = Array.isArray(r.stops) ? r.stops : [];
   if (st.length !== d.stops.length) out.push(`${d.date}: "stops" must have exactly ${d.stops.length} entries, one per place in order`);
-  routeLegs_(d, r, items || []).forEach(g => { if (g && !g.main) out.push(`${d.date}: the leg from "${g.from}" to "${g.to}" is missing — give it (with "from", "to" and options)`); });
+  const matched = routeStopData_(d, r);
+  d.stops.forEach((it, i) => {
+    if (!matched[i].time || routeMinute_(matched[i].time) < 0 || routeMinute_(matched[i].until) <= routeMinute_(matched[i].time))
+      out.push(`${d.date}: give valid arrival and later departure times for id=${it.id} "${it.title}"`);
+  });
+  const gaps = routeLegs_(d, r, items || []);
+  let previous = -1;
+  d.stops.forEach((it, i) => {
+    const x = matched[i], g = gaps[i], at = routeMinute_(x.time);
+    const setoff = g && g.main ? routeMinute_(g.main.time) : -1;
+    if (g && g.main && (setoff < 0 || (previous >= 0 && setoff < previous) || (at >= 0 && setoff >= at)))
+      out.push(`${d.date}: travel to id=${it.id} must leave after the previous stop ends and arrive before this stop starts`);
+    if (!routeInside_(d, matched, i, i - 1)) previous = Math.max(previous, routeMinute_(x.until));
+  });
+  gaps.forEach(g => {
+    if (g && !g.main) out.push(`${d.date}: the leg from "${g.from}" to "${g.to}" is missing — give it (with "from", "to" and options)`);
+  });
   return out;
 }
 
@@ -732,17 +783,20 @@ function routeDay_(d, r, items, p) {
   const hm = v => { const m = t(v).match(/^(\d{1,2})[:.](\d{2})/); return m ? ('0' + Math.min(23, +m[1])).slice(-2) + ':' + m[2] : ''; };
   const modes = ['ขับรถ', 'ขนส่งสาธารณะ', 'เดิน'], kinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
   r = r || {};
-  const st = Array.isArray(r.stops) ? r.stops : [], gaps = routeLegs_(d, r, items);
+  const st = routeStopData_(d, r), gaps = routeLegs_(d, r, items);
+  const warnings = [];
+  if (!d.fr.start) warnings.push('ยังไม่มีจุดเริ่มต้นของวัน เพิ่มที่พักหรือเที่ยวบินเพื่อจัดขาออกให้ครบ');
+  if (!d.fr.end) warnings.push('ยังไม่มีจุดจบของวัน เพิ่มที่พักหรือเที่ยวบินเพื่อจัดขากลับให้ครบ');
   const out = [];
   const move = (x, from, to) => {
     const m = moveOf_(Object.assign({}, x || { mode: 'ขนส่งสาธารณะ' }, { from, to }), t, hm, modes);
     m.from = String(from).slice(0, 80); m.to = String(to).slice(0, 80);
-    if (!x) m.guess = true;
+    if (!x) { m.guess = true; m.note = 'ต้องตรวจสอบเส้นทางและเวลา'; warnings.push('เติมช่วงเดินทาง ' + from + ' → ' + to + ' กรุณาตรวจสอบเส้นทางและเวลา'); }
     out.push(m);
   };
   const legTo = g => {
     let from = g.from;
-    g.via.forEach(v => { const h = items.find(i => i.type === 'stay' && sameName_(i.title, v.to)); move(v, from, h.title); from = h.title; });
+    g.via.forEach(v => { const h = items.find(i => i.type === 'stay' && routeName_(i.title, v.to)); move(v, from, h.title); from = h.title; });
     move(g.main, from, g.to);
   };
   let parent = null;
@@ -752,27 +806,51 @@ function routeDay_(d, r, items, p) {
     const g = gaps[i];
     if (g) legTo(g);
     const place = { time: hm(x.time), until: hm(x.until), type: 'place', title: t(it.title).slice(0, 80), kind, address: t(data.address).slice(0, 160),
-      note: (t(it.sub) || t(x.note)).slice(0, 80), ideaId: it.type === 'idea' ? it.id : t(data.fromIdea), ref: it.id, inside: !g && parent ? parent.title : '' };
+      note: (t(it.sub) || t(x.note)).slice(0, 80), ideaId: it.type === 'idea' ? it.id : t(data.fromIdea), ref: it.id, inside: routeInside_(d, st, i, parent ? d.stops.findIndex(v => v.id === parent.ref) : -1) ? parent.title : '' };
     out.push(place);
     if (!place.inside) parent = place;
   });
   if (gaps[d.stops.length]) legTo(gaps[d.stops.length]);
-  // times run forward through the day; a missing one follows from the item before it
-  const toM = v => { const m = /^(\d\d):(\d\d)$/.exec(v || ''); return m ? +m[1] * 60 + +m[2] : -1; };
-  const fmt = m => { m = Math.min(23 * 60 + 59, Math.max(0, m)); return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); };
-  let cur = -1, last = null, outer = -1;
+  // Use departure times and leg durations, not just nondecreasing arrival times.
+  const fmt = m => ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2);
+  const duration = x => {
+    const m = String(x.note || '').match(/(?:~|ประมาณ|ราว)?\s*(\d+)\s*(?:นาที|min)/i);
+    if (m) return Math.max(1, +m[1]);
+    warnings.push('เผื่อเดินทาง 30 นาทีสำหรับ ' + x.from + ' → ' + x.to + ' กรุณาตรวจสอบเวลาจริง');
+    return 30;
+  };
+  let ready = routeMinute_(p.start) >= 0 ? routeMinute_(p.start) : 540;
+  const flStart = flightsOn_(items, d.date).arr;
+  if (flStart && routeMinute_(flStart.data.arrTime) >= 0) ready = Math.max(ready, routeMinute_(flStart.data.arrTime) + 120);
+  let parentEnd = ready;
   out.forEach(x => {
-    let m = toM(x.time);
-    // a leg leaves when the group is done at the place before it (or at the park a restaurant inside it belongs to)
-    if (x.type === 'place' && !x.inside) outer = toM(x.until);
-    const left = last && last.type === 'place' && x.type === 'move' ? Math.max(toM(last.until), last.inside ? outer : -1) : -1;
-    if (x.type === 'move' && left > cur && (m < 0 || m <= cur)) m = left;
-    const gap = !last ? 0 : last.type === 'place' ? (x.type === 'move' ? 60 : 15) : 30;
-    if (m < 0) m = cur < 0 ? (toM(hm(p.start)) >= 0 ? toM(hm(p.start)) : 540) : cur + gap;
-    else if (cur >= 0 && m < cur) m = cur;
-    x.time = fmt(m); cur = m; last = x;
+    let at = routeMinute_(x.time), until = routeMinute_(x.until);
+    if (at < 0) warnings.push('เวลา ' + (x.title || (x.from + ' → ' + x.to)) + ' เป็นเวลาเผื่อ กรุณาตรวจสอบ');
+    if (x.inside) at = Math.max(parentEnd.start, at < 0 ? parentEnd.start : at);
+    else {
+      if (at >= 0 && at < ready) warnings.push('ปรับเวลา ' + (x.title || (x.from + ' → ' + x.to)) + ' เพื่อไม่ให้ทับช่วงก่อนหน้า');
+      at = Math.max(ready, at < 0 ? ready : at);
+    }
+    if (at > 1439) throw new Error('plan_day_overflow');
+    if (x.type === 'move') ready = at + duration(x);
+    else {
+      const suppliedAt = routeMinute_(x.time);
+      const stay = until > suppliedAt && suppliedAt >= 0 ? until - suppliedAt : (x.kind === 'ร้านอาหาร' ? 60 : 90);
+      if (until <= suppliedAt || suppliedAt < 0) warnings.push('เวลาแวะ ' + x.title + ' เป็นเวลาเผื่อ กรุณาตรวจสอบ');
+      const leave = at + stay;
+      if (x.inside) {
+        parentEnd.end = Math.max(parentEnd.end, leave);
+        ready = parentEnd.end;
+      } else { parentEnd = { start: at, end: leave }; ready = leave; }
+      x.until = fmt(Math.min(1439, leave));
+    }
+    x.time = fmt(at);
+    if (ready > 1439) throw new Error('plan_day_overflow');
+    delete x.guess;
   });
-  out.forEach(x => { delete x.guess; delete x.until; });
+  const departure = flightsOn_(items, d.date).dep;
+  if (departure && d.fr.end && routeMinute_(departure.time) >= 0 && ready > routeMinute_(departure.time) - 180)
+    warnings.push('แผนนี้ถึงสนามบินไม่ทันเวลาเผื่อ 3 ชั่วโมง กรุณาลดสถานที่หรือเริ่มให้เร็วขึ้น');
   // tips for the hotel or the airport go onto that booking on the day of check-in/out or the flight
   const prevD = Utilities.formatDate(new Date(new Date(d.date + 'T00:00:00Z').getTime() - 864e5), 'UTC', 'yyyy-MM-dd');
   const slept = nightStay_(items, prevD), tonight = nightStay_(items, d.date);
@@ -794,29 +872,44 @@ function routeDay_(d, r, items, p) {
     const km = kmBetween_(h, g), near = d.g.stops.some((o, j) => j !== i && o && kmBetween_(h, o) < 15);
     if (km > 40 && near && !tips.some(v => v.indexOf(it.title) >= 0)) tips.push(`"${it.title}" อยู่ห่างจากที่พัก ~${Math.round(km)} กม. ไกลกว่าที่อื่นในวันนี้ ลองย้ายไปวันอื่น`);
   });
-  return { date: d.date, summary: t(r.summary).slice(0, 80), items: out, attach, tips };
+  return { date: d.date, summary: t(r.summary).slice(0, 80), items: out, attach, tips, warnings: Array.from(new Set(warnings)), frame: d.fr };
 }
 
 function planRouteRun_(req) {
   const c = planCtx_(req), trip = c.trip, p = req.prefs || {};
-  const want = (Array.isArray(req.days) ? req.days : []).slice(0, 31).filter(d => d && c.all.indexOf(String(d.date)) >= 0);
+  const want = (Array.isArray(req.days) ? req.days : []).filter(d => d && c.all.indexOf(String(d.date)) >= 0);
   if (!want.length) throw new Error('no_dates');
   const dates = want.map(d => String(d.date));
+  if (new Set(dates).size !== dates.length) throw new Error('duplicate_plan_day');
   // the places and legs already on these days are replaced by this plan, so they do not shape it
   const items = c.items.filter(i => !((i.type === 'place' || i.type === 'move') && dates.indexOf(i.date) >= 0));
   const byId = {}; c.items.forEach(i => { byId[i.id] = i; });
   const seen = {};
   const days = want.map(w => {
     const date = String(w.date), fr = dayFrame_(items, date);
-    const stops = (Array.isArray(w.ids) ? w.ids : []).map(String).filter(id => !seen[id] && (seen[id] = true)).map(id => byId[id])
-      .filter(i => i && (i.type === 'idea' || i.type === 'place')).slice(0, 12);
+    const ids = (Array.isArray(w.ids) ? w.ids : []).map(String);
+    // Never silently truncate or drop the person's selected places.
+    if (ids.length > 60) throw new Error('too_many_stops');
+    const stops = ids.map(id => {
+      const it = byId[id];
+      if (!it || (it.type !== 'idea' && it.type !== 'place')) throw new Error('plan_place_missing');
+      if (seen[id]) throw new Error('duplicate_plan_place');
+      seen[id] = true;
+      return it;
+    });
     return { date, fr, stops, g: { start: frameSpot_(items, fr.start, trip), end: frameSpot_(items, fr.end, trip), stops: stops.map(i => spotOf_(i, trip)) } };
   });
   const others = c.all.filter(d => dates.indexOf(d) < 0).map(d => {
     const xs = c.items.filter(i => i.type === 'place' && i.date === d);
     return xs.length ? `- ${d}: ` + xs.map(i => String(i.title).slice(0, 60)).join(', ') : '';
   }).filter(Boolean).concat(days.length > 1 ? days.map(d => d.stops.length ? `- ${d.date}: ` + d.stops.map(i => String(i.title).slice(0, 60)).join(', ') : '').filter(Boolean) : []);
-  const chunks = []; for (let i = 0; i < days.length; i += 3) chunks.push(days.slice(i, i + 3));
+  // Keep dense days separate so a long response cannot crowd out later stops.
+  const chunks = [];
+  days.forEach(d => {
+    const last = chunks[chunks.length - 1];
+    if (last && last.length < 3 && last.reduce((n, v) => n + v.stops.length, 0) + d.stops.length <= 12) last.push(d);
+    else chunks.push([d]);
+  });
   const prompts = chunks.map(ds => planRoutePrompt_(trip, items, ds, p, others, String(req.wish || '').slice(0, 300)));
   const many = ps => callGeminiMany_(c.props, ps);
   const parse = (text, prompt) => { try { return parseJson_(text); } catch (e) { try { return parseJson_(many([prompt])[0]); } catch (e2) { return { days: [] }; } } };
