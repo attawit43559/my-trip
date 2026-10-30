@@ -630,6 +630,7 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  history:'<path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7M12 7v5l3 2"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
@@ -980,11 +981,11 @@ function vTripMenu(s){
 
 function vTripMore(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
-    <button data-act="export-open">ส่งออกแผนเป็นรูป / PDF</button>
-    <button data-act="history-open">ประวัติ / ย้อนแผน</button>
-    <button data-act="invite">ผู้ร่วมทริป / ชวนเพื่อน</button>
-    <button data-act="account">บัญชีและคำสั่งลัด</button>
-    ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?'<button class="danger" data-act="clear-open">ล้างแผน…</button>':''}
+    <button data-act="export-open">${ic("image",20)}ส่งออกแผนเป็นรูป / PDF</button>
+    <button data-act="history-open">${ic("history",20)}ประวัติ / ย้อนแผน</button>
+    <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
+    <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
+    ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
   </div></div></div>`;
 }
 
@@ -1093,10 +1094,16 @@ function swipeItem(it, key, inner){
       : `<button class="sw-btn sw-edit" data-act="entry-edit" data-id="${esc(it.id)}" aria-label="แก้ไข ${esc(it.title)}">${ic("edit",18)}</button><button class="sw-btn sw-del" data-act="entry-del" data-id="${esc(it.id)}" data-key="${esc(key)}" aria-label="ลบ ${esc(it.title)}">${ic("trash",18)}</button>`}</div>
     <div class="trow-slide">${inner}</div></li>`;
 }
-function briefName(value){
-  const name=String(value||''),comma=name.indexOf(',');
-  return comma>0 && /\d|〒/.test(name.slice(comma)) ? name.slice(0,comma).trim() : name;
+function mapNameParts(value){
+ const full=String(value||'').trim().replace(/\s+/g,' '),comma=full.search(/[,，]/);
+ if(comma<1)return {name:full,address:''};
+ const first=full.slice(0,comma).trim(),tail=full.slice(comma+1).trim();
+ const address=/〒|\b\d{3}-\d{4}\b|\b\d{5}(?:-\d{4})?\b|\d+[-–]\d+|\d+\s*(?:chome|丁目|番地|หมู่|ซอย|ถนน)|^\d+\s/i.test(tail);
+ if(address&&!/^(Japan|Thailand|日本|ประเทศไทย)$/i.test(first))return {name:first,address:tail};
+ return {name:full,address:''};
 }
+function briefName(value){return mapNameParts(value).name;}
+
 function entryHtml(e){
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.time||"--:--")}</span>
@@ -1113,12 +1120,12 @@ function catCard(){
     if(it.type === "idea"){
       const p = plannedFrom(it.id), d = it.data || {};
       const meta = [p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
-      return swipeItem(it, "c:" + it.id, `<button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm ${kindTone(it)}" role="img" aria-label="${esc(d.kind || "ที่เที่ยว")}">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(it.title)}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button>`);
+      return swipeItem(it, "c:" + it.id, `<button class="cat-row${p ? " done" : ""}" data-act="item" data-id="${esc(it.id)}"><span class="thumb-sm ${kindTone(it)}" role="img" aria-label="${esc(d.kind || "ที่เที่ยว")}">${ic(itemIcon(it),16)}</span><span class="grow"><span class="ttl">${esc(briefName(it.title))}</span>${meta ? `<br><span class="muted small">${esc(meta)}</span>` : ""}</span>${p ? `<span class="ok-mini" aria-hidden="true">${ic("check",16)}</span>` : ic("chev",18)}</button>`);
     }
     const when = it.type === "stay"
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
-    return swipeItem(it, "c:" + it.id, `<button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(it.title)}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
+    return swipeItem(it, "c:" + it.id, `<button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(briefName(it.title))}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
   };
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
@@ -1476,7 +1483,7 @@ function vAiPlan(s){
     const tone = it => kind(it) !== "ที่เที่ยว" ? IDEA_TONE[kind(it)] : "t-place";
     const rows = d.ids.map(aiStop).filter(Boolean).map((it, i, all) => `<li class="ai-prow"><span class="time">${i + 1}</span>
       <span class="thumb-sm ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",16)}</span>
-      <span class="grow"><span class="ttl">${esc(it.title)}</span>${it.sub ? `<br><span class="muted small">${esc(it.sub)}</span>` : ""}</span>
+      <span class="grow"><span class="ttl">${esc(briefName(it.title))}</span>${it.sub ? `<br><span class="muted small">${esc(it.sub)}</span>` : ""}</span>
       <span class="ai-mv"><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="-1" ${i ? "" : "disabled"} aria-label="เลื่อนขึ้น">${ic("up",16)}</button><button type="button" data-act="ai-move" data-k="${esc(it.id)}" data-d="1" ${i < all.length - 1 ? "" : "disabled"} aria-label="เลื่อนลง">${ic("down",16)}</button><button type="button" data-act="ai-drop" data-k="${esc(it.id)}" ${(it.data||{}).timeLocked?"disabled":""} aria-label="${(it.data||{}).timeLocked?"นัดที่ล็อกเวลา":"เอาออกจากวันนี้"}">${ic("close",16)}</button></span></li>`).join("");
     const ends = aiEnds(d.date);
     return wrap(`<p class="muted small" style="margin-top:-4px">AI ร่างให้แล้วว่าวันไหนไปที่ไหน ปรับได้เลย: ลูกศรสลับลำดับ, <b>×</b> เอาออก, แตะที่สนใจด้านล่างเพื่อใส่วันนี้ เสร็จแล้วกด <b>จัดเวลา</b> ให้ AI ใส่เวลาและการเดินทาง</p>
@@ -1484,7 +1491,7 @@ function vAiPlan(s){
       <section class="ai-day"><div class="ai-day-h"><b>วันที่ ${idx + 1} · ${esc(dShort(d.date))}${d.ids.length ? ` · ${d.ids.length} ที่` : ""}</b>${ends ? `<span class="muted small">${esc(ends)}</span>` : ""}${d.summary ? `<span class="muted small">${esc(d.summary)}</span>` : ""}</div>
         ${rows ? `<ul class="ai-list">${rows}</ul>` : `<p class="ai-empty">วันนี้ยังไม่มีสถานที่ แตะที่สนใจด้านล่างเพื่อใส่ หรือปล่อยว่างไว้ให้ AI แนะนำที่ใกล้ๆ เป็นโน้ต</p>`}
         ${d.note ? `<p class="ai-attach small">${ic("spark",14)}<span>${esc(d.note)}</span></p>` : ""}</section>
-      ${free.length ? `<div class="ai-q"><b>ที่สนใจที่ยังไม่ได้ใส่ (${free.length})</b><div class="chips ai-free">${free.map(it => `<button type="button" data-act="ai-put" data-k="${esc(it.id)}" title="${esc(why[it.id] || "")}"><span class="thumb-xs ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",12)}</span>${esc(it.title)}${why[it.id] ? `<small class="muted"> · ${esc(why[it.id])}</small>` : ""}${ic("plus",14)}</button>`).join("")}</div></div>` : ""}`);
+      ${free.length ? `<div class="ai-q"><b>ที่สนใจที่ยังไม่ได้ใส่ (${free.length})</b><div class="chips ai-free">${free.map(it => `<button type="button" data-act="ai-put" data-k="${esc(it.id)}" title="${esc(why[it.id] || "")}"><span class="thumb-xs ${tone(it)}" aria-hidden="true">${ic(IDEA_ICON[kind(it)] || "pin",12)}</span>${esc(briefName(it.title))}${why[it.id] ? `<small class="muted"> · ${esc(why[it.id])}</small>` : ""}${ic("plus",14)}</button>`).join("")}</div></div>` : ""}`);
   }
   if(s.step === "review"){
     const r = s.result || {days:[]};
@@ -1954,7 +1961,8 @@ async function fillFromLink(url){
   try{
     const r = await api("resolveMapLink", {url});
     if(S.sheet !== s) return;
-    s.title = r.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = ""; s.mapsUrl = url;
+    const label=mapNameParts(r.name);
+    s.title = label.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = r.address || label.address; s.originalMapsName = r.originalName || r.name || ""; s.mapsUrl = url;
     s.placeId = await gmapsFindId(r.name, r.lat, r.lon);
   } catch(e){
     if(S.sheet !== s) return;
@@ -1993,11 +2001,11 @@ function vSheet(){
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef],["โน้ตขาออก", data.note],["โน้ตตอนถึง", data.arrNote]];
     else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef],["โน้ตเช็กอิน", data.inNote],["โน้ตเช็กเอาต์", data.outNote]];
     else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
-    else if(it.type === "idea") rows = [["ประเภท", data.kind],["ที่อยู่", data.address],["โน้ต", it.sub]];
+    else if(it.type === "idea") rows = [["ประเภท", data.kind],["ที่อยู่", data.address || mapNameParts(it.title).address],["โน้ต", it.sub]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
-      <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>${esc(it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+      <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>${esc(it.type==='idea'?briefName(it.title):it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
       ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
@@ -2533,7 +2541,7 @@ document.addEventListener("submit", async e => {
     if(s.kind === "idea"){
       try{
         await store.addItem(t.id, {type:"idea", date:"", time:"", title:s.title.trim(), sub:s.note.trim(),
-          data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"", mapsUrl:s.mapsUrl||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
+          data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", originalMapsName:s.originalMapsName||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"", mapsUrl:s.mapsUrl||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
         S.sheet = null; S.catTab = "idea"; render(); toast("จดไว้แล้ว");
       } catch(err){ fail(err); }
       return;
@@ -2542,7 +2550,7 @@ document.addEventListener("submit", async e => {
     const from = s_(s.from), to = s_(s.to);
     const title = isMove ? moveTitle(from, to) : s.title.trim();
     try{
-      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : {data:{address:s.address||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"",timeLocked:!!s.timeLocked}}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
+      await store.addItem(t.id, {type:s.kind, date:s.date, time:s.time, title, sub:s.note.trim(), ...(isMove ? {data:{mode:s.mode, from, to}} : {data:{address:s.address||"", originalMapsName:s.originalMapsName||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"",timeLocked:!!s.timeLocked}}), createdBy:S.me, createdAt:Date.now(), source:"manual"});
       S.sheet = null; render(); toast("เพิ่มแล้ว");
     } catch(err){ fail(err); }
   }
@@ -2780,7 +2788,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-position8";
+const BUILD = "2026-10-30-names9";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
