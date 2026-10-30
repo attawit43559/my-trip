@@ -45,6 +45,7 @@ function doPost(e) {
     }
     return json_({ ok: true, data: fn(req) });
   } catch (err) {
+    if(/^plan(?:Assign|Route)$/.test(req.action))console.error('Planner '+req.action+' failed: '+String(err&&err.message||err).split(':')[0]);
     return json_({ ok: false, error: String(err && err.message || err) });
   }
 }
