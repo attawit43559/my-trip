@@ -555,6 +555,23 @@ html.lock,html.lock body{overflow:hidden}
 .ai-wrap .chips{flex-wrap:wrap;overflow:visible}
 .trip-tools{display:flex;gap:8px;flex-wrap:wrap}.sync-state{border:0;background:var(--tile);color:var(--muted);padding:8px 12px;border-radius:10px;text-align:left;font-size:12px}.sync-error{color:var(--danger)}.history-row,.overview-day{padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}.overview-sheet{max-width:780px!important}.trip-map{height:300px;min-height:300px;flex-shrink:0;border-radius:14px;background:var(--tile);z-index:0}.overview-day ol{padding-left:24px;line-height:1.8}.lock-field{display:flex;gap:8px;align-items:center;font-size:14px}.lock-field input{width:20px;height:20px}
 .static-map{height:auto;min-height:180px;overflow:hidden;border:1px solid var(--line)}.static-map a{display:block}.static-map-image{display:block;width:100%;height:auto}.static-map>p{padding:20px}.map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.map-legend span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pin);margin-right:5px}.map-pin-list{list-style:none;padding:0;margin:8px 0}.map-pin-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.map-pin-label{color:white;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex:none;font-weight:600}.map-pin-list li>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.map-pin-list small{display:block;color:var(--muted)}.map-pin-list a{font-size:12px;white-space:nowrap;color:var(--flight)}
+/* Long route names and transport choices wrap inside the available phone width. */
+.sheet,.dock-body,.entry .grow,.cat-row .grow{overflow-wrap:anywhere}
+.screen,.dock-panel,.dock-body,.ai-stack,.ai-day,.ai-form,.ai-q,.ai-row-q .chips{min-width:0}
+.sheet .hd h2,.kv span:last-child{min-width:0}
+.kv span:first-child{flex-shrink:0;max-width:42%}
+.sheet input,.sheet select,.sheet textarea{min-width:0;max-width:100%}
+.chips button{max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;padding-top:7px;padding-bottom:7px}
+.ai-row-q .chips{flex-wrap:wrap;overflow:visible}
+.ai-row-q .chips button{white-space:normal;flex:0 1 auto}
+.ai-modes{min-width:0;margin-left:0;padding-left:40px}
+.ai-modes button{flex:0 1 auto;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;padding:7px 10px}
+.ai-modes button em{min-width:0}
+.ai-bar{flex-wrap:wrap}
+.ai-free button{flex:0 1 auto}
+.ai-foot,.ai-bar>*{min-width:0}
+.ai-foot .btn{height:auto;min-height:48px;padding:10px 12px}
+@media(max-width:360px){.ai-modes{padding-left:0}.ai-row-q{flex-wrap:wrap}.map-pin-list li{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -2728,7 +2745,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-staticmaps2";
+const BUILD = "2026-10-30-layout3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
