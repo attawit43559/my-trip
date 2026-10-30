@@ -1440,18 +1440,20 @@ function planBox(it, s){
         : `<label class="fld sm">วัน<input id="pl-date" type="date" value="${esc(s.planDate)}" data-bind="sheet:planDate"></label>`}
       <label class="fld sm">เวลา<input id="pl-time" type="time" value="${esc(s.planTime)}" data-bind="sheet:planTime"></label>
     </div>
-    <button class="btn primary" style="height:48px;font-size:15px" data-act="plan-idea">${ic("plus",18)}เพิ่มลงแผน</button></div>`;
+    <button class="btn primary" style="height:48px;font-size:15px" data-act="plan-idea" ${S.planAdding?"disabled":""}>${ic("plus",18)}${S.planAdding?"กำลังเพิ่ม…":"เพิ่มลงแผน"}</button></div>`;
 }
 async function planIdea(){
-  const s = S.sheet, t = S.trip, it = s && S.items.find(i => i.id === s.id); if(!it || !t) return;
+  const s = S.sheet, t = S.trip, it = s && S.items.find(i => i.id === s.id); if(!it || !t || S.planAdding) return;
+  if(plannedFrom(it.id)){toast("สถานที่นี้อยู่ในแผนแล้ว");return;}
   if(!validD(s.planDate)){ toast("เลือกวันก่อนนะ"); return; }
   const d = it.data || {};
+  S.planAdding=it.id;render();
   try{
     await store.addItem(t.id, {type:"place", date:s.planDate, time:s.planTime||"", title:it.title, sub:it.sub||"",
       data:{address:d.address||"", lat:d.lat, lon:d.lon, placeId:d.placeId||"", kind:d.kind||"", fromIdea:it.id}, createdBy:S.me, createdAt:Date.now(), source:"idea"});
-    const i = tripDates(t).indexOf(s.planDate); if(i >= 0) S.day = i;
-    S.sheet = null; render(); toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
-  } catch(err){ fail(err); }
+    if(S.trip?.id===t.id){const i=tripDates(t).indexOf(s.planDate);if(i>=0)S.day=i;if(S.sheet===s)S.sheet=null;}
+    toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
+  } catch(err){ fail(err); }finally{S.planAdding=null;render();}
 }
 /* ---------- AI planner: a few quick choices, a draft per day, then pick what goes into the plan ---------- */
 const AI_INTERESTS = ["ธรรมชาติ","ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่","จุดถ่ายรูป"];
@@ -1557,7 +1559,7 @@ const aiStop = id => S.items.find(i => i.id === id);
 function vAiPlan(s){
   const wrap = inner => `<div class="ai-stack">${inner}</div>`;
   const dates = tripDates(S.trip);
-  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${esc(s.loadMsg || "กำลังวางแผน…")}</p><p class="muted small">ทริปหลายวันอาจใช้เวลา 1–3 นาที ย่อหน้าต่างนี้เพื่อดูส่วนอื่นระหว่างรอได้</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
+  if(s.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังวางแผน"></div><p class="muted">${esc(s.loadMsg || "กำลังวางแผน…")}</p><p class="muted small">ทริปหลายวันอาจใช้เวลาหลายนาที ย่อหน้าต่างนี้เพื่อดูส่วนอื่นระหว่างรอได้</p><button class="link-btn" data-act="ai-stop">หยุด</button></div>`);
   if(s.step === "pick"){
     const days = s.assign.days, shown = days.some(d => d.date === s.viewDay) ? s.viewDay : (days[0] || {}).date;
     const d = days.find(x => x.date === shown) || {date:shown, ids:[]}, idx = dates.indexOf(d.date);
@@ -1673,7 +1675,6 @@ async function planCall(s, action, body){
 const aiErr = e => ({
   plan_outside_flight_window:"วันนี้ยังไม่ถึงปลายทางหรือเดินทางกลับแล้ว กรุณาย้ายสถานที่ไปวันที่อยู่ที่ปลายทาง",
   plan_before_arrival:"แผนเริ่มก่อนผ่านขั้นตอนหลังลงเครื่อง กรุณาย้ายเวลาจองหรือเลือกวันอื่น",
-  rate_limited:"โควตา AI ชั่วคราวเต็ม กรุณารอสักครู่แล้วลองใหม่ แผนเดิมยังอยู่",
   plan_day_overflow:"สถานที่แน่นเกินหนึ่งวัน ลองลดสถานที่หรือแบ่งไปวันอื่น",
   too_many_stops:"เลือกได้ไม่เกิน 60 จุดต่อวัน กรุณาแบ่งไปวันอื่น",
   plan_place_missing:"ข้อมูลสถานที่ไม่ครบ ลองกลับไปเลือกสถานที่แล้วจัดเวลาใหม่",
@@ -1889,16 +1890,31 @@ async function clearNotes(t, dates){
   return list.reduce((a, x) => a + x.n, 0);
 }
 /* clear this day's or the whole trip's places and travel legs; flights and stays stay */
+async function clearPlan(){
+  const t=S.trip,s=S.sheet;if(!t||!s||s.kind!=='clear'||S.clearing)return;
+  const dates=tripDates(t),days=s.scope==='all'?dates:[dates[S.day]];
+  if(!ownOn(days).length&&!planNotes(days).length)return;
+  const notes=planNotes(days).map(n=>({id:n.it.id,data:n.patch}));
+  S.clearing=t.id;s.busy=true;S.directSaving=true;render();
+  try{
+    await flush();if(C.outbox.length)throw {code:'pending_sync'};
+    const fresh=await api('getTrip',{id:t.id});
+    const res=await api('replacePlan',{tripId:t.id,revision:fresh.revision,dates:days,items:[],notes,clear:true,operation:rid()});
+    applyPlanResponse(t.id,res);if(S.sheet===s)S.sheet=null;
+    toast('ล้างแผนแล้ว · ย้อนกลับได้ในประวัติแผน');
+  }catch(e){toast(featureError(e));}
+  finally{S.clearing=null;S.directSaving=false;s.busy=false;render();}
+}
 function vClear(s){
   const dates = tripDates(S.trip), days = s.scope === "all" ? dates : [dates[S.day]], list = ownOn(days);
   const notes = planNotes(days).reduce((a, x) => a + x.n, 0);
   const label = [list.length ? `${list.length} รายการ` : "", notes ? `โน้ต ${notes} อัน` : ""].filter(Boolean).join(" กับ ");
-  const chip = (k, label) => `<button type="button" aria-pressed="${s.scope === k}" data-act="clear-scope" data-k="${k}">${label}</button>`;
+  const chip = (k, label) => `<button type="button" aria-pressed="${s.scope === k}" data-act="clear-scope" data-k="${k}" ${S.clearing?"disabled":""}>${label}</button>`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ล้างแผน" data-stop="1">
     <div class="hd"><span class="thumb tc t-move">${ic("trash")}</span><h2>ล้างแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">ลบสถานที่ การเดินทาง และโน้ตในเที่ยวบินกับที่พัก ตัวเที่ยวบินกับที่พักยังอยู่</p>
     <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
-    <div class="grid2"><button class="pill-btn ex-go" data-act="sheet-cancel">ไม่ลบ</button><button class="pill-btn ex-go danger-soft" data-act="clear-run" ${label ? "" : "disabled"}>${label ? `ลบ ${label}` : "ไม่มีอะไรให้ลบ"}</button></div>
+    <div class="grid2"><button class="pill-btn ex-go" data-act="sheet-cancel">ไม่ลบ</button><button class="pill-btn ex-go danger-soft" data-act="clear-run" ${label&&!S.clearing ? "" : "disabled"}>${S.clearing?"กำลังล้างแผน…":label ? `ลบ ${label}` : "ไม่มีอะไรให้ลบ"}</button></div>
   </div></div>`;
 }
 function vExport(s){
@@ -2698,14 +2714,7 @@ document.addEventListener("click", async e => {
     case "ai-revise": if(s_(S.ai.wish)) aiRoute(S.ai.wish); break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
-    case "clear-run": {
-      const dates=tripDates(t),days=S.sheet.scope==='all'?dates:[dates[S.day]];
-      try{await flush();if(C.outbox.length)throw {code:'pending_sync'};const r=await api('getTrip',{id:t.id});
-        const notes=planNotes(days).map(n=>({id:n.it.id,data:n.patch}));
-        const res=await api('replacePlan',{tripId:t.id,revision:r.revision,dates:days,items:[],notes,clear:true,operation:rid()});
-        applyPlanResponse(t.id,res);S.sheet=null;render();toast('ล้างแผนแล้ว · ย้อนกลับได้ในประวัติแผน');
-      }catch(e){toast(featureError(e));}break;
-    }
+    case "clear-run": clearPlan();break;
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-scope": if(!S.sheet.busy){ S.sheet.scope = el.dataset.k; exportReset(S.sheet); render(); } break;
     case "export-run": exportRun(el.dataset.k); break;
@@ -2854,7 +2863,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-leanai13";
+const BUILD = "2026-10-30-leanai14";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
