@@ -3,12 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>
-// Installed iPhone apps reserve the system status area before the first paint.
-if(navigator.standalone === true){
-  document.querySelector('meta[name="viewport"]').setAttribute('content','width=device-width,initial-scale=1,viewport-fit=contain');
-}
-</script>
 <meta name="theme-color" content="#FFFDF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -54,14 +48,8 @@ html,body{min-height:100%}
 .screen .fld input,.screen .fld select,.join-row input{box-shadow:inset 0 0 0 1px var(--line)}
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
-/* Installed iPhone apps get an opaque status-area guard; browser tabs retain their layout. */
-@media (display-mode:standalone){
-  :root{background:var(--bg)}
-  @supports (-webkit-touch-callout:none){
-    :root{padding-top:calc(env(safe-area-inset-top,0px) + 24px)}
-    body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(env(safe-area-inset-top,0px) + 24px);background:var(--bg);pointer-events:none;z-index:40}
-  }
-}
+/* Match the installed app canvas without changing content position or viewport. */
+@media (display-mode:standalone){:root{background:var(--bg)}}
 [hidden]{display:none!important}
 img{max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
@@ -2792,7 +2780,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-30-safeedge7";
+const BUILD = "2026-10-30-position8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
