@@ -600,6 +600,7 @@ html.lock,html.lock body{overflow:hidden}
 .day-add{min-height:48px;background:var(--idea-soft);border:0;color:var(--idea);font-weight:600}.dock-hd .text-action{white-space:nowrap;font-size:12px}
 #sync-slot:empty{display:none}
 .day-picker.inline-picker{gap:10px;max-height:none;overflow:visible!important;border:1px solid var(--line);border-radius:20px;padding:12px;background:var(--surface)}.inline-picker .picker-list{flex:0 1 auto;max-height:clamp(80px,calc(var(--vvh,100dvh) - 510px),220px);min-height:0}.inline-picker .picker-footer{padding-bottom:0}.inline-picker h2{font-size:17px}.inline-picker .workflow-search{flex:none}
+.compact-picker.inline-picker{gap:8px;padding:10px;border-radius:16px}.picker-toolbar{display:flex;align-items:center;gap:6px;min-width:0}.picker-toolbar .picker-filters{flex:1;min-width:0;margin:0;gap:4px}.picker-toolbar .picker-filters button{min-height:34px;padding:5px 9px;font-size:12px}.picker-search{display:flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border:0;border-radius:10px;background:var(--tile);color:var(--ink)}.compact-picker .picker-choice{min-height:42px;padding:7px 9px;font-size:13px;border-radius:10px}.compact-picker .thumb-sm{width:24px;height:24px;border-radius:8px}.compact-picker .picker-list{max-height:clamp(120px,calc(var(--vvh,100dvh) - 380px),300px);gap:5px}.compact-picker .compact-footer{display:grid;grid-template-columns:auto 1fr;gap:8px}.compact-footer .btn{height:38px;min-height:38px;font-size:14px;padding:6px 14px}.compact-picker .workflow-search{min-height:38px;padding:7px 10px;font-size:14px}
 </style>
 </head>
 <body>
@@ -658,6 +659,7 @@ const IC = {
   history:'<path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7M12 7v5l3 2"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
@@ -1518,7 +1520,7 @@ function vDayIdeaRows(s){
   return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่มีสถานที่ให้เลือก</p>';
 }
 function vDayIdeas(s){
-  return `<section class="day-picker inline-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></section>`;
+  return `<section class="day-picker inline-picker compact-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="day-idea-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}" ${s.busy?'disabled':''}>${ic('search',19)}</button></div>${s.searchOpen?`<input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}>`:''}<div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer compact-footer"><button class="btn ghost" data-act="close-sheet" ${s.busy?'disabled':''}>ยกเลิก</button><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่ง'}</button></div></section>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -2904,6 +2906,7 @@ document.addEventListener("click", async e => {
     case "ai-intent": {const s=S.ai,all=tripDates(t);s.intent=el.dataset.k;s.dates=s.intent==='all'?all:[all[S.day]||all[0]].filter(Boolean);s.step='ask';s.more=false;s.requiredIds=[];s.err='';render();break;}
     case "ai-edit-places": S.catTab="";S.ai=null;render();break;
     case "day-ideas-open": S.sheet={kind:"day-ideas",date:tripDates(t)[S.day],selected:[],query:'',filter:''};render();break;
+    case "day-idea-search": {const s=S.sheet;if(s?.kind==='day-ideas'&&!s.busy){s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});}break;}
     case "day-idea-filter": if(S.sheet?.kind==='day-ideas'&&!S.sheet.busy){S.sheet.filter=el.dataset.k;render();}break;
     case "day-idea-toggle": {const s=S.sheet,id=el.dataset.id;if(!s.busy)s.selected=s.selected.includes(id)?s.selected.filter(x=>x!==id):s.selected.concat(id);render();break;}
     case "day-ideas-add": addDayIdeas();break;
@@ -3084,7 +3087,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-inlinepicker32";
+const BUILD = "2026-10-31-compactpicker33";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
