@@ -1244,10 +1244,7 @@ function vTrip(){
 </div>
       <button class="add-dash t-idea" data-act="day-ideas-open">${ic("plus",20)}เลือกที่สนใจลงวันนี้</button>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
-      <div class="add-row">
-        <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
-        <button class="add-dash t-move" data-act="sheet" data-k="move">${ic("move",20)}เพิ่มการเดินทาง</button>
-      </div>`}
+`}
     </section>
     ${loose.length ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
@@ -3053,7 +3050,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-cleanlift24";
+const BUILD = "2026-10-31-leanentry25";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
