@@ -606,6 +606,7 @@ html.lock,html.lock body{overflow:hidden}
 /* One warm accent for interaction; category colors identify content only. */
 .dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock .text-action{color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
 .travel-leg-link small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.travel-leg-link .grow,.travel-points{overflow-wrap:anywhere}.travel-points{margin:0;font-weight:500}.maps-travel-link{color:var(--ink);background:var(--tile);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14px;min-height:44px}
+.travel-gap{position:relative;list-style:none;padding:2px 12px}.travel-gap button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--tile);color:var(--muted);text-align:left;font:inherit}.travel-gap b{font-size:12px;font-weight:500}.travel-gap small{display:block;font-size:11px;overflow-wrap:anywhere}.travel-results{display:flex;flex-direction:column;gap:10px}.travel-result{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:13px}.travel-result ol{padding-left:20px;margin:0}.travel-result li{margin:4px 0;overflow-wrap:anywhere}.travel-date{margin:0}.travel-results .pill-btn{min-height:38px}
 </style>
 </head>
 <body>
@@ -1253,7 +1254,7 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       ${vSync()}
-      ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
+      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
 `}
     </section>
     ${loose.length&&!S.catTab ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
@@ -1494,6 +1495,42 @@ function manualTravelLegs(date){
     return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
   }).filter(l=>l.fromId!==l.toId);
 }
+function dailyEntryRows(entries,date){
+  const missing=manualTravelLegs(date).filter(l=>!l.saved);
+  return entries.map(e=>{
+    const before=missing.filter(l=>l.beforeKey?l.beforeKey===dayEntryKey(e):e.night&&l.toId===e.it.id);
+    return before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}">${ic('move',17)}<span class="grow"><b>เพิ่มการเดินทาง</b><small>${esc(briefName(l.from))} → ${esc(briefName(l.to))}</small></span>${ic('chev',15)}</button></li>`).join('')+entryHtml(e);
+  }).join('');
+}
+function travelTimezone(leg){
+  if(S.trip.timezone)return S.trip.timezone;
+  const records=S.items.filter(i=>[leg.fromId,leg.toId].includes(i.id));
+  if(records.some(i=>{const d=i.data||{};return +d.lat>=24&&+d.lat<=46&&+d.lon>=122&&+d.lon<=146;})||/japan|tokyo|osaka|kyoto|โตเกียว|ญี่ปุ่น/i.test(S.trip.destination+' '+S.trip.name))return 'Asia/Tokyo';
+  return Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Bangkok';
+}
+function travelQueryKey(s){return JSON.stringify([s.tripId,s.date,s.key,s.time,s.timezone,s.mode]);}
+function vTravelResults(s){
+  if(s.lookupBusy)return '<p class="muted small" role="status">กำลังค้นหาเฉพาะช่วงนี้…</p>';
+  if(s.lookupError)return `<p class="err">${esc(s.lookupError)}</p>`;
+  const result=s.lookup;if(!result)return '';
+  return `<div class="travel-results"><p class="muted small">Google Maps · ${esc(dLong(s.date))} · ${esc(result.timezone)}</p>${(result.routes||[]).map((r,n)=>`<div class="travel-result"><b>${r.scheduled?'ตารางตามวัน':'เวลาโดยประมาณ'} · ${r.minutes} นาที${r.departure?' · '+esc(r.departure)+'–'+esc(r.arrival):''}</b><ol>${r.steps.map(step=>`<li>${esc(step.departure?step.departure+' ':'')}${esc(step.line||step.instruction||step.mode)}${step.from?' · '+esc(step.from)+' → '+esc(step.to):''}${step.arrival?' · ถึง '+esc(step.arrival):''}</li>`).join('')}</ol><button class="pill-btn" data-act="travel-use" data-i="${n}">ใช้เส้นทางนี้</button>${r.copyright?`<small class="muted">${esc(r.copyright)}</small>`:''}</div>`).join('')||'<p class="muted small">ไม่มีตารางสำหรับวันและเวลานี้</p>'}${result.advice?`<div class="travel-result"><b>AI แนะนำ · ประมาณ ${result.advice.minutes} นาที</b><p>${esc(result.advice.reason||result.advice.note)}</p><button class="pill-btn" data-act="travel-use-ai">ใช้คำแนะนำนี้</button></div>`:''}${result.adviceError?`<p class="muted small">${esc(result.adviceError)}</p>`:''}<small class="muted">ตารางอาจเปลี่ยน ควรตรวจอีกครั้งก่อนเดินทาง</small></div>`;
+}
+async function lookupTravel(ai=false){
+  const s=S.sheet;if(s?.kind!=='travel-leg'||s.lookupBusy)return;
+  if(!s.time){s.lookupError='เลือกเวลาออกก่อนค้นหาตาราง';render();return;}
+  const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return;
+  const signature=travelQueryKey(s);s.lookupBusy=true;s.lookupError='';s.lookup=null;s.lookupCtl=new AbortController();render();
+  try{const result=await api(ai?'travelAdvice':'travelTimetable',{tripId:s.tripId,date:s.date,time:s.time,timezone:s.timezone,mode:s.mode,fromId:leg.fromId,toId:leg.toId,from:leg.from,to:leg.to},s.lookupCtl.signal);if(S.sheet===s&&travelQueryKey(s)===signature){s.lookup=result;s.lookupKey=signature;}}
+  catch(e){if(S.sheet===s)s.lookupError=({travel_date_range:'ตารางรองรับช่วง 7 วันที่ผ่านมาถึง 100 วันข้างหน้า',travel_quota:'วันนี้ใช้โควตาค้นหาครบแล้ว',travel_date_time:'ตรวจสอบวัน เวลา และเขตเวลา',travel_maps_unavailable:'ยังดึงตารางไม่ได้ เปิด Google Maps เพื่อตรวจสอบได้',rate_limited:'AI ใช้งานเต็มโควตาชั่วคราว',offline:'ไม่มีอินเทอร์เน็ต'})[e.code]||'ค้นหาไม่สำเร็จ ลองใหม่หรือเปิด Google Maps';}
+  finally{s.lookupBusy=false;if(S.sheet===s)render();}
+}
+function applyTravelChoice(ai,index){
+  const s=S.sheet;if(s?.kind!=='travel-leg'||!s.lookup||s.lookupKey!==travelQueryKey(s))return;
+  const choice=ai?s.lookup.advice:s.lookup.routes?.[index];if(!choice)return;
+  if(ai){s.mode=choice.mode;s.minutes=choice.minutes;s.note=choice.note;s.travelSource='AI ประมาณ';}
+  else{const transit=choice.steps.filter(x=>x.mode==='TRANSIT');s.mode=transit.length?(transit.some(x=>/RAIL|SUBWAY|TRAIN|TRAM/.test(x.vehicle))?'รถไฟ':'ขนส่งสาธารณะ'):choice.steps.some(x=>x.mode==='DRIVING')?'ขับรถ':'เดิน';s.minutes=choice.minutes;if(choice.departure)s.time=choice.departure;s.note=choice.steps.filter(x=>x.mode==='TRANSIT').map(x=>[x.line,x.from&&x.from+' → '+x.to,x.departure&&x.departure+'–'+x.arrival].filter(Boolean).join(' · ')).join(' / ').slice(0,160);s.travelSource=choice.scheduled?'Google Maps ตารางตามวัน':'Google Maps ประมาณ';}
+  s.travelCheckedAt=s.lookup.checkedAt;s.lookup=null;render();
+}
 function manualTravelLinks(it){
   const date=tripDates(S.trip)[S.day];
   return manualTravelLegs(date).filter(l=>l.fromId===it.id||l.toId===it.id).map(l=>{
@@ -1502,22 +1539,22 @@ function manualTravelLinks(it){
   }).join('');
 }
 function openTravelSheet(leg){
-  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||'',note:leg.saved?.sub||''};render();
+  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||'',note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||''};render();
 }
 function editManualTravel(it){
   if(!it?.data?.legKey)return false;const leg=manualTravelLegs(it.date).find(l=>l.saved?.id===it.id);if(!leg)return false;openTravelSheet(leg);return true;
 }
 function vTravelLeg(s){
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return `<div class="scrim" data-act="close-sheet"><div class="sheet"><p>ลำดับสถานที่เปลี่ยนแล้ว</p><button class="btn ghost" data-act="close-sheet">ปิด</button></div></div>`;
-  const modes=['ขนส่งสาธารณะ','เดิน','รถไฟ','รถบัส','แท็กซี่','ขับรถ','อื่นๆ'];if(s.mode&&!modes.includes(s.mode))modes.unshift(s.mode);
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2>การเดินทาง</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><p class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</p><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}))}" target="_blank" rel="noopener">${ic('pin',18)}ดูเส้นทางใน Google Maps${ic('ext',16)}</a><form class="stack" data-form="travel-leg"><label class="fld">วิธีเดินทาง<select data-bind="sheet:mode">${modes.map(m=>`<option ${m===s.mode?'selected':''}>${esc(m)}</option>`).join('')}</select></label><div class="grid2"><label class="fld">ใช้เวลา (นาที)<input type="number" min="1" max="1440" inputmode="numeric" placeholder="ประมาณ" value="${esc(s.minutes)}" data-bind="sheet:minutes"></label><label class="fld">เวลาออก<input type="time" value="${esc(s.time)}" data-bind="sheet:time"></label></div><label class="fld">โน้ต<input maxlength="160" placeholder="สายรถ / สถานี / จุดขึ้นรถ" value="${esc(s.note)}" data-bind="sheet:note"></label><button class="btn primary" type="submit" ${s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button></form></div></div>`;
+  const modes=['ขนส่งสาธารณะ','เดิน','รถไฟ','รถบัส','แท็กซี่','ขับรถ','อื่นๆ'];if(s.mode&&!modes.includes(s.mode))modes.unshift(s.mode);const zoneLabels={'Asia/Tokyo':'ญี่ปุ่น','Asia/Bangkok':'ไทย','Asia/Seoul':'เกาหลี','Asia/Singapore':'สิงคโปร์','Europe/Paris':'ฝรั่งเศส','Europe/London':'อังกฤษ','America/New_York':'นิวยอร์ก'};const zones=[...new Set([s.timezone,'Asia/Tokyo','Asia/Bangkok','Asia/Seoul','Asia/Singapore','Europe/Paris','Europe/London','America/New_York'])];
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2>การเดินทาง</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><p class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</p><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}))}" target="_blank" rel="noopener">${ic('pin',18)}ดูเส้นทางใน Google Maps${ic('ext',16)}</a><p class="muted small travel-date">${esc(dLong(s.date))}</p><form class="stack" data-form="travel-leg"><div class="grid2"><label class="fld">เวลาออก<input type="time" value="${esc(s.time)}" data-bind="sheet:time"></label><label class="fld">เวลาท้องถิ่น<select data-bind="sheet:timezone">${zones.map(z=>`<option value="${esc(z)}" ${z===s.timezone?'selected':''}>${esc(zoneLabels[z]||z)}</option>`).join('')}</select></label></div><div class="grid2"><button class="pill-btn" type="button" data-act="travel-lookup" ${s.lookupBusy?'disabled':''}>${ic('bus',17)}ตารางตามวัน</button><button class="pill-btn" type="button" data-act="travel-ai" ${s.lookupBusy?'disabled':''}>${ic('spark',17)}AI แนะนำ</button></div>${vTravelResults(s)}<label class="fld">วิธีเดินทาง<select data-bind="sheet:mode">${modes.map(m=>`<option ${m===s.mode?'selected':''}>${esc(m)}</option>`).join('')}</select></label><label class="fld">ใช้เวลา (นาที)<input type="number" min="1" max="1440" inputmode="numeric" placeholder="ประมาณ" value="${esc(s.minutes)}" data-bind="sheet:minutes"></label><label class="fld">โน้ต<input maxlength="160" placeholder="สายรถ / สถานี / จุดขึ้นรถ" value="${esc(s.note)}" data-bind="sheet:note"></label>${s.travelSource?`<small class="muted">${esc(s.travelSource)}</small>`:''}<button class="btn primary" type="submit" ${s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button></form></div></div>`;
 }
 async function saveTravelLeg(){
   const s=S.sheet,t=S.trip;if(s?.kind!=='travel-leg'||s.busy||t?.id!==s.tripId)return;
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg){toast('ลำดับสถานที่เปลี่ยนแล้ว');return;}
   const minutes=s_(s.minutes)===''?null:Number(s.minutes);
   if(minutes!==null&&(!Number.isInteger(minutes)||minutes<1||minutes>1440)){toast('ระบุเวลาระหว่าง 1–1440 นาที');return;}
-  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId};
+  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId,timezone:s.timezone||'',travelSource:s.travelSource||'',travelCheckedAt:s.travelCheckedAt||''};
   s.busy=true;render();
   try{
     let id=leg.saved?.id;
@@ -2574,6 +2611,7 @@ document.addEventListener("input", e => {
   if(root === "root") S[path] = (e.target.type === "checkbox" ? e.target.checked : e.target.value); else if(S[root]) setPath(S[root], path, e.target.type === "checkbox" ? e.target.checked : e.target.value);
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); e.target.scrollIntoView({block:"nearest"}); }
   if(b === "ai:wish"){ const btn = document.querySelector('[data-act="ai-revise"]'); const s = S.ai; if(btn && s) btn.disabled = !s_(s.wish); }
+  if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&['time','timezone','mode'].includes(path)){S.sheet.lookup=null;S.sheet.lookupError='';S.sheet.travelSource='';S.sheet.travelCheckedAt='';}
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
@@ -2939,6 +2977,10 @@ document.addEventListener("click", async e => {
   if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
   const a = el.dataset.act, t = S.trip;
   switch(a){
+    case "travel-lookup": await lookupTravel(false);break;
+    case "travel-ai": await lookupTravel(true);break;
+    case "travel-use": applyTravelChoice(false,+el.dataset.i);break;
+    case "travel-use-ai": applyTravelChoice(true);break;
     case "travel-leg": {const date=tripDates(t)[S.day],leg=manualTravelLegs(date).find(l=>l.key===el.dataset.key);if(leg)openTravelSheet(leg);break;}
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
@@ -3047,8 +3089,8 @@ document.addEventListener("click", async e => {
       const p = plannedFrom(S.sheet.id), i = p ? tripDates(t).indexOf(p.date) : -1;
       S.sheet = null; if(i >= 0) S.day = i; render();
       setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
-    case "item": S.sheet = {kind:"item", id:el.dataset.id, confirm:false}; render(); break;
-    case "close-sheet": S.sheet = null; render(); break;
+    case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
+    case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet = null; render(); break;
     case "sheet-cancel": S.sheet = null; render(); break;
     case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
     case "rm-cancel": S.rmAsk = null; render(); break;
@@ -3181,7 +3223,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-manualtravel37";
+const BUILD = "2026-10-31-travelassist38";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
