@@ -188,6 +188,7 @@ p{margin:0}
 .day-list.day-list{padding:2px 0}
 .day-list li+li{border-top:0}
 .day-list li+li::before{content:"";position:absolute;top:0;left:16px;right:16px;height:1px;background:var(--line);z-index:1;pointer-events:none}
+.place-drag{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;min-height:44px;border:0;background:transparent;color:var(--muted);font-size:26px;touch-action:none;cursor:grab}.place-drag:active{cursor:grabbing}.day-list .reorderable-entry{padding-right:50px!important}.place-reordering{opacity:.6;outline:2px solid var(--ai);border-radius:12px}.place-drop-target{box-shadow:inset 0 3px var(--ai)}
 .day-list .entry{padding-left:16px;padding-right:16px}
 .cat-list.cat-list{padding:0}
 .cat-list .cat-row{padding-left:4px;padding-right:4px}
@@ -817,6 +818,7 @@ const store = {
     queue("deleteTrip", {id});
   },
   async addItem(tripId, data){
+    if(data.type==='place'){const existing=Object.values(C.items[tripId]||{}).filter(i=>i.type==='place'&&i.date===data.date);const next=Math.max(-1,...existing.map((i,n)=>Number.isFinite(i.data?.dayOrder)?i.data.dayOrder:n))+1;data={...data,data:{...data.data,dayOrder:next,orderPending:true}};}
     const it = {id:rid(), tripId, ...data};
     (C.items[tripId] ||= {})[it.id] = it; emit();
     queue("saveItems", {tripId, items:[it]});
@@ -1061,9 +1063,25 @@ function vLoadingTrip(){
   return `<div class="load muted">กำลังโหลดทริป…</div>`;
 }
 
+function orderedDayPlaces(date){
+  const base=S.items.filter(i=>i.type==='place'&&i.date===date).sort((a,b)=>String(a.time||'99').localeCompare(String(b.time||'99'))||Number(a.createdAt||0)-Number(b.createdAt||0)||a.id.localeCompare(b.id));
+  const index=new Map(base.map((i,n)=>[i.id,n]));
+  return base.sort((a,b)=>(Number.isFinite(a.data?.dayOrder)?a.data.dayOrder:index.get(a.id))-(Number.isFinite(b.data?.dayOrder)?b.data.dayOrder:index.get(b.id)));
+}
+function dayOrderPending(date){return S.items.some(i=>i.type==='place'&&i.date===date&&i.data?.orderPending);}
+function saveDayOrder(date,ids,tripId){
+  if(S.trip?.id!==tripId||S.directSaving||S.ai?.step==='loading')return false;
+  const places=orderedDayPlaces(date),known=new Set(places.map(i=>i.id));
+  if(ids.length!==places.length||new Set(ids).size!==ids.length||ids.some(id=>!known.has(id))){toast('รายการเปลี่ยนไปแล้ว ลองเรียงใหม่อีกครั้ง');render();return false;}
+  if(ids.every((id,n)=>id===places[n].id)){render();return true;}
+  const patches=ids.map((id,dayOrder)=>({id,data:{...places.find(i=>i.id===id).data,dayOrder,orderPending:true}}));
+  for(const patch of patches)C.items[tripId][patch.id]={...C.items[tripId][patch.id],data:patch.data};
+  queue('saveItems',{tripId,items:patches});S.ai=null;emit();toast('เรียงสถานที่แล้ว · กด AI วิเคราะห์เพื่อจัดเวลาใหม่');return true;
+}
 function dayEntries(dateStr){
   const out = [];
   for(const it of S.items){
+    if(it.type==='move'&&dayOrderPending(dateStr))continue;
     if(it.type === "stay"){
       const sd = it.data || {};
       if(it.date === dateStr) out.push({it, phase:"in", time:it.time, title:"เช็กอิน " + (it.title||"ที่พัก"), sub:s_(sd.inNote)});
@@ -1078,6 +1096,7 @@ function dayEntries(dateStr){
     }
   }
   out.sort((a,b) => (a.time||"99") < (b.time||"99") ? -1 : 1);
+  const places=orderedDayPlaces(dateStr);let placeAt=0;out.forEach((e,n)=>{if(e.it.type==='place'){const it=places[placeAt++];out[n]={...e,it,time:it.time,title:it.title,sub:subOf(it),orderPending:dayOrderPending(dateStr)};}});
   /* where everyone sleeps tonight: any stay whose nights cover this date */
   for(const it of S.items){
     if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate)
@@ -1125,8 +1144,8 @@ function briefName(value){return mapNameParts(value).name;}
 
 function entryHtml(e){
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${e.it.type==='place'?' reorderable-entry':''}" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : e.orderPending&&!d.timeLocked?"—":esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${e.it.type==='place'&&e.it.date===tripDates(S.trip)[S.day]?`<button class="place-drag" type="button" data-place-drag="${esc(e.it.id)}" aria-label="ลากเพื่อเรียง ${esc(briefName(e.it.title))}" title="ลากขึ้นลง หรือใช้ปุ่มลูกศรบนคีย์บอร์ด" ${S.ai?.step==='loading'||S.directSaving?'disabled':''}>⠿</button>`:''}`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -1202,14 +1221,15 @@ function vTrip(){
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
     <section class="stack" style="gap:14px">
-      <div class="sec-h"><h2>แผนรายวัน</h2>${vSync()}</div>
-      <div class="plan-actions"><button class="pill-btn t-flight" data-act="overview-open">${ic("pin",17)}เปิดเส้นทางวันนี้</button>${dates.length?`<button class="pill-btn t-ai" data-act="ai-open">${ic("spark",17)}AI วิเคราะห์วันนี้</button>`:""}</div>
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
-      <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>
+      <div class="plan-actions"><button class="pill-btn t-flight" data-act="overview-open">${ic("pin",17)}เส้นทางทั้งวัน</button><button class="pill-btn t-ai" data-act="ai-open">${ic("spark",17)}AI วิเคราะห์วันนี้</button></div>
+      <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>${vSync()}
 </div>
+      <button class="add-dash t-idea" data-act="day-ideas-open">${ic("plus",20)}เลือกที่สนใจลงวันนี้</button>
+      ${dayOrderPending(d)?'<p class="muted small" role="status">รอจัดเวลาและการเดินทางตามลำดับใหม่ · กด AI วิเคราะห์วันนี้</p>':''}
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
-      <div class="add-row"><button class="add-dash t-idea" data-act="day-ideas-open">${ic("plus",20)}เลือกจากที่สนใจ</button>
+      <div class="add-row">
         <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
         <button class="add-dash t-move" data-act="sheet" data-k="move">${ic("move",20)}เพิ่มการเดินทาง</button>
       </div>`}
@@ -1460,15 +1480,15 @@ async function planIdea(){
 }
 function vDayIdeas(s){
   const ideas=S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id));
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา แล้วค่อยกด AI วิเคราะห์วันนี้</p><div class="stack" style="max-height:45dvh;overflow-y:auto;min-height:0">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><label class="fld sm">ลงวัน<select data-bind="sheet:date">${tripDates(S.trip).map((d,n)=>`<option value="${d}" ${d===s.date?'selected':''}>วันที่ ${n+1} · ${esc(dShort(d))}</option>`).join('')}</select></label><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา แล้วค่อยกด AI วิเคราะห์วันนี้</p><div class="stack" style="max-height:45dvh;overflow-y:auto;min-height:0">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
-  const selected=S.items.filter(i=>i.type==='idea'&&s.selected.includes(i.id)&&!plannedFrom(i.id));
+  const selected=s.selected.map(id=>S.items.find(i=>i.type==='idea'&&i.id===id&&!plannedFrom(id))).filter(Boolean);
   s.busy=true;render();
   try{
     for(const it of selected){const d=it.data||{};await store.addItem(t.id,{type:'place',date:s.date,time:'',title:it.title,sub:it.sub||'',data:{address:d.address||'',lat:d.lat,lon:d.lon,placeId:d.placeId||'',kind:d.kind||'',fromIdea:it.id},createdBy:S.me,createdAt:Date.now(),source:'idea'});}
-    if(S.trip?.id===t.id){if(S.sheet===s)S.sheet=null;if(S.ai?.step==='ask'){S.ai.result=null;S.ai.assign=null;}}
+    if(S.trip?.id===t.id){const at=tripDates(t).indexOf(s.date);if(at>=0)S.day=at;if(S.sheet===s)S.sheet=null;if(S.ai?.step==='ask'){S.ai.result=null;S.ai.assign=null;}}
     toast('เพิ่มสถานที่แล้ว · กด AI วิเคราะห์วันนี้ได้เลย');
   }catch(e){fail(e);}finally{s.busy=false;render();}
 }
@@ -1631,7 +1651,7 @@ function vAiPlan(s){
       ${r.days.length>1?aiDateSelect(r.days,shown):''}${days||'<p class="muted">ยังไม่มีร่างแผน</p>'}${days?wish:''}${(s.assign?.days||[]).length>1?`<button class="text-action" data-act="ai-other-day">เลือกวันอื่นเพื่อจัดเวลาต่อ</button><p class="muted small">กดยืนยันเพื่อลงเฉพาะ ${r.days.length} วันที่จัดเวลาแล้ว วันอื่นยังคงเดิม</p>`:''}`);
 
   }
-  const places=S.items.filter(i=>i.type==='place'&&s.dates.includes(i.date));
+  const places=s.dates.flatMap(date=>orderedDayPlaces(date));
   const hm=m=>pad(Math.floor(m/60))+':'+pad(m%60);
   return wrap(`<form class="ai-form" id="ai-form" data-form="ai">
     ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
@@ -1706,7 +1726,7 @@ async function aiRun(){
   s.compareDays=null;s.err='';s.result=null;s.assign=null;s.ctl=new AbortController();
   const pool=aiPool(dates);
   if(s.intent==='improve'){
-    s.assign={days:dates.map(date=>({date,ids:S.items.filter(i=>i.type==='place'&&i.date===date).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))).map(i=>i.id)})),left:[]};s.viewDay=dates[0];if(s.analyse){await aiRoute(s_(s.note)||undefined,true);return;}s.step='pick';render();return;
+    s.assign={days:dates.map(date=>({date,ids:orderedDayPlaces(date).map(i=>i.id)})),left:[]};s.viewDay=dates[0];if(s.analyse){await aiRoute(s_(s.note)||undefined,true);return;}s.step='pick';render();return;
   }
   if(!pool.length){s.assign={days:dates.map(date=>({date,ids:[]})),left:[]};s.viewDay=dates[0];s.step='pick';render();return;}
   s.step='loading';s.loadMsg='กำลังเลือกสถานที่ให้เหมาะกับวัน…';render();
@@ -1782,7 +1802,7 @@ async function aiAdd(){
         const src=S.items.find(i=>i.id===x.ref),sd=(src||{}).data||{};
         const base={id:rid(),tripId:t.id,date:d.date,time:x.time||'',sub:x.note||'',createdBy:S.me,createdAt:Date.now()+docs.length,source:'ai'};
         docs.push(x.type==='move'?{...base,type:'move',title:moveTitle(x.from,x.to),data:{mode:x.mode,from:x.from,to:x.to,options:x.options||[],durationMinutes:travelMinutes(x)}}:
-          {...base,type:'place',title:x.title,data:{...sd,address:sd.address||x.address||'',until:x.until||'',inside:x.inside||'',originId:x.ref||'',timeLocked:!!x.lockedTime,...(x.ideaId?{fromIdea:x.ideaId}:{})}});
+          {...base,type:'place',title:x.title,data:{...sd,dayOrder:d.items.filter(i=>i.type==='place').indexOf(x),orderPending:false,address:sd.address||x.address||'',until:x.until||'',inside:x.inside||'',originId:x.ref||'',timeLocked:!!x.lockedTime,...(x.ideaId?{fromIdea:x.ideaId}:{})}});
       }
     }
     const noteBy={};for(const n of planNotes(dates))noteBy[n.it.id]={...n.patch};
@@ -1884,15 +1904,39 @@ function dayRouteLinks(date){
   }
   return links;
 }
+function dayRoutePoints(date){
+  const entries=dayEntries(date).filter(e=>!e.night),places=entries.filter(e=>e.it.type==='place').map(e=>e.it);
+  if(!places.length)return [];
+  const flights=S.items.filter(i=>i.type==='flight'&&i.data),prev=addDays(date,-1);
+  const stay=x=>S.items.find(i=>i.type==='stay'&&i.date<=x&&x<i.endDate);
+  const arr=flights.find(i=>arrDateOf(i)===date&&(i.date<date||stay(date))),dep=flights.find(i=>i.date===date&&i!==arr);
+  const moves=entries.filter(e=>e.it.type==='move').map(e=>e.it),point=it=>({name:it.title,record:it});
+  const start=arr?{name:arr.data.to+' airport'}:stay(prev)?point(stay(prev)):moves[0]?.data.from?{name:moves[0].data.from}:null;
+  const end=dep?{name:dep.data.from+' airport'}:stay(date)?point(stay(date)):moves.at(-1)?.data.to?{name:moves.at(-1).data.to}:null;
+  const out=[];for(const p of [start,...places.map(point),end].filter(Boolean)){const last=out.at(-1);if(!last||last.name!==p.name)out.push(p);}return out;
+}
+function fullRouteUrl(points,mode){
+  if(points.length<2||!['driving','walking'].includes(mode))return '';
+  const ends=points.map(p=>mapEndpoint(p.name,p.record)),first=ends[0],last=ends.at(-1),mid=ends.slice(1,-1);
+  const q=new URLSearchParams({api:'1',origin:first.query,destination:last.query,travelmode:mode});
+  if(first.placeId)q.set('origin_place_id',first.placeId);if(last.placeId)q.set('destination_place_id',last.placeId);
+  if(mid.length){q.set('waypoints',mid.map(p=>p.query).join('|'));if(mid.every(p=>p.placeId))q.set('waypoint_place_ids',mid.map(p=>p.placeId).join('|'));}
+  return 'https://www.google.com/maps/dir/?'+q.toString();
+}
+function fullDayRoutes(date,mode='driving'){
+  const points=dayRoutePoints(date),out=[];let at=0;
+  while(at<points.length-1){let end=Math.min(at+4,points.length-1),href='';while(end>at){href=fullRouteUrl(points.slice(at,end+1),mode);if(href&&href.length<=2048)break;end--;}
+    if(end===at)return [];out.push({href,points:points.slice(at,end+1)});at=end;
+  }return out;
+}
 function vOverview(s){
-  const dates=tripDates(S.trip),date=dates.includes(s.date)?s.date:dates[S.day]||dates[0],links=date?dayRouteLinks(date):[];
-  const places=date?dayEntries(date).filter(e=>['place','stay'].includes(e.it.type)):[];
-  const seen=new Set(),unique=places.filter(e=>!seen.has(e.it.id)&&seen.add(e.it.id));
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet overview-sheet" role="dialog" aria-modal="true" aria-label="เส้นทางวันนี้" data-stop="1"><div class="hd"><h2>เปิดใน Google Maps</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>
+  const dates=tripDates(S.trip),date=dates.includes(s.date)?s.date:dates[S.day]||dates[0],mode=s.mode||'driving',routes=fullDayRoutes(date,mode),legs=dayRouteLinks(date);
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet overview-sheet" role="dialog" aria-modal="true" aria-label="เส้นทางทั้งวัน" data-stop="1"><div class="hd"><h2>เส้นทางทั้งวัน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>
   <label class="fld">วัน<select id="overview-date">${dates.map((d,i)=>`<option value="${d}" ${d===date?'selected':''}>วันที่ ${i+1} · ${dShort(d)}</option>`).join('')}</select></label>
-  <p class="muted small">เปิดทีละช่วงตามลำดับ เพื่อเลือกดูรถไฟ รถบัส หรือวิธีเดินทางอื่นใน Google Maps ได้ครบ</p>
-  ${links.length?`<ol class="route-link-list">${links.map((l,i)=>`<li><a class="route-link" href="${esc(l.href)}" target="_blank" rel="noopener"><span class="route-number">${i+1}</span><span class="grow"><b>${esc(briefName(l.title.split(' → ')[0]))} → ${esc(briefName(l.title.split(' → ').slice(1).join(' → ')))}</b><small>${esc(l.mode)}</small></span>${ic('ext',18)}</a></li>`).join('')}</ol>`:'<p class="muted small">ยังไม่มีช่วงเดินทาง เปิดสถานที่ด้านล่างเพื่อดูใน Google Maps ได้</p>'}
-  ${unique.length?`<section><h3>สถานที่วันนี้</h3><div class="links">${unique.map(e=>`<a class="lnk" href="${esc(mapsLink(e.it))}" target="_blank" rel="noopener">${ic('pin',18)}<span class="grow">${esc(briefName(e.it.title))}</span>${ic('ext',16)}</a>`).join('')}</div></section>`:''}</div></div>`;
+  <div class="chips" role="group" aria-label="ภาพรวมเส้นทาง">${[['driving','รถยนต์ / แท็กซี่'],['walking','เดิน']].map(([k,v])=>`<button aria-pressed="${mode===k}" data-act="overview-mode" data-mode="${k}">${v}</button>`).join('')}</div>
+  <p class="muted small">เปิด Google Maps พร้อมสถานที่ตามลำดับของวันนี้ เป็นภาพรวมแบบ${mode==='walking'?'เดิน':'รถยนต์'}${routes.length>1?' · วันนี้มีหลายจุด จึงแบ่งเป็นช่วงต่อเนื่องเพื่อให้เปิดบนมือถือได้ครบ':''}</p>
+  ${routes.length?routes.map((r,i)=>`<a class="route-link" href="${esc(r.href)}" target="_blank" rel="noopener"><span class="grow"><b>${routes.length===1?'เปิดเส้นทางทั้งวันใน Google Maps':'เปิดช่วงที่ '+(i+1)+' ใน Google Maps'}</b><small>${r.points.map(p=>esc(briefName(p.name))).join(' → ')}</small></span>${ic('ext',18)}</a>`).join(''):'<p class="muted">เพิ่มสถานที่อย่างน้อยสองจุด หรือสถานที่พร้อมที่พัก เพื่อเปิดเส้นทาง</p>'}
+  ${legs.length?`<details><summary>รถไฟ / รถบัส หรือวิธีเดินทางตามแผน</summary><p class="muted small">Google Maps ไม่รองรับหลายจุดสำหรับเส้นทางขนส่งสาธารณะ เปิดแยกช่วงเพื่อใช้วิธีเดินทางเดิมได้</p><ol class="route-link-list">${legs.map((l,i)=>`<li><a class="route-link" href="${esc(l.href)}" target="_blank" rel="noopener"><span class="route-number">${i+1}</span><span class="grow"><b>${esc(l.title)}</b><small>${esc(l.mode)}</small></span>${ic('ext',18)}</a></li>`).join('')}</ol></details>`:''}</div></div>`;
 }
 
 /* ---------- day pages to keep or send: one picture per day, with a map ---------- */
@@ -2573,9 +2617,44 @@ document.addEventListener("drop", e => {
   e.preventDefault();
   const fl = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if(fl.length) addFiles(fl);
 });
+/* Drag only from the dedicated grip, so vertical page scrolling and swipe actions still work. */
+let PLACE_DRAG=null;
+function placeDragFrame(){
+  const d=PLACE_DRAG;if(!d)return;
+  if(!d.row.isConnected||S.trip?.id!==d.tripId){PLACE_DRAG=null;render();return;}
+  if(d.moved){
+    if(d.y<90)window.scrollBy(0,-14);else if(d.y>innerHeight-100)window.scrollBy(0,14);
+    const rows=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(h=>h.closest('.trow'));
+    const target=rows.find(r=>r!==d.row&&d.y>=r.getBoundingClientRect().top&&d.y<=r.getBoundingClientRect().bottom);
+    if(target){const box=target.getBoundingClientRect();d.list.insertBefore(d.row,d.y<box.top+box.height/2?target:target.nextSibling);}
+  }
+  d.frame=requestAnimationFrame(placeDragFrame);
+}
+document.addEventListener('pointerdown',e=>{
+  const grip=e.target.closest('[data-place-drag]');if(!grip||grip.disabled||e.button!==0||PLACE_DRAG)return;
+  const row=grip.closest('.trow'),list=row.closest('.day-list'),date=tripDates(S.trip)[S.day];
+  if(!S.items.some(i=>i.id===grip.dataset.placeDrag&&i.date===date))return;
+  PLACE_DRAG={row,list,date,tripId:S.trip.id,y:e.clientY,startY:e.clientY,moved:false,pointer:e.pointerId};
+  grip.setPointerCapture?.(e.pointerId);e.preventDefault();PLACE_DRAG.frame=requestAnimationFrame(placeDragFrame);
+});
+document.addEventListener('pointermove',e=>{const d=PLACE_DRAG;if(!d||e.pointerId!==d.pointer)return;d.y=e.clientY;if(Math.abs(d.y-d.startY)>6){d.moved=true;d.row.classList.add('place-reordering');}e.preventDefault();},{passive:false});
+function finishPlaceDrag(e){
+  const d=PLACE_DRAG;if(!d||e.pointerId!==d.pointer)return;cancelAnimationFrame(d.frame);PLACE_DRAG=null;
+  if(e.type==='pointercancel'||!d.row.isConnected){render();return;}
+  if(d.moved){const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(h=>h.dataset.placeDrag);if(!saveDayOrder(d.date,ids,d.tripId))render();}else d.row.classList.remove('place-reordering');
+}
+document.addEventListener('pointerup',finishPlaceDrag);
+document.addEventListener('pointercancel',finishPlaceDrag);
+document.addEventListener('keydown',e=>{
+  const grip=e.target.closest('[data-place-drag]');if(!grip||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();
+  const date=tripDates(S.trip)[S.day],ids=orderedDayPlaces(date).map(i=>i.id),at=ids.indexOf(grip.dataset.placeDrag),to=at+(e.key==='ArrowUp'?-1:1);
+  if(at<0||to<0||to>=ids.length)return;[ids[at],ids[to]]=[ids[to],ids[at]];saveDayOrder(date,ids,S.trip.id);
+  document.querySelector('[data-place-drag="'+grip.dataset.placeDrag+'"]')?.focus();
+});
 /* swipe a trip row left to reveal delete */
 const SW = {row:null, x:0, y:0, base:0, dx:0, moved:false, suppress:false};
 document.addEventListener("pointerdown", e => {
+  if(e.target.closest("[data-place-drag]"))return;
   const slide = e.target.closest(".trow-slide"); 
   if(!slide){ if(S.swipeOpen && !e.target.closest(".trow-actions")){ S.swipeOpen = null; S.delAsk = null; document.querySelectorAll(".trow.open").forEach(r => r.classList.remove("open", "ask")); } return; }
   const row = slide.parentElement, w = +row.dataset.w || 88;
@@ -2670,6 +2749,7 @@ document.addEventListener("click", async e => {
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
     case "map-page": S.sheet.mapPage=+el.dataset.page;render();break;
+    case "overview-mode": S.sheet.mode=el.dataset.mode;render();break;
     case "overview-open": S.catTab='';S.sheet={kind:'overview',date:tripDates(t)[S.day]||'all'};render();break;
     case "overview-day": S.day=tripDates(t).indexOf(el.dataset.d);S.sheet=null;render();break;
     case "history-open": historyOpen();break;
@@ -2900,7 +2980,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-analyse19";
+const BUILD = "2026-10-31-dragroute20";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
