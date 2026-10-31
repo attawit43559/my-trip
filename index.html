@@ -601,6 +601,7 @@ html.lock,html.lock body{overflow:hidden}
 #sync-slot:empty{display:none}
 .day-picker.inline-picker{gap:10px;max-height:none;overflow:visible!important;border:1px solid var(--line);border-radius:20px;padding:12px;background:var(--surface)}.inline-picker .picker-list{flex:0 1 auto;max-height:clamp(80px,calc(var(--vvh,100dvh) - 510px),220px);min-height:0}.inline-picker .picker-footer{padding-bottom:0}.inline-picker h2{font-size:17px}.inline-picker .workflow-search{flex:none}
 .compact-picker.inline-picker{gap:8px;padding:10px;border-radius:16px}.picker-toolbar{display:flex;align-items:center;gap:6px;min-width:0}.picker-toolbar .picker-filters{flex:1;min-width:0;margin:0;gap:4px}.picker-toolbar .picker-filters button{min-height:34px;padding:5px 9px;font-size:12px}.picker-search{display:flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border:0;border-radius:10px;background:var(--tile);color:var(--ink)}.compact-picker .picker-choice{min-height:42px;padding:7px 9px;font-size:13px;border-radius:10px}.compact-picker .thumb-sm{width:24px;height:24px;border-radius:8px}.compact-picker .picker-list{max-height:clamp(120px,calc(var(--vvh,100dvh) - 380px),300px);gap:5px}.compact-picker .compact-footer{display:grid;grid-template-columns:auto 1fr;gap:8px}.compact-footer .btn{height:38px;min-height:38px;font-size:14px;padding:6px 14px}.compact-picker .workflow-search{min-height:38px;padding:7px 10px;font-size:14px}
+.dock.planning{height:min(360px,calc(var(--vvh,100dvh) - var(--calendar-bottom,220px) - 24px - env(safe-area-inset-bottom,0px)));min-height:110px}.dock.planning .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden;padding:4px}.planner-picker{flex:1;min-height:0;max-height:none;overflow:hidden!important;gap:8px}.planner-picker .picker-list{flex:1;min-height:0;max-height:none}.planner-picker .picker-toolbar,.planner-picker .workflow-search{flex:none}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--idea-soft);border-color:var(--idea-mid);color:var(--idea)}.dock.planning .seg{flex:none}html.kb .dock.planning .seg{display:grid}
 </style>
 </head>
 <body>
@@ -1171,9 +1172,8 @@ function entryHtml(e){
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
-  if(S.sheet?.kind==='day-ideas')return "";
   const tab = S.catTab || "";
-  const tabs = [["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
+  const tabs = [["planning","วางแผน"],["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
   const info = ["info","flight","stay"].includes(tab);
   const list = tab === "idea"
     ? S.items.filter(i => i.type === "idea" && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
@@ -1199,8 +1199,8 @@ function catCard(){
   };
   /* the open animation plays once, when a tab is tapped; later re-renders (sync, toasts) must not replay it */
   const anim = S.dockAnim ? " anim" : ""; S.dockAnim = false;
-  return `<nav class="dock${tab ? " open" : ""}${anim}" aria-label="ข้อมูลทริป">
-    ${tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
+  return `<nav class="dock${tab ? " open" : ""}${tab==='planning'?' planning':''}${anim}" aria-label="ข้อมูลทริป">
+    ${tab==='planning'?`<div class="dock-panel" id="trip-dock-panel">${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}</div>`:tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">วิเคราะห์แผนวันนี้</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
       ${aiFoot(S.ai)}
@@ -1209,8 +1209,8 @@ function catCard(){
       <div class="dock-body" data-k="${info?'info':tab}">${tab==='idea'?`<input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหาที่สนใจ" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`)}</div>
       ${info?'':add}
     </div>` : ""}
-    <div class="seg" role="group" aria-label="เปิดข้อมูลทริป">${tabs.map(([k,l])=>`<button class="t-${k==='info'?'flight':'idea'}" aria-expanded="${k==='info'?info:k===tab}" aria-controls="trip-dock-panel" data-act="cat" data-k="${k}">${ic(k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
-  </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
+    <div class="seg" role="group" aria-label="เปิดข้อมูลทริป">${tabs.map(([k,l])=>`<button class="t-${k==='planning'?'place':k==='info'?'flight':'idea'}" aria-expanded="${k==='info'?info:k===tab}" aria-controls="trip-dock-panel" data-act="cat" data-k="${k}">${ic(k==='planning'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
+  </nav>${tab&&tab!=='planning' ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
@@ -1248,7 +1248,6 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       ${vSync()}
-      ${S.sheet?.kind==='day-ideas'?vDayIdeas(S.sheet):`<button class="add-dash t-idea day-add" data-act="day-ideas-open">${ic("plus",20)}เพิ่มจากที่สนใจ</button>`}
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
 `}
     </section>
@@ -1516,12 +1515,38 @@ function dayIdeaChoices(s){
   const query=(s.query||'').trim().toLocaleLowerCase();
   return S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id)&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
 }
+function plannerIdeas(s){
+  const query=(s.query||'').trim().toLocaleLowerCase();
+  return S.items.filter(i=>i.type==='idea'&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
+}
 function vDayIdeaRows(s){
-  return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่มีสถานที่ให้เลือก</p>';
+  const date=tripDates(S.trip)[S.day];
+  return plannerIdeas(s).map(i=>{const selected=S.items.some(p=>p.type==='place'&&p.date===date&&(p.data||{}).fromIdea===i.id);
+    return `<button class="ai-priority picker-choice" data-act="planner-toggle" data-id="${esc(i.id)}" aria-pressed="${selected}" ${PLAN_TOGGLES.has(S.trip.id+':'+date+':'+i.id)?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span></button>`;
+  }).join('')||'<p class="muted small">ไม่มีสถานที่</p>';
 }
 function vDayIdeas(s){
-  return `<section class="day-picker inline-picker compact-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="day-idea-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}" ${s.busy?'disabled':''}>${ic('search',19)}</button></div>${s.searchOpen?`<input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}>`:''}<div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer compact-footer"><button class="btn ghost" data-act="close-sheet" ${s.busy?'disabled':''}>ยกเลิก</button><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่ง'}</button></div></section>`;
+  return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="planner-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}">${ic('search',19)}</button></div>${s.searchOpen?`<input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1">`:''}<div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
 }
+const PLAN_TOGGLES=new Set();
+async function togglePlannerIdea(id){
+  const t=S.trip,date=tripDates(t)[S.day],idea=S.items.find(i=>i.id===id&&i.type==='idea');
+  if(!t||!date||!idea||S.directSaving||S.ai?.step==='loading')return;
+  const key=t.id+':'+date+':'+id;if(PLAN_TOGGLES.has(key))return;
+  const current=S.items.filter(p=>p.type==='place'&&p.date===date&&(p.data||{}).fromIdea===id);
+  PLAN_TOGGLES.add(key);
+  try{
+    if(current.length){for(const it of current)await store.deleteItem(t.id,it.id);}
+    else{const d=idea.data||{};await store.addItem(t.id,{type:'place',date,time:'',title:idea.title,sub:idea.sub||'',data:{address:d.address||'',lat:d.lat,lon:d.lon,placeId:d.placeId||'',mapsUrl:d.mapsUrl||'',kind:d.kind||'',fromIdea:id},createdBy:S.me,createdAt:Date.now(),source:'idea'});}
+  }catch(e){fail(e);}finally{PLAN_TOGGLES.delete(key);render();}
+}
+function fitPlannerPanel(){
+  if(S.catTab!=='planning')return;
+  const calendar=document.querySelector('.cal');if(calendar)document.documentElement.style.setProperty('--calendar-bottom',Math.max(0,calendar.getBoundingClientRect().bottom)+'px');
+}
+window.addEventListener('resize',fitPlannerPanel);
+window.addEventListener('scroll',fitPlannerPanel,{passive:true});
+
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
   const selected=s.selected.map(id=>S.items.find(i=>i.type==='idea'&&i.id===id&&!plannedFrom(id))).filter(Boolean);
@@ -2251,9 +2276,9 @@ function render(){
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
   const modalSheet=S.sheet&&S.sheet.kind!=="day-ideas";
   document.body.style.overflow = modalSheet ? "hidden" : "";
-  document.documentElement.classList.toggle("lock", !!(modalSheet || (S.view === "trip" && S.catTab)));
+  document.documentElement.classList.toggle("lock", !!(modalSheet || (S.view === "trip" && S.catTab&&S.catTab!=="planning")));
   if(S.view === "login") mountGoogleButton();
-  fitAreas(); updateSync();
+  fitAreas(); updateSync();fitPlannerPanel();
 }
 /* typing boxes that grow line by line so the whole message stays visible */
 function fitAreas(el){ (el ? [el] : document.querySelectorAll("textarea.grow-area")).forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }); }
@@ -2474,8 +2499,8 @@ async function confirmJoin(){
 
 /* ---------- events ---------- */
 document.addEventListener("input", e => {
-  if(e.target.dataset?.daySearch!==undefined&&S.sheet?.kind==='day-ideas'){
-    S.sheet.query=e.target.value;const list=document.querySelector('.picker-list');if(list)list.innerHTML=vDayIdeaRows(S.sheet);return;
+  if(e.target.dataset?.daySearch!==undefined&&S.catTab==='planning'){
+    const s=S.planner||(S.planner={});s.query=e.target.value;const list=document.querySelector('.picker-list');if(list)list.innerHTML=vDayIdeaRows(s);return;
   }
   if(e.target.dataset && e.target.dataset.aiStart !== undefined && S.ai){
     const m = +e.target.value; S.ai.start = m;
@@ -2870,10 +2895,10 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
+    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(S.catTab!=="planning")S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
-    case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
+    case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
     case "manual":
@@ -2905,7 +2930,10 @@ document.addEventListener("click", async e => {
     case "ai-refine": S.ai.showRefine=true;render();break;
     case "ai-intent": {const s=S.ai,all=tripDates(t);s.intent=el.dataset.k;s.dates=s.intent==='all'?all:[all[S.day]||all[0]].filter(Boolean);s.step='ask';s.more=false;s.requiredIds=[];s.err='';render();break;}
     case "ai-edit-places": S.catTab="";S.ai=null;render();break;
-    case "day-ideas-open": S.sheet={kind:"day-ideas",date:tripDates(t)[S.day],selected:[],query:'',filter:''};render();break;
+    case "day-ideas-open": S.sheet=null;S.catTab='planning';S.planner||={query:'',filter:''};S.dockHidden=false;render();break;
+    case "planner-toggle": await togglePlannerIdea(el.dataset.id);break;
+    case "planner-filter": S.planner.filter=el.dataset.k;render();break;
+    case "planner-search": {const s=S.planner;s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});break;}
     case "day-idea-search": {const s=S.sheet;if(s?.kind==='day-ideas'&&!s.busy){s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});}break;}
     case "day-idea-filter": if(S.sheet?.kind==='day-ideas'&&!S.sheet.busy){S.sheet.filter=el.dataset.k;render();}break;
     case "day-idea-toggle": {const s=S.sheet,id=el.dataset.id;if(!s.busy)s.selected=s.selected.includes(id)?s.selected.filter(x=>x!==id):s.selected.concat(id);render();break;}
@@ -3087,7 +3115,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-compactpicker33";
+const BUILD = "2026-10-31-tapplan34";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
