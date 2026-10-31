@@ -140,7 +140,7 @@ p{margin:0}
 .tab span{font-size:12px}
 .tab b{font-family:var(--display);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
-.day-list{background:var(--surface);border-radius:24px;padding:4px 16px;margin:0;list-style:none}
+.day-list{position:relative;background:var(--surface);border-radius:24px;padding:4px 16px;margin:0;list-style:none}
 .day-list li+li{border-top:1px solid var(--line)}
 .entry{display:flex;align-items:center;gap:12px;min-height:72px;width:100%;border:0;background:none;text-align:left;padding:8px 0}
 .entry .time{width:48px;flex:none;font-family:var(--display);font-weight:500;font-variant-numeric:tabular-nums}
@@ -2647,6 +2647,7 @@ function activatePlacePress(){
   const floating=document.createElement('div');floating.className='place-floating';floating.setAttribute('aria-hidden','true');floating.inert=true;floating.style.width=box.width+'px';floating.appendChild(d.card.cloneNode(true));document.body.appendChild(floating);d.floating=floating;
   d.row.classList.add('place-placeholder');PLACE_SUPPRESS_UNTIL=Date.now()+1000;
   if(!d.touch)try{d.card.setPointerCapture(d.pointer);}catch(_){}
+  d.reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   d.frame=requestAnimationFrame(placeDragFrame);
 }
 function beginPlacePress(card,x,y,pointer,touch){
@@ -2656,31 +2657,53 @@ function beginPlacePress(card,x,y,pointer,touch){
   PLACE_DRAG={card,row,list,date,tripId:S.trip.id,x,y,startX:x,startY:y,pointer,touch,active:false};
   PLACE_DRAG.timer=setTimeout(activatePlacePress,330);
 }
-function placeDragFrame(){
+function placeDragFrame(now=performance.now()){
   const d=PLACE_DRAG;if(!d||!d.active)return;
   if(!d.row.isConnected||S.trip?.id!==d.tripId){cancelPlacePress();return;}
-  if(d.y<85)window.scrollBy(0,-12);else if(d.y>innerHeight-90)window.scrollBy(0,12);
+  const elapsed=Math.min(32,Math.max(0,now-(d.lastFrame??now)));d.lastFrame=now;
+  const edge=85,velocity=d.y<edge?-Math.min(1,(edge-d.y)/edge):d.y>innerHeight-edge?Math.min(1,(d.y-innerHeight+edge)/edge):0;
+  if(velocity)window.scrollBy(0,velocity*elapsed*.45);
   const left=Math.max(6,Math.min(innerWidth-d.floating.offsetWidth-6,d.x-d.offsetX));
   d.floating.style.transform=`translate3d(${left}px,${d.y-d.offsetY}px,0) scale(1.025)`;
   const rows=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.closest('.trow'));
-  const others=rows.filter(r=>r!==d.row),target=others.find(r=>{const box=r.getBoundingClientRect();return d.y<box.top+box.height/2;});
-  if(others.length)d.list.insertBefore(d.row,target||others[others.length-1].nextSibling);
+  // Hit testing uses layout positions, independent of the animated visual positions.
+  const others=rows.filter(r=>r!==d.row),top=d.list.getBoundingClientRect().top;
+  const target=others.find(r=>d.y<top+r.offsetTop+r.offsetHeight/2),before=target||others[others.length-1]?.nextSibling;
+  if(others.length&&before!==d.row&&d.row.nextSibling!==before){
+    const positions=others.map(r=>[r,r.getBoundingClientRect().top]);
+    d.list.insertBefore(d.row,before||null);
+    for(const [row,oldTop] of positions){
+      row.getAnimations?.().forEach(a=>a.cancel());
+      const delta=oldTop-row.getBoundingClientRect().top;
+      if(delta&&!d.reducedMotion)row.animate?.([{transform:`translateY(${delta}px)`},{transform:'translateY(0)'}],{duration:200,easing:'cubic-bezier(.2,.8,.2,1)'});
+    }
+  }
   d.frame=requestAnimationFrame(placeDragFrame);
 }
 function movePlacePress(x,y){
-  const d=PLACE_DRAG;if(!d)return;d.x=x;d.y=y;
+  const d=PLACE_DRAG;if(!d||d.settling)return;d.x=x;d.y=y;
   if(!d.active&&Math.hypot(x-d.startX,y-d.startY)>8){
     if(d.touch){cancelPlacePress();return;}clearTimeout(d.timer);activatePlacePress();
   }
 }
 function finishPlacePress(cancelled=false){
-  const d=PLACE_DRAG;if(!d)return;
+  const d=PLACE_DRAG;if(!d||d.settling)return;
   clearTimeout(d.timer);cancelAnimationFrame(d.frame);PLACE_DRAG=null;
   if(!d.active)return;
-  PLACE_SUPPRESS_UNTIL=Date.now()+600;d.floating?.remove();d.row.classList.remove('place-placeholder');
-  if(cancelled||!d.row.isConnected){render();return;}
-  const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.dataset.placeDrag);
-  if(!saveDayRowOrder(d.date,ids,d.tripId))render();
+  PLACE_SUPPRESS_UNTIL=Date.now()+600;
+  const complete=()=>{
+    d.floating?.remove();d.row.classList.remove('place-placeholder');
+    if(cancelled||!d.row.isConnected){render();return;}
+    const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.dataset.placeDrag);
+    if(!saveDayRowOrder(d.date,ids,d.tripId))render();
+  };
+  if(!cancelled&&d.row.isConnected&&!d.reducedMotion&&d.floating?.animate){
+    // Keep the drag locked until the lifted card has settled into its slot.
+    PLACE_DRAG=d;d.settling=true;
+    const box=d.row.getBoundingClientRect(),animation=d.floating.animate([{transform:d.floating.style.transform},{transform:`translate3d(${box.left}px,${box.top}px,0) scale(1)`}],{duration:170,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+    animation.onfinish=()=>{if(PLACE_DRAG!==d)return;PLACE_DRAG=null;complete();};
+    animation.oncancel=()=>{if(PLACE_DRAG!==d)return;PLACE_DRAG=null;complete();};
+  }else complete();
 }
 document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0)return;const card=e.target.closest('[data-place-drag]');if(card)beginPlacePress(card,e.clientX,e.clientY,e.pointerId,false);});
 document.addEventListener('pointermove',e=>{if(!PLACE_DRAG||PLACE_DRAG.touch||e.pointerId!==PLACE_DRAG.pointer)return;movePlacePress(e.clientX,e.clientY);if(PLACE_DRAG?.active)e.preventDefault();},{passive:false});
@@ -3030,7 +3053,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-mixedorder22";
+const BUILD = "2026-10-31-smoothsort23";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
