@@ -239,7 +239,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .seg button{position:relative;min-height:44px;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:500;color:var(--muted);padding:4px 1px;min-width:0}
 .seg button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
 @media (max-width:360px){.seg button{font-size:11px}}
-.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button[aria-selected="true"],.seg button[aria-expanded="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .seg em{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;font-weight:600;min-width:16px;height:16px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;padding:0 4px}
 .cat-list{list-style:none;margin:0;padding:0 4px}
 .cat-list li+li{border-top:1px solid var(--line)}
@@ -364,7 +364,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
 .hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
 .seg button .ic{color:var(--deep)}
-.seg button[aria-selected="true"]{background:var(--soft);color:var(--deep);box-shadow:none}
+.seg button[aria-selected="true"],.seg button[aria-expanded="true"]{background:var(--soft);color:var(--deep);box-shadow:none}
 .seg em{background:var(--mid);color:var(--on)}
 .cat-add[class*="t-"]{background:var(--soft);color:var(--deep)}
 .dot-sm{width:10px;height:10px;border-radius:999px;background:var(--mid);flex:none}
@@ -597,6 +597,7 @@ html.lock,html.lock body{overflow:hidden}
 .route-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.route-link-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.route-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--tile);border-radius:16px;text-decoration:none;color:var(--ink);min-width:0}.route-link .grow{min-width:0;overflow-wrap:anywhere}.route-link b{font-size:14px}.route-link small{display:block;color:var(--muted);margin-top:5px}.route-number{background:var(--flight-soft,#e3eeff);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex-shrink:0}.route-link>svg{flex-shrink:0}
 .ai-stops{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:10px}.ai-stops li{display:flex;gap:10px;align-items:baseline}.ai-stops .time{flex:none;font-size:12px;width:48px}.ai-stops li>span:last-child{min-width:0;overflow-wrap:anywhere}.ai-scope{display:flex;gap:6px}.ai-scope button{flex:1;min-width:0;padding:10px 6px}.ai-refine{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--tile);border-radius:16px}
 .workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{overflow-y:auto;overscroll-behavior:contain;min-height:80px;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}.picker-footer{display:grid;gap:10px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px)}.picker-footer .btn{width:100%}.maps-import{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;min-height:48px;background:var(--idea-soft);color:var(--idea);font:inherit;font-weight:600}.route-hint{display:block;font-size:12px;margin-top:3px}
+.day-focus{display:flex;align-items:center;gap:10px;text-align:center}.day-focus p{margin:2px 0 0}.day-focus .round{width:40px;height:40px;flex:none;background:var(--tile)}.day-focus button:disabled{opacity:.25}.day-next{display:flex;transform:rotate(180deg)}.day-add{min-height:48px;background:var(--idea-soft);border:0;color:var(--idea);font-weight:600}.dock-hd .text-action{white-space:nowrap;font-size:12px}
 </style>
 </head>
 <body>
@@ -1167,7 +1168,7 @@ function entryHtml(e){
 }
 function catCard(){
   const tab = S.catTab || "";
-  const tabs = [["plan","แผน"],["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
+  const tabs = [["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
   const info = ["info","flight","stay"].includes(tab);
   const list = tab === "idea"
     ? S.items.filter(i => i.type === "idea" && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
@@ -1198,12 +1199,12 @@ function catCard(){
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">วิเคราะห์แผนวันนี้</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
       ${aiFoot(S.ai)}
-    </div>` : tab ? `<div class="dock-panel">
-      <div class="dock-hd"><b class="grow">${info?'ข้อมูลทริป':'ที่สนใจ'}</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
-      <div class="dock-body" data-k="${info?'info':tab}">${tab==='idea'?`<p class="muted small">เก็บจาก Google Maps ไว้ก่อน แล้วเลือกลงวันในหน้าแผน</p><input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหาที่สนใจ" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">จดสถานที่ที่อยากไปไว้ก่อน</p>`)}</div>
+    </div>` : tab ? `<div class="dock-panel" id="trip-dock-panel">
+      <div class="dock-hd"><b class="grow">${info?'ข้อมูลทริป':'ที่สนใจ'}</b><button class="text-action" data-act="cat-close" aria-label="กลับตาราง">${ic("close",16)}กลับตาราง</button></div>
+      <div class="dock-body" data-k="${info?'info':tab}">${tab==='idea'?`<p class="muted small">เก็บจาก Google Maps ไว้ก่อน แล้วเลือกลงวันในหน้าตาราง</p><input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหาที่สนใจ" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">จดสถานที่ที่อยากไปไว้ก่อน</p>`)}</div>
       ${info?'':add}
     </div>` : ""}
-    <div class="seg" role="tablist" aria-label="เมนูทริป">${tabs.map(([k,l])=>`<button class="t-${k==='plan'?'place':k==='info'?'flight':'idea'}" role="tab" aria-selected="${k==='plan'?!tab||tab==='ai':k==='info'?info:k===tab}" data-act="${k==='plan'?'plan-nav':'cat'}" data-k="${k}">${ic(k==='plan'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
+    <div class="seg" role="group" aria-label="เปิดข้อมูลทริป">${tabs.map(([k,l])=>`<button class="t-${k==='info'?'flight':'idea'}" aria-expanded="${k==='info'?info:k===tab}" aria-controls="trip-dock-panel" data-act="cat" data-k="${k}">${ic(k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
   </nav>${tab ? `<div class="dock-scrim${anim}" data-act="cat-close"></div>` : ""}`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -1241,9 +1242,8 @@ function vTrip(){
     <section class="stack" style="gap:14px">
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
-      <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>${vSync()}
-</div>
-      <button class="add-dash t-idea" data-act="day-ideas-open">${ic("plus",20)}เลือกสถานที่ลงวันนี้</button>
+      <div class="day-focus"><button class="round day-prev" data-act="day" data-i="${S.day-1}" aria-label="วันก่อนหน้า" ${S.day===0?'disabled':''}>${ic('back',18)}</button><div class="grow"><b>วันที่ ${S.day+1}</b><p class="muted small">${esc(dLong(d))}${d<today()?' · ผ่านไปแล้ว':''}</p></div><button class="round" data-act="day" data-i="${S.day+1}" aria-label="วันถัดไป" ${S.day===dates.length-1?'disabled':''}><span class="day-next">${ic('back',18)}</span></button>${vSync()}</div>
+      <button class="add-dash t-idea day-add" data-act="day-ideas-open">${ic("plus",20)}เพิ่มจากที่สนใจ</button>
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
 `}
     </section>
@@ -1515,7 +1515,7 @@ function vDayIdeaRows(s){
   return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่พบสถานที่ที่ยังไม่ได้ลงแผน ลองค้นหาใหม่หรือเพิ่มใน “ที่สนใจ”</p>';
 }
 function vDayIdeas(s){
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet day-picker" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><div class="grow"><h2>เลือกลงวันนี้</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><span class="muted small">เพิ่มตามลำดับที่เลือก · ลากเรียงต่อได้</span><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่ง'}</button></div></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet day-picker" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><span class="muted small">เพิ่มตามลำดับที่เลือก · ลากเรียงต่อได้</span><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></div></div>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -2861,7 +2861,7 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": S.day = Number(el.dataset.i); S.clearAsk = null; render(); break;
+    case "day": S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
@@ -3077,7 +3077,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-mapsflow26";
+const BUILD = "2026-10-31-dayfocus27";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
