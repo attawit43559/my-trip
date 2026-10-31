@@ -605,6 +605,7 @@ html.lock,html.lock body{overflow:hidden}
 .dock.open{top:var(--trip-panel-top,140px);height:auto;max-height:none;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}.dock.open .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden}.dock.open .dock-body{flex:1;min-height:0}.dock.planning{height:auto;min-height:0}.planner-calendar{flex:none;padding:0 4px 6px}.interest-tools{flex:none;display:flex;flex-direction:column;gap:8px;padding:2px 4px 6px}.interest-tools .workflow-search{min-height:38px;font-size:14px}.dock.open .seg,.dock.open .cat-add{flex:none}.dock.open .planner-picker{min-height:0}.dock.open .cal{margin:0}.dock.open .cal .tab{min-height:40px}.dock.open .planner-calendar{max-height:35%;overflow-y:auto;overscroll-behavior:contain}
 /* One warm accent for interaction; category colors identify content only. */
 .dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock .text-action{color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
+.travel-leg-link small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.travel-leg-link .grow,.travel-points{overflow-wrap:anywhere}.travel-points{margin:0;font-weight:500}.maps-travel-link{color:var(--ink);background:var(--tile);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14px;min-height:44px}
 </style>
 </head>
 <body>
@@ -833,7 +834,7 @@ const store = {
     const it = {id:rid(), tripId, ...data};
     (C.items[tripId] ||= {})[it.id] = it; emit();
     queue("saveItems", {tripId, items:[it]});
-    syncDates(tripId);
+    syncDates(tripId);return it.id;
   },
   async updateItem(tripId, itemId, patch){
     const cur = (C.items[tripId] || {})[itemId]; if(!cur) return;
@@ -1143,6 +1144,7 @@ function arrDateOf(it){
   return (d.arrTime && it.time && d.arrTime < it.time) ? addDays(it.date, 1) : it.date;
 }
 function subOf(it){
+  if(it.type==='move'&&it.data?.legKey)return [it.data.mode,it.data.durationMinutes?it.data.durationMinutes+' นาที':'',it.sub].filter(Boolean).join(' · ');
   if(it.type !== "flight") return it.sub || "";
   const d = it.data || {};
   const ad = arrDateOf(it), shift = validD(ad) && validD(it.date) ? daysBetween(it.date, ad) : 0;
@@ -1475,12 +1477,65 @@ function nextStopLink(it){
   const date=tripDates(S.trip)[S.day],next=nextPlanStop(it,date);if(!next)return '';
   return `<a class="lnk" href="${esc(routeLink({type:'move',data:{from:it.title,to:next.title}}))}" target="_blank" rel="noopener">${ic('move',20)}<span class="grow">เดินทางต่อไป ${esc(briefName(next.title))}</span>${ic('ext',16)}</a>`;
 }
+function manualTravelLegs(date){
+  const entries=dayEntries(date),points=[];
+  const arrival=entries.some(e=>!e.night&&e.it.type==='flight'&&(e.phase==='arr'||(arrDateOf(e.it)===date&&e.it.date!==date)));
+  const prev=addDays(date,-1),hotel=!arrival&&S.items.find(i=>i.type==='stay'&&i.date<=prev&&prev<i.endDate);
+  if(hotel)points.push({id:hotel.id,name:hotel.title,key:''});
+  for(const e of entries){
+    const it=e.it,d=it.data||{};if(!['place','stay','flight'].includes(it.type)||(e.night&&it.type!=='stay'))continue;
+    const names=it.type==='flight'?(e.phase==='arr'?[[d.to,d.toCity]]:[[d.from,d.fromCity],...(arrDateOf(it)===date?[[d.to,d.toCity]]:[])]).map(parts=>parts.filter(Boolean).join(' ')):[it.title];
+    for(const name of names){if(!name)continue;const point={id:it.id,name,key:e.night?'':dayEntryKey(e)};
+      if(points.at(-1)?.id===point.id&&points.at(-1)?.name===point.name)continue;points.push(point);
+    }
+  }
+  return points.slice(1).map((to,i)=>{const from=points[i],key=JSON.stringify([from.id,from.name,to.id,to.name]);
+    const saved=S.items.find(m=>m.type==='move'&&m.date===date&&((m.data||{}).legKey===key||((m.data||{}).from===from.name&&(m.data||{}).to===to.name)));
+    return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
+  }).filter(l=>l.fromId!==l.toId);
+}
+function manualTravelLinks(it){
+  const date=tripDates(S.trip)[S.day];
+  return manualTravelLegs(date).filter(l=>l.fromId===it.id||l.toId===it.id).map(l=>{
+    const d=l.saved?.data||{},sub=l.saved?[d.mode,d.durationMinutes?d.durationMinutes+' นาที':'',l.saved.time].filter(Boolean).join(' · '):'บันทึกการเดินทาง';
+    return `<button class="lnk travel-leg-link" data-act="travel-leg" data-key="${esc(l.key)}">${ic('move',20)}<span class="grow">${esc(briefName(l.from))} → ${esc(briefName(l.to))}<small>${esc(sub)}</small></span>${ic('chev',16)}</button>`;
+  }).join('');
+}
+function openTravelSheet(leg){
+  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||'',note:leg.saved?.sub||''};render();
+}
+function editManualTravel(it){
+  if(!it?.data?.legKey)return false;const leg=manualTravelLegs(it.date).find(l=>l.saved?.id===it.id);if(!leg)return false;openTravelSheet(leg);return true;
+}
+function vTravelLeg(s){
+  const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return `<div class="scrim" data-act="close-sheet"><div class="sheet"><p>ลำดับสถานที่เปลี่ยนแล้ว</p><button class="btn ghost" data-act="close-sheet">ปิด</button></div></div>`;
+  const modes=['ขนส่งสาธารณะ','เดิน','รถไฟ','รถบัส','แท็กซี่','ขับรถ','อื่นๆ'];if(s.mode&&!modes.includes(s.mode))modes.unshift(s.mode);
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2>การเดินทาง</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><p class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</p><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}))}" target="_blank" rel="noopener">${ic('pin',18)}ดูเส้นทางใน Google Maps${ic('ext',16)}</a><form class="stack" data-form="travel-leg"><label class="fld">วิธีเดินทาง<select data-bind="sheet:mode">${modes.map(m=>`<option ${m===s.mode?'selected':''}>${esc(m)}</option>`).join('')}</select></label><div class="grid2"><label class="fld">ใช้เวลา (นาที)<input type="number" min="1" max="1440" inputmode="numeric" placeholder="ประมาณ" value="${esc(s.minutes)}" data-bind="sheet:minutes"></label><label class="fld">เวลาออก<input type="time" value="${esc(s.time)}" data-bind="sheet:time"></label></div><label class="fld">โน้ต<input maxlength="160" placeholder="สายรถ / สถานี / จุดขึ้นรถ" value="${esc(s.note)}" data-bind="sheet:note"></label><button class="btn primary" type="submit" ${s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button></form></div></div>`;
+}
+async function saveTravelLeg(){
+  const s=S.sheet,t=S.trip;if(s?.kind!=='travel-leg'||s.busy||t?.id!==s.tripId)return;
+  const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg){toast('ลำดับสถานที่เปลี่ยนแล้ว');return;}
+  const minutes=s_(s.minutes)===''?null:Number(s.minutes);
+  if(minutes!==null&&(!Number.isInteger(minutes)||minutes<1||minutes>1440)){toast('ระบุเวลาระหว่าง 1–1440 นาที');return;}
+  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId};
+  s.busy=true;render();
+  try{
+    let id=leg.saved?.id;
+    const patch={type:'move',date:s.date,time:s.time||'',title:moveTitle(leg.from,leg.to),sub:s_(s.note),data,source:'manual'};
+    if(id)await store.updateItem(t.id,id,patch);else id=await store.addItem(t.id,{...patch,createdBy:S.me,createdAt:Date.now()});
+    if(S.trip?.id===t.id){
+      const entries=dayEntries(s.date).filter(e=>!e.night),move=entries.find(e=>e.it.id===id),keys=entries.filter(e=>e.it.id!==id).map(dayEntryKey);
+      if(move){const before=keys.indexOf(leg.beforeKey),after=keys.indexOf(leg.afterKey),at=before>=0?before:after>=0?after+1:keys.length;keys.splice(at,0,dayEntryKey(move));saveDayRowOrder(s.date,keys,t.id);}
+      if(S.sheet===s)S.sheet=null;toast('บันทึกการเดินทางแล้ว');
+    }
+  }catch(e){fail(e);}finally{s.busy=false;render();}
+}
 function itemLinks(it){
   const d = it.data || {}, out = [];
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
   if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "ดูใน Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "นำทางใน Google Maps"));
-  if(it.type==='place'){const next=nextStopLink(it);if(next)out.push(next);}
+  if(['place','stay','flight'].includes(it.type)){const legs=manualTravelLinks(it);if(legs)out.push(legs);}
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
   files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
@@ -2204,6 +2259,7 @@ function addFromLink(url){
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
+  if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "day-ideas") return "";
   if(s.kind === "overview") return vOverview(s);
   if(s.kind === "history") return vHistory(s);
@@ -2223,7 +2279,7 @@ function vSheet(){
     let rows = [];
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef],["โน้ตขาออก", data.note],["โน้ตตอนถึง", data.arrNote]];
     else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef],["โน้ตเช็กอิน", data.inNote],["โน้ตเช็กเอาต์", data.outNote]];
-    else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
+    else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["ใช้เวลา",data.durationMinutes?data.durationMinutes+" นาที":""],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
     else if(it.type === "idea") rows = [["ประเภท", data.kind],["ที่อยู่", data.address || mapNameParts(it.title).address],["โน้ต", it.sub]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
@@ -2826,6 +2882,7 @@ document.addEventListener("pointercancel", endSwipe);
 document.addEventListener("click", e => { if(SW.suppress && e.target.closest(".trow-slide")){ e.preventDefault(); e.stopImmediatePropagation(); SW.suppress = false; } }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S.sheet = null; render(); } });
 document.addEventListener("submit", async e => {
+  if(e.target.dataset.form==='travel-leg'){e.preventDefault();await saveTravelLeg();return;}
   const f = e.target.dataset && e.target.dataset.form; if(!f) return;
   e.preventDefault();
   if(f === "join") return startJoin(S.joinCode);
@@ -2882,6 +2939,7 @@ document.addEventListener("click", async e => {
   if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
   const a = el.dataset.act, t = S.trip;
   switch(a){
+    case "travel-leg": {const date=tripDates(t)[S.day],leg=manualTravelLegs(date).find(l=>l.key===el.dataset.key);if(leg)openTravelSheet(leg);break;}
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
     case "map-page": S.sheet.mapPage=+el.dataset.page;render();break;
@@ -3004,11 +3062,11 @@ document.addEventListener("click", async e => {
       break;
     }
     case "sheet-confirm": S.sheet.confirm = true; render(); break;
-    case "item-edit": { const it = S.items.find(i => i.id === S.sheet.id); if(it){ S.sheet.edit = editFromItem(it); render(); } break; }
+    case "item-edit": { const it = S.items.find(i => i.id === S.sheet.id); if(it){if(editManualTravel(it))break;S.sheet.edit = editFromItem(it); render(); } break; }
     case "item-edit-cancel": if(S.sheet.fromSwipe) S.sheet = null; else S.sheet.edit = null; render(); break;
     case "entry-edit": {
       const it = S.items.find(i => i.id === el.dataset.id); S.swipeOpen = null; S.delAsk = null;
-      if(it){ S.sheet = {kind:"item", id:it.id, edit:editFromItem(it), fromSwipe:true}; render(); }
+      if(it){if(editManualTravel(it))break;S.sheet = {kind:"item", id:it.id, edit:editFromItem(it), fromSwipe:true};render();}
       break; }
     case "entry-del": S.delAsk = el.dataset.key; S.swipeOpen = el.dataset.key; render(); break;
     case "entry-del-yes": {
@@ -3123,7 +3181,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-unifiedcolors36";
+const BUILD = "2026-10-31-manualtravel37";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
