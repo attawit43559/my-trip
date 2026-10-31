@@ -1186,7 +1186,7 @@ function catCard(){
   };
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
-    : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}${tab==="idea"?"เพิ่มจาก Google Maps":"เพิ่ม"}</button>`;
+    : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}${tab==="idea"?"เพิ่มเอง":"เพิ่ม"}</button>`;
   const empty = {flight:"ยังไม่มีเที่ยวบิน", stay:"ยังไม่มีที่พัก", place:"ยังไม่มีสถานที่", move:"ยังไม่มีการเดินทาง", idea:"จดร้านอาหารหรือที่ที่อยากไปไว้ก่อน ยังไม่ต้องระบุวัน"}[tab];
   const bookingGroup = (kind,label) => {
     const bookings = S.items.filter(i=>i.type===kind).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
@@ -1201,7 +1201,7 @@ function catCard(){
       ${aiFoot(S.ai)}
     </div>` : tab ? `<div class="dock-panel" id="trip-dock-panel">
       <div class="dock-hd"><b class="grow">${info?'ข้อมูลทริป':'ที่สนใจ'}</b><button class="text-action" data-act="cat-close" aria-label="กลับตาราง">${ic("close",16)}กลับตาราง</button></div>
-      <div class="dock-body" data-k="${info?'info':tab}">${tab==='idea'?`<p class="muted small">เก็บจาก Google Maps ไว้ก่อน แล้วเลือกลงวันในหน้าตาราง</p><input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหาที่สนใจ" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">จดสถานที่ที่อยากไปไว้ก่อน</p>`)}</div>
+      <div class="dock-body" data-k="${info?'info':tab}">${tab==='idea'?`<input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหาที่สนใจ" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}${info?bookingGroup('flight','เที่ยวบิน')+bookingGroup('stay','ที่พัก'):(list.length?`<ul class="cat-list">${list.map(row).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`)}</div>
       ${info?'':add}
     </div>` : ""}
     <div class="seg" role="group" aria-label="เปิดข้อมูลทริป">${tabs.map(([k,l])=>`<button class="t-${k==='info'?'flight':'idea'}" aria-expanded="${k==='info'?info:k===tab}" aria-controls="trip-dock-panel" data-act="cat" data-k="${k}">${ic(k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
@@ -1466,7 +1466,7 @@ function nextPlanStop(it,date){
 }
 function nextStopLink(it){
   const date=tripDates(S.trip)[S.day],next=nextPlanStop(it,date);if(!next)return '';
-  return `<a class="lnk" href="${esc(routeLink({type:'move',data:{from:it.title,to:next.title}}))}" target="_blank" rel="noopener">${ic('move',20)}<span class="grow">เดินทางต่อไป ${esc(briefName(next.title))}<small class="muted route-hint">เลือกวิธีเดินทางและดูเวลาใน Google Maps</small></span>${ic('ext',16)}</a>`;
+  return `<a class="lnk" href="${esc(routeLink({type:'move',data:{from:it.title,to:next.title}}))}" target="_blank" rel="noopener">${ic('move',20)}<span class="grow">เดินทางต่อไป ${esc(briefName(next.title))}</span>${ic('ext',16)}</a>`;
 }
 function itemLinks(it){
   const d = it.data || {}, out = [];
@@ -1512,10 +1512,10 @@ function dayIdeaChoices(s){
   return S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id)&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
 }
 function vDayIdeaRows(s){
-  return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่พบสถานที่ที่ยังไม่ได้ลงแผน ลองค้นหาใหม่หรือเพิ่มใน “ที่สนใจ”</p>';
+  return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่มีสถานที่ให้เลือก</p>';
 }
 function vDayIdeas(s){
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet day-picker" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><span class="muted small">เพิ่มตามลำดับที่เลือก · ลากเรียงต่อได้</span><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet day-picker" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></div></div>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -2207,7 +2207,6 @@ function vSheet(){
       ${s.fromLink && S.trips.length > 1 ? `<label class="fld">ทริป<select id="sh-trip">${S.trips.map(x => `<option value="${esc(x.id)}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
       ${s.linking ? `<div class="link-wait"><div class="spinner sm" role="status" aria-label="กำลังอ่านลิงก์"></div><span class="muted small">กำลังอ่านลิงก์จาก Google Maps…</span></div>` : ""}
       ${s.linkErr ? `<div class="err" role="alert">${esc(s.linkErr)}</div>` : ""}
-      ${!s.fromLink ? `<button type="button" class="maps-import" data-act="paste-maps">${ic("pin",20)}วางลิงก์จาก Google Maps</button><p class="muted small">หรือแชร์จาก Google Maps ด้วยคำสั่งลัดที่เชื่อมไว้</p>` : ""}
       <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
       <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="เช่น เพื่อนแนะนำ, ต้องจองก่อน" value="${esc(s.note)}" data-bind="sheet:note"></label>
@@ -3077,7 +3076,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-calendaronly28";
+const BUILD = "2026-10-31-cleancopy29";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
