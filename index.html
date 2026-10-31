@@ -1460,7 +1460,7 @@ async function planIdea(){
 }
 function vDayIdeas(s){
   const ideas=S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id));
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา แล้วค่อยกด AI วิเคราะห์วันนี้</p><div class="stack">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา แล้วค่อยกด AI วิเคราะห์วันนี้</p><div class="stack" style="max-height:45dvh;overflow-y:auto;min-height:0">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -1641,7 +1641,7 @@ function vAiPlan(s){
     <div class="ai-q"><b>สไตล์ที่ชอบ</b><div class="chips">${AI_INTERESTS.map(v=>`<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="ai-multi" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
     <label class="fld sm"><span>อยากให้คำนึงถึงอะไร?</span><textarea id="ai-note" rows="2" maxlength="400" placeholder="เช่น มีเด็ก เดินน้อย กลับโรงแรมก่อนมืด" data-bind="ai:note">${esc(s.note)}</textarea></label>
     <button type="button" class="ai-section-toggle" data-act="ai-settings" aria-expanded="${!!s.more}">เวลาเริ่มและผู้เดินทาง ${ic(s.more?'up':'down',16)}</button>
-    ${s.more?`<label class="fld sm">เวลาเริ่ม ${hm(s.start)}<input type="range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"></label><p class="small muted">ผู้ใหญ่ ${s.adults} · เด็ก ${s.children} · สูงอายุ ${s.elders}</p><div class="chips">${['adults','children','elders'].map((k,i)=>`<button type="button" data-act="ai-num" data-k="${k}" data-d="-1">− ${['ผู้ใหญ่','เด็ก','สูงอายุ'][i]}</button><button type="button" data-act="ai-num" data-k="${k}" data-d="1">+ ${['ผู้ใหญ่','เด็ก','สูงอายุ'][i]}</button>`).join('')}</div>`:''}
+    ${s.more?`<label class="fld sm">เวลาเริ่ม <output class="ai-time">${hm(s.start)}</output><input type="range" min="300" max="720" step="15" value="${s.start}" data-ai-start aria-label="เวลาเริ่มวัน"></label><p class="small muted">ผู้ใหญ่ ${s.adults} · เด็ก ${s.children} · สูงอายุ ${s.elders}</p><div class="chips">${['adults','children','elders'].map((k,i)=>`<button type="button" data-act="ai-num" data-k="${k}" data-d="-1">− ${['ผู้ใหญ่','เด็ก','สูงอายุ'][i]}</button><button type="button" data-act="ai-num" data-k="${k}" data-d="1">+ ${['ผู้ใหญ่','เด็ก','สูงอายุ'][i]}</button>`).join('')}</div>`:''}
     <p class="muted small">AI จะใช้เฉพาะสถานที่ในวันนี้ เรียงลำดับ จัดเวลาคร่าว ๆ และวิธีเดินทาง พร้อมข้อเสนอแนะ สถานที่แนะนำจะไม่ถูกเพิ่มเอง ตรวจแล้วกดยืนยันจึงเปลี่ยนแผนจริง</p>
   </form>`);
 }
@@ -2900,7 +2900,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-analyse18";
+const BUILD = "2026-10-31-analyse19";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
