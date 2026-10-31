@@ -599,6 +599,7 @@ html.lock,html.lock body{overflow:hidden}
 .workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}.picker-footer{display:grid;gap:10px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px)}.picker-footer .btn{width:100%}.maps-import{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;min-height:48px;background:var(--idea-soft);color:var(--idea);font:inherit;font-weight:600}.route-hint{display:block;font-size:12px;margin-top:3px}
 .day-add{min-height:48px;background:var(--idea-soft);border:0;color:var(--idea);font-weight:600}.dock-hd .text-action{white-space:nowrap;font-size:12px}
 #sync-slot:empty{display:none}
+.day-picker.inline-picker{gap:10px;max-height:none;overflow:visible!important;border:1px solid var(--line);border-radius:20px;padding:12px;background:var(--surface)}.inline-picker .picker-list{flex:0 1 auto;max-height:clamp(80px,calc(var(--vvh,100dvh) - 510px),220px);min-height:0}.inline-picker .picker-footer{padding-bottom:0}.inline-picker h2{font-size:17px}.inline-picker .workflow-search{flex:none}
 </style>
 </head>
 <body>
@@ -1168,6 +1169,7 @@ function entryHtml(e){
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
+  if(S.sheet?.kind==='day-ideas')return "";
   const tab = S.catTab || "";
   const tabs = [["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
   const info = ["info","flight","stay"].includes(tab);
@@ -1244,7 +1246,7 @@ function vTrip(){
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
       ${vSync()}
-      <button class="add-dash t-idea day-add" data-act="day-ideas-open">${ic("plus",20)}เพิ่มจากที่สนใจ</button>
+      ${S.sheet?.kind==='day-ideas'?vDayIdeas(S.sheet):`<button class="add-dash t-idea day-add" data-act="day-ideas-open">${ic("plus",20)}เพิ่มจากที่สนใจ</button>`}
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
 `}
     </section>
@@ -1516,7 +1518,7 @@ function vDayIdeaRows(s){
   return dayIdeaChoices(s).map(i=>`<button class="ai-priority picker-choice" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span><span class="picker-check">${ic(s.selected.includes(i.id)?'check':'plus',18)}</span></button>`).join('')||'<p class="muted small">ไม่มีสถานที่ให้เลือก</p>';
 }
 function vDayIdeas(s){
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet day-picker" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></div></div>`;
+  return `<section class="day-picker inline-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="hd"><div class="grow"><h2>เพิ่มลงวันที่ ${tripDates(S.trip).indexOf(s.date)+1}</h2><span class="muted small">${esc(dLong(s.date))}</span></div><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหาสถานที่หรือร้าน" value="${esc(s.query||'')}" data-day-search="1" ${s.busy?'disabled':''}><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="day-idea-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}" ${s.busy?'disabled':''}>${esc(k||'ทั้งหมด')}</button>`).join('')}</div><div class="picker-list">${vDayIdeaRows(s)}</div><div class="picker-footer"><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' แห่งลงวันที่ '+(tripDates(S.trip).indexOf(s.date)+1)}</button></div></section>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -2169,7 +2171,7 @@ function addFromLink(url){
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
-  if(s.kind === "day-ideas") return vDayIdeas(s);
+  if(s.kind === "day-ideas") return "";
   if(s.kind === "overview") return vOverview(s);
   if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
@@ -2245,8 +2247,9 @@ function render(){
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
-  document.body.style.overflow = S.sheet ? "hidden" : "";
-  document.documentElement.classList.toggle("lock", !!(S.sheet || (S.view === "trip" && S.catTab)));
+  const modalSheet=S.sheet&&S.sheet.kind!=="day-ideas";
+  document.body.style.overflow = modalSheet ? "hidden" : "";
+  document.documentElement.classList.toggle("lock", !!(modalSheet || (S.view === "trip" && S.catTab)));
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();
 }
@@ -2865,7 +2868,7 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
+    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false; render(); break; }
@@ -3081,7 +3084,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-pickerscroll31";
+const BUILD = "2026-10-31-inlinepicker32";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
