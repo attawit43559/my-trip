@@ -1067,6 +1067,7 @@ function vLoadingTrip(){
 function orderedDayPlaces(date){
   const base=S.items.filter(i=>i.type==='place'&&i.date===date).sort((a,b)=>String(a.time||'99').localeCompare(String(b.time||'99'))||Number(a.createdAt||0)-Number(b.createdAt||0)||a.id.localeCompare(b.id));
   const index=new Map(base.map((i,n)=>[i.id,n]));
+  const saved=S.trip?.dayRowOrder?.[date];if(Array.isArray(saved)){const rank=i=>{const at=saved.indexOf(JSON.stringify([i.id,'']));return at<0?saved.length+index.get(i.id):at;};return base.sort((a,b)=>rank(a)-rank(b));}
   return base.sort((a,b)=>(Number.isFinite(a.data?.dayOrder)?a.data.dayOrder:index.get(a.id))-(Number.isFinite(b.data?.dayOrder)?b.data.dayOrder:index.get(b.id)));
 }
 function dayOrderPending(date){return S.items.some(i=>i.type==='place'&&i.date===date&&i.data?.orderPending);}
@@ -1078,6 +1079,16 @@ function saveDayOrder(date,ids,tripId){
   const patches=ids.map((id,dayOrder)=>({id,data:{...places.find(i=>i.id===id).data,dayOrder,orderPending:true}}));
   for(const patch of patches)C.items[tripId][patch.id]={...C.items[tripId][patch.id],data:patch.data};
   queue('saveItems',{tripId,items:patches});S.ai=null;emit();toast('เรียงสถานที่แล้ว');return true;
+}
+function dayEntryKey(e){return JSON.stringify([e.it.id,e.phase||'']);}
+function saveDayRowOrder(date,keys,tripId){
+  if(S.trip?.id!==tripId||S.directSaving||S.ai?.step==='loading')return false;
+  const rows=dayEntries(date).filter(e=>!e.night),current=rows.map(dayEntryKey),known=new Set(current);
+  if(keys.length!==current.length||new Set(keys).size!==keys.length||keys.some(k=>!known.has(k))){toast('รายการเปลี่ยนไปแล้ว ลองเรียงใหม่อีกครั้ง');render();return false;}
+  if(keys.every((k,n)=>k===current[n])){render();return true;}
+  const patch={dayRowOrder:{[date]:keys.slice()}};
+  C.trips[tripId]=deepMerge(C.trips[tripId],patch);
+  queue('saveTrip',{trip:{id:tripId,...patch}});S.ai=null;emit();toast('เรียงรายการแล้ว');return true;
 }
 function dayEntries(dateStr){
   const out = [];
@@ -1097,6 +1108,11 @@ function dayEntries(dateStr){
   }
   out.sort((a,b) => (a.time||"99") < (b.time||"99") ? -1 : 1);
   const places=orderedDayPlaces(dateStr);let placeAt=0;out.forEach((e,n)=>{if(e.it.type==='place'){const it=places[placeAt++];out[n]={...e,it,time:it.time,title:it.title,sub:subOf(it),orderPending:dayOrderPending(dateStr)};}});
+  const saved=S.trip?.dayRowOrder?.[dateStr];
+  if(Array.isArray(saved)){
+    const ranks=new Map(saved.map((key,n)=>[key,n])),base=new Map(out.map((e,n)=>[dayEntryKey(e),n]));
+    out.sort((a,b)=>(ranks.has(dayEntryKey(a))?ranks.get(dayEntryKey(a)):saved.length+base.get(dayEntryKey(a)))-(ranks.has(dayEntryKey(b))?ranks.get(dayEntryKey(b)):saved.length+base.get(dayEntryKey(b))));
+  }
   /* where everyone sleeps tonight: any stay whose nights cover this date */
   for(const it of S.items){
     if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate)
@@ -1107,7 +1123,7 @@ function dayEntries(dateStr){
         out.push({it, phase:"night", night:true, time:"", title:"นอนบนเครื่องบิน", sub:s_((it.data||{}).flightNo)});
     }
   }
-  return out;
+  return out.map(e=>({...e,dayDate:dateStr}));
 }
 /* flights show number and arrival only; the airline name is in the detail sheet */
 function arrDateOf(it){
@@ -1143,8 +1159,9 @@ function mapNameParts(value){
 function briefName(value){return mapNameParts(value).name;}
 
 function entryHtml(e){
+  const sortable=!e.night&&e.dayDate===tripDates(S.trip)[S.day];
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${e.it.type==='place'?' reorderable-entry':''}" ${e.it.type==='place'&&e.it.date===tripDates(S.trip)[S.day]?`data-place-drag="${esc(e.it.id)}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
@@ -2635,7 +2652,7 @@ function activatePlacePress(){
 function beginPlacePress(card,x,y,pointer,touch){
   if(PLACE_DRAG||S.directSaving||S.ai?.step==='loading')return;
   const row=card.closest('.trow'),list=row?.closest('.day-list'),date=tripDates(S.trip)[S.day];
-  if(!list||!S.items.some(i=>i.id===card.dataset.placeDrag&&i.date===date))return;
+  if(!list||!dayEntries(date).some(e=>!e.night&&dayEntryKey(e)===card.dataset.placeDrag))return;
   PLACE_DRAG={card,row,list,date,tripId:S.trip.id,x,y,startX:x,startY:y,pointer,touch,active:false};
   PLACE_DRAG.timer=setTimeout(activatePlacePress,330);
 }
@@ -2646,8 +2663,8 @@ function placeDragFrame(){
   const left=Math.max(6,Math.min(innerWidth-d.floating.offsetWidth-6,d.x-d.offsetX));
   d.floating.style.transform=`translate3d(${left}px,${d.y-d.offsetY}px,0) scale(1.025)`;
   const rows=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.closest('.trow'));
-  const target=rows.find(r=>r!==d.row&&d.y>=r.getBoundingClientRect().top&&d.y<=r.getBoundingClientRect().bottom);
-  if(target){const box=target.getBoundingClientRect();d.list.insertBefore(d.row,d.y<box.top+box.height/2?target:target.nextSibling);}
+  const others=rows.filter(r=>r!==d.row),target=others.find(r=>{const box=r.getBoundingClientRect();return d.y<box.top+box.height/2;});
+  if(others.length)d.list.insertBefore(d.row,target||others[others.length-1].nextSibling);
   d.frame=requestAnimationFrame(placeDragFrame);
 }
 function movePlacePress(x,y){
@@ -2663,7 +2680,7 @@ function finishPlacePress(cancelled=false){
   PLACE_SUPPRESS_UNTIL=Date.now()+600;d.floating?.remove();d.row.classList.remove('place-placeholder');
   if(cancelled||!d.row.isConnected){render();return;}
   const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.dataset.placeDrag);
-  if(!saveDayOrder(d.date,ids,d.tripId))render();
+  if(!saveDayRowOrder(d.date,ids,d.tripId))render();
 }
 document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0)return;const card=e.target.closest('[data-place-drag]');if(card)beginPlacePress(card,e.clientX,e.clientY,e.pointerId,false);});
 document.addEventListener('pointermove',e=>{if(!PLACE_DRAG||PLACE_DRAG.touch||e.pointerId!==PLACE_DRAG.pointer)return;movePlacePress(e.clientX,e.clientY);if(PLACE_DRAG?.active)e.preventDefault();},{passive:false});
@@ -2679,9 +2696,9 @@ window.addEventListener('blur',cancelPlacePress);
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&PLACE_DRAG){finishPlacePress(true);return;}
   const card=e.target.closest('[data-place-drag]');if(!card||!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();
-  const date=tripDates(S.trip)[S.day],ids=orderedDayPlaces(date).map(i=>i.id),at=ids.indexOf(card.dataset.placeDrag),to=at+(e.key==='ArrowUp'?-1:1);
-  if(at<0||to<0||to>=ids.length)return;[ids[at],ids[to]]=[ids[to],ids[at]];saveDayOrder(date,ids,S.trip.id);
-  document.querySelector('[data-place-drag="'+card.dataset.placeDrag+'"]')?.focus();
+  const date=tripDates(S.trip)[S.day],ids=dayEntries(date).filter(e=>!e.night).map(dayEntryKey),at=ids.indexOf(card.dataset.placeDrag),to=at+(e.key==='ArrowUp'?-1:1);
+  if(at<0||to<0||to>=ids.length)return;[ids[at],ids[to]]=[ids[to],ids[at]];saveDayRowOrder(date,ids,S.trip.id);
+  Array.from(document.querySelectorAll('[data-place-drag]')).find(el=>el.dataset.placeDrag===card.dataset.placeDrag)?.focus();
 });
 /* swipe a trip row left to reveal delete */
 const SW = {row:null, x:0, y:0, base:0, dx:0, moved:false, suppress:false};
@@ -3013,7 +3030,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-holdsort21";
+const BUILD = "2026-10-31-mixedorder22";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
