@@ -596,7 +596,7 @@ html.lock,html.lock body{overflow:hidden}
 .ai-overview{display:flex;flex-direction:column;gap:5px;border-radius:16px;padding:12px 14px;background:var(--ai-soft);font-size:13px;overflow-wrap:anywhere}.ai-overview ul{margin:8px 0 0;padding-left:18px}.ai-overview summary{cursor:pointer;padding-top:5px}.ai-quick{padding:8px 0}.ai-row .time{width:52px;font-size:12px}
 .route-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.route-link-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.route-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--tile);border-radius:16px;text-decoration:none;color:var(--ink);min-width:0}.route-link .grow{min-width:0;overflow-wrap:anywhere}.route-link b{font-size:14px}.route-link small{display:block;color:var(--muted);margin-top:5px}.route-number{background:var(--flight-soft,#e3eeff);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex-shrink:0}.route-link>svg{flex-shrink:0}
 .ai-stops{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:10px}.ai-stops li{display:flex;gap:10px;align-items:baseline}.ai-stops .time{flex:none;font-size:12px;width:48px}.ai-stops li>span:last-child{min-width:0;overflow-wrap:anywhere}.ai-scope{display:flex;gap:6px}.ai-scope button{flex:1;min-width:0;padding:10px 6px}.ai-refine{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--tile);border-radius:16px}
-.workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{overflow-y:auto;overscroll-behavior:contain;min-height:80px;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}.picker-footer{display:grid;gap:10px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px)}.picker-footer .btn{width:100%}.maps-import{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;min-height:48px;background:var(--idea-soft);color:var(--idea);font:inherit;font-weight:600}.route-hint{display:block;font-size:12px;margin-top:3px}
+.workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}.picker-footer{display:grid;gap:10px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px)}.picker-footer .btn{width:100%}.maps-import{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;min-height:48px;background:var(--idea-soft);color:var(--idea);font:inherit;font-weight:600}.route-hint{display:block;font-size:12px;margin-top:3px}
 .day-add{min-height:48px;background:var(--idea-soft);border:0;color:var(--idea);font-weight:600}.dock-hd .text-action{white-space:nowrap;font-size:12px}
 #sync-slot:empty{display:none}
 </style>
@@ -2569,11 +2569,15 @@ function showSuggest(input, list){
       if(ul.getBoundingClientRect().bottom > sh.getBoundingClientRect().bottom || lab.getBoundingClientRect().top < sh.getBoundingClientRect().top) sh.scrollTop = top; }
 }
 /* while a panel or sheet is open, only it scrolls; the page behind stays put (iPhone ignores overflow:hidden on its own) */
-document.addEventListener("touchmove", e => {
-  if(!document.documentElement.classList.contains("lock")) return;
-  const box = e.target.closest && e.target.closest(".dock-body, .sheet");
-  if(!box || box.scrollHeight <= box.clientHeight) e.preventDefault();
-}, {passive:false});
+function overlayTouchMove(e){
+  if(!document.documentElement.classList.contains("lock"))return;
+  // The picker scrolls inside the sheet; the sheet itself deliberately does not.
+  const box=e.target.closest&&e.target.closest(".picker-list, .picker-filters, .dock-body, .sheet");
+  if(!box||(box.scrollHeight<=box.clientHeight&&box.scrollWidth<=box.clientWidth)){
+    if(e.cancelable)e.preventDefault();
+  }
+}
+document.addEventListener("touchmove",overlayTouchMove,{passive:false});
 /* a field inside the bottom panel scrolls into view once the keyboard is up (one smooth move, after the keyboard settles) */
 let fieldToReveal = null, revealTimer = 0;
 function revealField(){
@@ -3077,7 +3081,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-nodaylabel30";
+const BUILD = "2026-10-31-pickerscroll31";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
