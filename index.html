@@ -188,7 +188,8 @@ p{margin:0}
 .day-list.day-list{padding:2px 0}
 .day-list li+li{border-top:0}
 .day-list li+li::before{content:"";position:absolute;top:0;left:16px;right:16px;height:1px;background:var(--line);z-index:1;pointer-events:none}
-.place-drag{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;min-height:44px;border:0;background:transparent;color:var(--muted);font-size:26px;touch-action:none;cursor:grab}.place-drag:active{cursor:grabbing}.day-list .reorderable-entry{padding-right:50px!important}.place-reordering{opacity:.6;outline:2px solid var(--ai);border-radius:12px}.place-drop-target{box-shadow:inset 0 3px var(--ai)}
+.reorderable-entry{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:grab}.place-placeholder{border-radius:16px;background:var(--tile)!important;outline:1px dashed var(--line)}.place-placeholder>*{visibility:hidden}.place-floating{position:fixed;left:0;top:0;z-index:10000;pointer-events:none;background:var(--surface);border-radius:18px;box-shadow:0 14px 36px rgba(43,33,28,.24),0 2px 8px rgba(43,33,28,.14);outline:1px solid var(--line);overflow:hidden;will-change:transform;animation:placeLift .12s ease-out}.place-floating .entry{padding:14px 16px;width:100%;cursor:grabbing}.place-floating .sw-btn{display:none}@keyframes placeLift{from{opacity:.7;box-shadow:0 2px 6px rgba(43,33,28,.1)}to{opacity:1}}
+
 .day-list .entry{padding-left:16px;padding-right:16px}
 .cat-list.cat-list{padding:0}
 .cat-list .cat-row{padding-left:4px;padding-right:4px}
@@ -1076,12 +1077,11 @@ function saveDayOrder(date,ids,tripId){
   if(ids.every((id,n)=>id===places[n].id)){render();return true;}
   const patches=ids.map((id,dayOrder)=>({id,data:{...places.find(i=>i.id===id).data,dayOrder,orderPending:true}}));
   for(const patch of patches)C.items[tripId][patch.id]={...C.items[tripId][patch.id],data:patch.data};
-  queue('saveItems',{tripId,items:patches});S.ai=null;emit();toast('เรียงสถานที่แล้ว · กด AI วิเคราะห์เพื่อจัดเวลาใหม่');return true;
+  queue('saveItems',{tripId,items:patches});S.ai=null;emit();toast('เรียงสถานที่แล้ว');return true;
 }
 function dayEntries(dateStr){
   const out = [];
   for(const it of S.items){
-    if(it.type==='move'&&dayOrderPending(dateStr))continue;
     if(it.type === "stay"){
       const sd = it.data || {};
       if(it.date === dateStr) out.push({it, phase:"in", time:it.time, title:"เช็กอิน " + (it.title||"ที่พัก"), sub:s_(sd.inNote)});
@@ -1144,8 +1144,8 @@ function briefName(value){return mapNameParts(value).name;}
 
 function entryHtml(e){
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${e.it.type==='place'?' reorderable-entry':''}" data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : e.orderPending&&!d.timeLocked?"—":esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${e.it.type==='place'&&e.it.date===tripDates(S.trip)[S.day]?`<button class="place-drag" type="button" data-place-drag="${esc(e.it.id)}" aria-label="ลากเพื่อเรียง ${esc(briefName(e.it.title))}" title="ลากขึ้นลง หรือใช้ปุ่มลูกศรบนคีย์บอร์ด" ${S.ai?.step==='loading'||S.directSaving?'disabled':''}>⠿</button>`:''}`);
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${e.it.type==='place'?' reorderable-entry':''}" ${e.it.type==='place'&&e.it.date===tripDates(S.trip)[S.day]?`data-place-drag="${esc(e.it.id)}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
 function catCard(){
   const tab = S.catTab || "";
@@ -1223,11 +1223,9 @@ function vTrip(){
     <section class="stack" style="gap:14px">
       ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
       ${calendar(dates)}
-      <div class="plan-actions"><button class="pill-btn t-flight" data-act="overview-open">${ic("pin",17)}เส้นทางทั้งวัน</button><button class="pill-btn t-ai" data-act="ai-open">${ic("spark",17)}AI วิเคราะห์วันนี้</button></div>
       <div class="day-h"><p class="muted" style="font-weight:500">วันที่ ${S.day+1} · ${esc(dLong(d))}${d < today() ? " · ผ่านไปแล้ว" : ""}</p>${vSync()}
 </div>
       <button class="add-dash t-idea" data-act="day-ideas-open">${ic("plus",20)}เลือกที่สนใจลงวันนี้</button>
-      ${dayOrderPending(d)?'<p class="muted small" role="status">รอจัดเวลาและการเดินทางตามลำดับใหม่ · กด AI วิเคราะห์วันนี้</p>':''}
       ${entries.length ? `<ul class="day-list">${entries.map(entryHtml).join("")}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
       <div class="add-row">
         <button class="add-dash t-place" data-act="sheet" data-k="place">${ic("place",20)}เพิ่มสถานที่</button>
@@ -1480,7 +1478,7 @@ async function planIdea(){
 }
 function vDayIdeas(s){
   const ideas=S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id));
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><label class="fld sm">ลงวัน<select data-bind="sheet:date">${tripDates(S.trip).map((d,n)=>`<option value="${d}" ${d===s.date?'selected':''}>วันที่ ${n+1} · ${esc(dShort(d))}</option>`).join('')}</select></label><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา แล้วค่อยกด AI วิเคราะห์วันนี้</p><div class="stack" style="max-height:45dvh;overflow-y:auto;min-height:0">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เลือกสถานที่ของวันนี้" data-stop="1"><div class="hd"><h2>เลือกสถานที่ · ${esc(dShort(s.date))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><label class="fld sm">ลงวัน<select data-bind="sheet:date">${tripDates(S.trip).map((d,n)=>`<option value="${d}" ${d===s.date?'selected':''}>วันที่ ${n+1} · ${esc(dShort(d))}</option>`).join('')}</select></label><p class="muted small">เลือกหลายแห่งได้ ยังไม่ต้องใส่เวลา เพิ่มแล้วกดค้างที่รายการเพื่อลากเรียง</p><div class="stack" style="max-height:45dvh;overflow-y:auto;min-height:0">${ideas.map(i=>`<button class="ai-priority" data-act="day-idea-toggle" data-id="${esc(i.id)}" aria-pressed="${s.selected.includes(i.id)}" ${s.busy?'disabled':''}><span>${esc(briefName(i.title))}</span>${ic(s.selected.includes(i.id)?'check':'plus',18)}</button>`).join('')||'<p class="muted">ที่สนใจทั้งหมดลงแผนแล้ว หรือยังไม่ได้เพิ่มที่สนใจ</p>'}</div><button class="btn primary" data-act="day-ideas-add" ${s.selected.length&&!s.busy?'':'disabled'}>${s.busy?'กำลังเพิ่ม…':'เพิ่ม '+s.selected.length+' สถานที่ลงวันนี้'}</button></div></div>`;
 }
 async function addDayIdeas(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
@@ -1489,7 +1487,7 @@ async function addDayIdeas(){
   try{
     for(const it of selected){const d=it.data||{};await store.addItem(t.id,{type:'place',date:s.date,time:'',title:it.title,sub:it.sub||'',data:{address:d.address||'',lat:d.lat,lon:d.lon,placeId:d.placeId||'',kind:d.kind||'',fromIdea:it.id},createdBy:S.me,createdAt:Date.now(),source:'idea'});}
     if(S.trip?.id===t.id){const at=tripDates(t).indexOf(s.date);if(at>=0)S.day=at;if(S.sheet===s)S.sheet=null;if(S.ai?.step==='ask'){S.ai.result=null;S.ai.assign=null;}}
-    toast('เพิ่มสถานที่แล้ว · กด AI วิเคราะห์วันนี้ได้เลย');
+    toast('เพิ่มสถานที่แล้ว');
   }catch(e){fail(e);}finally{s.busy=false;render();}
 }
 /* ---------- AI planner: a few quick choices, a draft per day, then pick what goes into the plan ---------- */
@@ -1874,8 +1872,10 @@ function syncCopy(){
   if(C.outbox.length)return !navigator.onLine?'ออฟไลน์ · รอส่ง '+C.outbox.length+' รายการ':flushing?'กำลังบันทึก '+C.outbox.length+' รายการ…':'รอส่ง '+C.outbox.length+' รายการ';
   return S.directSaving?'กำลังบันทึกแผน…':!navigator.onLine?'ออฟไลน์ · ข้อมูลที่บันทึกแล้วอยู่ในเครื่อง':'บันทึกแล้ว';
 }
-function updateSync(){const el=document.getElementById('sync-state');if(el){el.textContent=syncCopy();el.classList.toggle('sync-error',!!S.localSaveError||C.outbox.some(o=>o.error));el.classList.toggle('sync-ok',syncCopy()==='บันทึกแล้ว');}}
-function vSync(){return `<button id="sync-state" class="sync-state${syncCopy()==='บันทึกแล้ว'?' sync-ok':''}" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`;}
+function vSyncError(){return S.localSaveError||C.outbox.some(o=>o.error)?`<button id="sync-state" class="sync-state sync-error" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`:'';}
+function updateSync(){const slot=document.getElementById('sync-slot');if(slot)slot.innerHTML=vSyncError();}
+function vSync(){return `<span id="sync-slot">${vSyncError()}</span>`;}
+
 async function historyOpen(){
   S.sheet={kind:'history',loading:true};render();
   try{await flush(); if(C.outbox.length)throw {code:'pending_sync'};const entries=await api('planHistory',{tripId:S.trip.id});if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',entries};render();}}
@@ -2617,50 +2617,83 @@ document.addEventListener("drop", e => {
   e.preventDefault();
   const fl = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if(fl.length) addFiles(fl);
 });
-/* Drag only from the dedicated grip, so vertical page scrolling and swipe actions still work. */
-let PLACE_DRAG=null;
-function placeDragFrame(){
-  const d=PLACE_DRAG;if(!d)return;
-  if(!d.row.isConnected||S.trip?.id!==d.tripId){PLACE_DRAG=null;render();return;}
-  if(d.moved){
-    if(d.y<90)window.scrollBy(0,-14);else if(d.y>innerHeight-100)window.scrollBy(0,14);
-    const rows=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(h=>h.closest('.trow'));
-    const target=rows.find(r=>r!==d.row&&d.y>=r.getBoundingClientRect().top&&d.y<=r.getBoundingClientRect().bottom);
-    if(target){const box=target.getBoundingClientRect();d.list.insertBefore(d.row,d.y<box.top+box.height/2?target:target.nextSibling);}
-  }
+/* Hold a place to lift its card; moving before the hold keeps normal scrolling/swiping. */
+let PLACE_DRAG=null,PLACE_SUPPRESS_UNTIL=0;
+function cancelPlacePress(){
+  const d=PLACE_DRAG;if(!d)return;PLACE_DRAG=null;clearTimeout(d.timer);cancelAnimationFrame(d.frame);d.floating?.remove();d.row.classList.remove('place-placeholder');
+  if(d.active){PLACE_SUPPRESS_UNTIL=Date.now()+500;render();}
+}
+function activatePlacePress(){
+  const d=PLACE_DRAG;if(!d||d.active||!d.row.isConnected||S.trip?.id!==d.tripId||S.directSaving||S.ai?.step==='loading')return;
+  d.active=true;SW.active=false;S.swipeOpen=null;d.row.classList.remove('open','ask');
+  const box=d.row.getBoundingClientRect();d.offsetX=d.x-box.left;d.offsetY=d.y-box.top;
+  const floating=document.createElement('div');floating.className='place-floating';floating.setAttribute('aria-hidden','true');floating.inert=true;floating.style.width=box.width+'px';floating.appendChild(d.card.cloneNode(true));document.body.appendChild(floating);d.floating=floating;
+  d.row.classList.add('place-placeholder');PLACE_SUPPRESS_UNTIL=Date.now()+1000;
+  if(!d.touch)try{d.card.setPointerCapture(d.pointer);}catch(_){}
   d.frame=requestAnimationFrame(placeDragFrame);
 }
-document.addEventListener('pointerdown',e=>{
-  const grip=e.target.closest('[data-place-drag]');if(!grip||grip.disabled||e.button!==0||PLACE_DRAG)return;
-  const row=grip.closest('.trow'),list=row.closest('.day-list'),date=tripDates(S.trip)[S.day];
-  if(!S.items.some(i=>i.id===grip.dataset.placeDrag&&i.date===date))return;
-  PLACE_DRAG={row,list,date,tripId:S.trip.id,y:e.clientY,startY:e.clientY,moved:false,pointer:e.pointerId};
-  grip.setPointerCapture?.(e.pointerId);e.preventDefault();PLACE_DRAG.frame=requestAnimationFrame(placeDragFrame);
-});
-document.addEventListener('pointermove',e=>{const d=PLACE_DRAG;if(!d||e.pointerId!==d.pointer)return;d.y=e.clientY;if(Math.abs(d.y-d.startY)>6){d.moved=true;d.row.classList.add('place-reordering');}e.preventDefault();},{passive:false});
-function finishPlaceDrag(e){
-  const d=PLACE_DRAG;if(!d||e.pointerId!==d.pointer)return;cancelAnimationFrame(d.frame);PLACE_DRAG=null;
-  if(e.type==='pointercancel'||!d.row.isConnected){render();return;}
-  if(d.moved){const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(h=>h.dataset.placeDrag);if(!saveDayOrder(d.date,ids,d.tripId))render();}else d.row.classList.remove('place-reordering');
+function beginPlacePress(card,x,y,pointer,touch){
+  if(PLACE_DRAG||S.directSaving||S.ai?.step==='loading')return;
+  const row=card.closest('.trow'),list=row?.closest('.day-list'),date=tripDates(S.trip)[S.day];
+  if(!list||!S.items.some(i=>i.id===card.dataset.placeDrag&&i.date===date))return;
+  PLACE_DRAG={card,row,list,date,tripId:S.trip.id,x,y,startX:x,startY:y,pointer,touch,active:false};
+  PLACE_DRAG.timer=setTimeout(activatePlacePress,330);
 }
-document.addEventListener('pointerup',finishPlaceDrag);
-document.addEventListener('pointercancel',finishPlaceDrag);
+function placeDragFrame(){
+  const d=PLACE_DRAG;if(!d||!d.active)return;
+  if(!d.row.isConnected||S.trip?.id!==d.tripId){cancelPlacePress();return;}
+  if(d.y<85)window.scrollBy(0,-12);else if(d.y>innerHeight-90)window.scrollBy(0,12);
+  const left=Math.max(6,Math.min(innerWidth-d.floating.offsetWidth-6,d.x-d.offsetX));
+  d.floating.style.transform=`translate3d(${left}px,${d.y-d.offsetY}px,0) scale(1.025)`;
+  const rows=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.closest('.trow'));
+  const target=rows.find(r=>r!==d.row&&d.y>=r.getBoundingClientRect().top&&d.y<=r.getBoundingClientRect().bottom);
+  if(target){const box=target.getBoundingClientRect();d.list.insertBefore(d.row,d.y<box.top+box.height/2?target:target.nextSibling);}
+  d.frame=requestAnimationFrame(placeDragFrame);
+}
+function movePlacePress(x,y){
+  const d=PLACE_DRAG;if(!d)return;d.x=x;d.y=y;
+  if(!d.active&&Math.hypot(x-d.startX,y-d.startY)>8){
+    if(d.touch){cancelPlacePress();return;}clearTimeout(d.timer);activatePlacePress();
+  }
+}
+function finishPlacePress(cancelled=false){
+  const d=PLACE_DRAG;if(!d)return;
+  clearTimeout(d.timer);cancelAnimationFrame(d.frame);PLACE_DRAG=null;
+  if(!d.active)return;
+  PLACE_SUPPRESS_UNTIL=Date.now()+600;d.floating?.remove();d.row.classList.remove('place-placeholder');
+  if(cancelled||!d.row.isConnected){render();return;}
+  const ids=Array.from(d.list.querySelectorAll('[data-place-drag]')).map(c=>c.dataset.placeDrag);
+  if(!saveDayOrder(d.date,ids,d.tripId))render();
+}
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0)return;const card=e.target.closest('[data-place-drag]');if(card)beginPlacePress(card,e.clientX,e.clientY,e.pointerId,false);});
+document.addEventListener('pointermove',e=>{if(!PLACE_DRAG||PLACE_DRAG.touch||e.pointerId!==PLACE_DRAG.pointer)return;movePlacePress(e.clientX,e.clientY);if(PLACE_DRAG?.active)e.preventDefault();},{passive:false});
+document.addEventListener('pointerup',e=>{if(PLACE_DRAG&&!PLACE_DRAG.touch&&e.pointerId===PLACE_DRAG.pointer)finishPlacePress();});
+document.addEventListener('pointercancel',e=>{if(PLACE_DRAG&&!PLACE_DRAG.touch&&e.pointerId===PLACE_DRAG.pointer)finishPlacePress(true);});
+document.addEventListener('touchstart',e=>{if(e.touches.length!==1){cancelPlacePress();return;}const card=e.target.closest('[data-place-drag]'),t=e.touches[0];if(card)beginPlacePress(card,t.clientX,t.clientY,t.identifier,true);},{passive:true});
+document.addEventListener('touchmove',e=>{const d=PLACE_DRAG;if(!d||!d.touch)return;const t=Array.from(e.touches).find(t=>t.identifier===d.pointer);if(!t){cancelPlacePress();return;}movePlacePress(t.clientX,t.clientY);if(PLACE_DRAG?.active&&e.cancelable)e.preventDefault();},{passive:false});
+document.addEventListener('touchend',e=>{if(!PLACE_DRAG?.touch)return;if(PLACE_DRAG.active&&e.cancelable)e.preventDefault();finishPlacePress();},{passive:false});
+document.addEventListener('touchcancel',()=>{if(PLACE_DRAG?.touch)finishPlacePress(true);});
+document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-place-drag]'))e.preventDefault();});
+document.addEventListener('click',e=>{if(Date.now()<PLACE_SUPPRESS_UNTIL&&e.target.closest('.day-list')){e.preventDefault();e.stopImmediatePropagation();}},true);
+window.addEventListener('blur',cancelPlacePress);
 document.addEventListener('keydown',e=>{
-  const grip=e.target.closest('[data-place-drag]');if(!grip||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();
-  const date=tripDates(S.trip)[S.day],ids=orderedDayPlaces(date).map(i=>i.id),at=ids.indexOf(grip.dataset.placeDrag),to=at+(e.key==='ArrowUp'?-1:1);
+  if(e.key==='Escape'&&PLACE_DRAG){finishPlacePress(true);return;}
+  const card=e.target.closest('[data-place-drag]');if(!card||!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();
+  const date=tripDates(S.trip)[S.day],ids=orderedDayPlaces(date).map(i=>i.id),at=ids.indexOf(card.dataset.placeDrag),to=at+(e.key==='ArrowUp'?-1:1);
   if(at<0||to<0||to>=ids.length)return;[ids[at],ids[to]]=[ids[to],ids[at]];saveDayOrder(date,ids,S.trip.id);
-  document.querySelector('[data-place-drag="'+grip.dataset.placeDrag+'"]')?.focus();
+  document.querySelector('[data-place-drag="'+card.dataset.placeDrag+'"]')?.focus();
 });
 /* swipe a trip row left to reveal delete */
 const SW = {row:null, x:0, y:0, base:0, dx:0, moved:false, suppress:false};
 document.addEventListener("pointerdown", e => {
-  if(e.target.closest("[data-place-drag]"))return;
+  if(PLACE_DRAG?.active)return;
   const slide = e.target.closest(".trow-slide"); 
   if(!slide){ if(S.swipeOpen && !e.target.closest(".trow-actions")){ S.swipeOpen = null; S.delAsk = null; document.querySelectorAll(".trow.open").forEach(r => r.classList.remove("open", "ask")); } return; }
   const row = slide.parentElement, w = +row.dataset.w || 88;
   Object.assign(SW, {row, w, x:e.clientX, y:e.clientY, base: row.classList.contains("open") ? -w : 0, dx:0, moved:false, active:true});
 });
 document.addEventListener("pointermove", e => {
+  if(PLACE_DRAG?.active){SW.active=false;return;}
   if(!SW.active || !SW.row) return;
   const dx = e.clientX - SW.x, dy = e.clientY - SW.y;
   if(!SW.moved){
@@ -2980,7 +3013,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-10-31-dragroute20";
+const BUILD = "2026-10-31-holdsort21";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
