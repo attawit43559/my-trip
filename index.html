@@ -1059,7 +1059,7 @@ function stepRow(label, sub, key, min, max){
 }
 function tripFields(root, n){
   return `<label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="${root}:name"></label>
-      <label class="fld">ไปที่ไหน <span class="muted small" style="font-weight:400">ไม่ใส่ก็ได้</span><input maxlength="60" placeholder="เช่น โตเกียว" value="${esc(n.destination||"")}" data-bind="${root}:destination"></label>
+      <label class="fld">ไปที่ไหน<input maxlength="60" placeholder="เช่น โตเกียว (ไม่ใส่ก็ได้)" value="${esc(n.destination||"")}" data-bind="${root}:destination"></label>
       <div class="grid2"><label class="fld">วันไป<input type="date" value="${esc(n.start||"")}" data-bind="${root}:start"></label><label class="fld">วันกลับ<input type="date" value="${esc(n.end||"")}" min="${esc(n.start||"")}" data-bind="${root}:end"></label></div>
       <p class="muted small" style="margin:-6px 0 0">ยังไม่ต้องมีตั๋วหรือที่พัก ใส่วันคร่าวๆ ไว้วางแผนก่อนได้ พอเพิ่มเที่ยวบินหรือที่พักแล้ว วันของทริปจะขยายตามให้เอง</p>`;
 }
@@ -3324,7 +3324,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-dates1";
+const BUILD = "2026-11-02-dates2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
