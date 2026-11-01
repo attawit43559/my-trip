@@ -667,6 +667,9 @@ function planReviewRun_(req) {
   const ideas = c.items.filter(i => i.type === 'idea' && !planned[i.id]).slice(0, 60);
   const pace = { relaxed: 'relaxed (few stops, long breaks)', balanced: 'balanced', packed: 'packed (see as much as possible)' }[p.pace] || 'balanced';
   const kids = Number(p.children) || 0, elders = Number(p.elders) || 0;
+  const likes = (Array.isArray(p.interests) ? p.interests : []).slice(0, 10).map(s).filter(Boolean);
+  const fill = {}; (Array.isArray(p.fill) ? p.fill : []).forEach(d => { if (c.all.indexOf(String(d)) >= 0) fill[String(d)] = true; });
+  const stops = { relaxed: '2-3', balanced: '3-4', packed: '5-6' }[p.pace] || '3-4';
   const line = r => {
     const when = (r.time || '--:--') + (r.until ? '–' + r.until : '');
     if (r.type === 'move') return `  id=${r.id} ${when} travel "${r.title}"${r.mode ? ' by ' + r.mode : ''}${r.minutes ? ' · ' + r.minutes + ' min' : ' · duration unknown'}`;
@@ -680,23 +683,26 @@ function planReviewRun_(req) {
     '<<<TRIP',
     `Trip: "${s(trip.name)}"${trip.destination ? ' to ' + s(trip.destination) : ''}`,
     `Travellers: ${Number(p.adults) || 1} adults, ${kids} children, ${elders} older people. Style: ${pace}.`,
+    `They like: ${likes.length ? likes.join(', ') : 'anything (a good mix)'}.`,
     p.note ? 'Other wishes: ' + s(p.note) : '',
     'Bookings:', bookingLines_(c.items),
     'The plan, day by day, in the order they will do it (times are when each starts; "–" gives when they leave):',
-    ds.map(d => `Day ${d.date}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
+    ds.map(d => `Day ${d.date}${fill[d.date] ? ' [PICK PLACES FOR THIS DAY]' : ''}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
     'Saved places not yet in the plan (can be suggested for a day):',
     ideas.map(i => `  ideaId=${i.id} · ${s((i.data || {}).kind) || 'ที่เที่ยว'} · "${s(i.title)}"${i.sub ? ' · note: ' + s(i.sub) : ''}`).join('\n') || '  none',
     'TRIP>>>',
-    'Review every day listed. For each day give 0-5 tips, most important first. Look for:',
+    'Review every day listed. For each day give 0-5 tips, most important first.',
+    ds.some(d => fill[d.date]) ? `Days marked [PICK PLACES FOR THIS DAY]: the person wants you to choose places for that day. Put FIRST a tip of kind "plan" whose "fix" adds ${stops} stops in a sensible route order with start times (fewer if the day already has a flight, check-in or other plans, keeping them; work around booked times). Match what they like (${likes.join(', ') || 'a good mix'}), prefer their saved places by ideaId when one fits, otherwise real, well-known places by their usual English or local name. Keep the stops close together and near the hotel or the area of that day, include a real restaurant for lunch (and dinner if the day is long), and suit children or older people when there are any. Its "text" is one Thai line about the theme of the day (e.g. "วันธรรมชาติแถวฮาโกเน่ เดินไม่เยอะ เหมาะกับเด็ก"). Never suggest a place already in the plan on another day.` : '',
+    'Look for:',
     '- too packed for this group and style (suggest what to drop or move to a lighter day), or too empty (suggest a saved place, or a real nearby place, that fits);',
     '- times that cannot work: compare each start time with the time before it plus the time spent there and the travel duration; check opening hours you know; on a departure day the group should reach the airport about 3 hours before an international flight; on an arrival day allow time after landing;',
     '- order that back-tracks across the city, places far apart on one day, missing meals around lunch and dinner, and too much walking with children or older people;',
     '- also say briefly what is good about a day when it is well planned (kind "good").',
-    'Each tip: {"kind": "good"|"tight"|"free"|"late"|"order"|"meal"|"tip", "text": Thai, friendly and specific, max ~140 characters, name the places, "fix": [] }.',
+    'Each tip: {"kind": "plan"|"good"|"tight"|"free"|"late"|"order"|"meal"|"tip", "text": Thai, friendly and specific, max ~140 characters, name the places, "fix": [] }.',
     '"fix" is the list of exact changes that carry out the tip, so the person can apply it with one tap. Every tip that suggests a change MUST have a fix: a new start time, dropping or moving a place, adding a specific saved place or a specific real restaurant or sight by name with a time, or a travel duration. Only "good" tips, and advice that no allowed change can express, have []. Allowed changes, using only ids shown above (never flights or bookings):',
     '  {"op":"time","id":"","time":"HH:MM"} set a start time · {"op":"remove","id":""} take a place or travel leg out · {"op":"move","id":"","date":"YYYY-MM-DD"} move a place to another trip day',
     '  {"op":"add","date":"YYYY-MM-DD","ideaId":"","title":"","kind":"ที่เที่ยว|ร้านอาหาร|ช้อปปิ้ง","time":"HH:MM"} add a saved place (ideaId) or a real place by name · {"op":"duration","id":"","minutes":0} set a travel leg duration',
-    'What the fix should be, by kind: "late" → a "time" change (and a "duration" if the travel time is wrong); "tight" → "remove" the least important stop or "move" it to a lighter day; "free" → "add" one specific place (a saved place by ideaId, else a real nearby sight by name) with a time; "meal" → "add" a specific real restaurant near where they are, by name, with a lunch or dinner time; "order" → "time" changes that put the stops in a better order. Name the place in the text too.',
+    'What the fix should be, by kind: "plan" → several "add" changes (one per stop); "late" → a "time" change (and a "duration" if the travel time is wrong); "tight" → "remove" the least important stop or "move" it to a lighter day; "free" → "add" one specific place (a saved place by ideaId, else a real nearby sight by name) with a time; "meal" → "add" a specific real restaurant near where they are, by name, with a lunch or dinner time; "order" → "time" changes that put the stops in a better order. Name the place in the text too.',
     'Example: {"kind":"meal","text":"ยังไม่มีมื้อกลางวัน แวะ Queen of Hearts Banquet Hall ในสวนตอนเที่ยง","fix":[{"op":"add","date":"2026-11-24","ideaId":"","title":"Queen of Hearts Banquet Hall","kind":"ร้านอาหาร","time":"12:00"}]}',
     'Also give each day a one-line Thai "summary" of how it looks (e.g. "แน่นไปนิด", "กำลังดี", "ว่างช่วงบ่าย").',
     'Reply with only this JSON:',
@@ -708,7 +714,7 @@ function planReviewRun_(req) {
   const raws = callGeminiMany_(c.props, prompts, busy).map((text, i) => { try { return parseJson_(text); } catch (e) {
     try { return parseJson_(callGemini_(c.props, prompts[i], [], Object.assign({ temperature: 0.4, thinking: 'low', maxTokens: 16384 }, busy))); } catch (e2) { return { days: [] }; } } });
   if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
-  const kinds = ['good', 'tight', 'free', 'late', 'order', 'meal', 'tip'], placeKinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
+  const kinds = ['plan', 'good', 'tight', 'free', 'late', 'order', 'meal', 'tip'], placeKinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
   const ideaOk = {}; ideas.forEach(i => { ideaOk[i.id] = i; });
   const out = { days: [] }, suggested = {};
   chunks.forEach((ds, ci) => ds.forEach(d => {
@@ -731,14 +737,16 @@ function planReviewRun_(req) {
     };
     const tips = (Array.isArray(r.tips) ? r.tips : []).slice(0, 6).map(x => x && t(x.text) ? {
       kind: kinds.indexOf(t(x.kind)) >= 0 ? t(x.kind) : 'tip', text: t(x.text).slice(0, 220),
-      fix: (Array.isArray(x.fix) ? x.fix : []).slice(0, 5).map(fixOk).filter(Boolean)
+      fix: (Array.isArray(x.fix) ? x.fix : []).slice(0, t(x.kind) === 'plan' ? 8 : 5).map(fixOk).filter(Boolean)
     } : null).filter(Boolean);
-    // the days are read in parts at the same time, so one saved place can be offered for several days: keep the first offer only
+    // the days are read in parts at the same time, so one place can be offered for several days: keep the first offer only
     const kept = tips.filter(tp => {
-      const adds = tp.fix.filter(f => f.op === 'add').map(f => f.ideaId || f.title.toLowerCase());
-      if (adds.some(k => suggested[k])) return false;
-      adds.forEach(k => { suggested[k] = true; }); return true;
+      const had = tp.fix.some(f => f.op === 'add');
+      tp.fix = tp.fix.filter(f => { if (f.op !== 'add') return true; const k = f.ideaId || f.title.toLowerCase(); if (suggested[k]) return false; suggested[k] = true; return true; });
+      if (tp.kind === 'plan') { tp.fix.sort((a, b) => (a.time || '99').localeCompare(b.time || '99')); return tp.fix.length > 0; }
+      return !had || tp.fix.some(f => f.op === 'add');
     });
+    kept.sort((a, b) => (b.kind === 'plan') - (a.kind === 'plan'));
     out.days.push({ date: d.date, summary: t(r.summary).slice(0, 60), tips: kept });
   }));
   return out;
