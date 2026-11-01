@@ -733,6 +733,7 @@ function planReviewRun_(req) {
     } : null).filter(Boolean);
     out.days.push({ date: d.date, summary: t(r.summary).slice(0, 60), tips });
   }));
+  if (req.debug) out.raws = raws;
   return out;
 }
 /* where a wish-list place, a planned place or a hotel is (its own pin when it has one) */
