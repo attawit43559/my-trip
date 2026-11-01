@@ -369,7 +369,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .thumb.tc{background:var(--mid);color:var(--on)}
 .thumb.night,.entry .thumb.night{background:transparent;border:2px solid var(--mid);color:var(--deep);border-radius:999px;box-sizing:border-box}
 .moon[class*="t-"]{background:transparent;border:1.67px solid var(--mid);color:var(--deep);box-sizing:border-box}
-.hero .cover[class*="t-"],.trip-head[class*="t-"]{background:var(--soft)}
+.hero .cover[class*="t-"],.hero .cover[class*="cv-"],.trip-head[class*="t-"],.trip-head[class*="cv-"]{background:var(--soft)}
 .seg button .ic{color:var(--deep)}
 .seg button[aria-selected="true"],.seg button[aria-expanded="true"]{background:var(--soft);color:var(--deep);box-shadow:none}
 .seg em{background:var(--mid);color:var(--on)}
@@ -3274,7 +3274,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-colors1";
+const BUILD = "2026-11-01-colors2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
