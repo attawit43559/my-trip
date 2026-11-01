@@ -227,6 +227,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock-hd .round.sm{width:34px;height:34px;background:var(--tile);color:var(--muted)}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
 /* dims from the bottom and fades to clear before the top: iPhone tints the status bar from the page a beat late, so a dark top made it flash */
+.dock-dismiss{position:fixed;inset:0;z-index:15;border:0;padding:0;background:transparent;cursor:default}
 .dock-scrim{position:fixed;inset:0;z-index:15;background:linear-gradient(to top,rgba(20,19,26,.34) 0%,rgba(20,19,26,.24) 40%,rgba(20,19,26,.08) 72%,rgba(20,19,26,0) 90%)}
 .dock-scrim.anim{animation:fadeIn .22s ease}
 .dock.open{box-shadow:0 -4px 40px rgba(43,33,28,.22),0 0 0 1px var(--line)}
@@ -1215,7 +1216,7 @@ function catCard(){
   };
   /* the open animation plays once, when a tab is tapped; later re-renders (sync, toasts) must not replay it */
   const anim = S.dockAnim ? " anim" : ""; S.dockAnim = false;
-  return `<nav class="dock${tab ? " open" : ""}${tab==='planning'?' planning':''}${anim}" aria-label="ข้อมูลทริป">
+  return `${tab?'<button type="button" class="dock-dismiss" data-act="cat-close" aria-label="ปิดแผงข้อมูล"></button>':''}<nav class="dock${tab ? " open" : ""}${tab==='planning'?' planning':''}${anim}" aria-label="ข้อมูลทริป">
     ${tab==='planning'?`<div class="dock-panel" id="trip-dock-panel">${tripDates(S.trip).length?`<div class="planner-calendar">${calendar(tripDates(S.trip))}</div>`:''}${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}</div>`:tab === "ai" && S.ai ? `<div class="dock-panel t-ai ai-panel">
       <div class="dock-hd"><span class="thumb-sm" aria-hidden="true">${ic("spark",16)}</span><b class="grow">วิเคราะห์แผนวันนี้</b><button class="round sm" data-act="cat-close" aria-label="ย่อ">${ic("close",16)}</button></div>
       <div class="dock-body" data-k="ai:${S.ai.step}">${vAiPlan(S.ai)}</div>
@@ -3266,7 +3267,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-tap55";
+const BUILD = "2026-11-01-dismiss56";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
