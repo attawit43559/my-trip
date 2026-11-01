@@ -1626,7 +1626,8 @@ function callGeminiMany_(props, prompts, extra) {
   const model = (more.models && more.models[0]) || props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
   const reqs = prompts.map(p => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': key }, muteHttpExceptions: true,
     payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
-  const res = UrlFetchApp.fetchAll(reqs);
+  const t0 = Date.now(), res = UrlFetchApp.fetchAll(reqs);
+  console.log('gemini many ' + model + ': ' + res.map(r => r.getResponseCode()).join(',') + ' in ' + (Date.now() - t0) + 'ms');
   return res.map((r, i) => {
     try {
       if (r.getResponseCode() < 300) {

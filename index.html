@@ -1492,7 +1492,7 @@ function vHelpPage(){
         ${d.tips.map((tp, ti) => { const [icn, tone, label] = HELP_KIND[tp.kind] || HELP_KIND.tip;
           const adds = tp.fix.length > 1 && tp.fix.every(f => f.op === "add");
           if(adds) return `<div class="help-tip help-plan${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
-            <ul class="help-adds">${tp.fix.map((f, fi) => { const k = [IDEA_ICON[f.kind] || "pin", IDEA_TONE[f.kind] || "k-sight"]; return `<li><span class="ha-time">${esc(f.time || "--:--")}</span><span class="ha-ic ${k[1]}" aria-hidden="true">${ic(k[0],15)}</span><span class="grow ha-t">${esc(f.title)}</span>${f.applied ? `<span class="ha-ok" aria-label="เพิ่มแล้ว">${ic("check",16)}</span>` : `<button type="button" class="ha-add" data-act="help-fix" data-i="${di}" data-j="${ti}" data-f="${fi}" ${tp.busy ? "disabled" : ""} aria-label="เพิ่ม ${esc(f.title)}">${ic("plus",16)}</button>`}</li>`; }).join("")}</ul>
+            <ul class="help-adds">${tp.fix.map((f, fi) => { const k = [IDEA_ICON[f.kind] || "pin", IDEA_TONE[f.kind] || "k-sight"]; return `<li><span class="ha-time">${esc(f.time || "--:--")}</span><span class="ha-ic ${k[1]}" aria-hidden="true">${ic(k[0],15)}</span><span class="grow ha-t">${esc(String(f.title).split(", ")[0])}</span>${f.applied ? `<span class="ha-ok" aria-label="เพิ่มแล้ว">${ic("check",16)}</span>` : `<button type="button" class="ha-add" data-act="help-fix" data-i="${di}" data-j="${ti}" data-f="${fi}" ${tp.busy ? "disabled" : ""} aria-label="เพิ่ม ${esc(f.title)}">${ic("plus",16)}</button>`}</li>`; }).join("")}</ul>
             ${tp.applied ? `<span class="help-done">${ic("check",14)}เพิ่มลงแผนแล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังเพิ่ม…" : "เพิ่มทั้งหมด"}</button>`}</div></div>`;
           return `<div class="help-tip${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
             ${tp.fix.length ? (tp.applied ? `<span class="help-done">${ic("check",14)}แก้แล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังแก้…" : "แก้ให้เลย"}</button>`) : ""}</div></div>`; }).join("")}</section>`;
@@ -3600,7 +3600,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help5";
+const BUILD = "2026-11-02-help6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
