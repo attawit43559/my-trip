@@ -693,7 +693,7 @@ function planReviewRun_(req) {
     '- order that back-tracks across the city, places far apart on one day, missing meals around lunch and dinner, and too much walking with children or older people;',
     '- also say briefly what is good about a day when it is well planned (kind "good").',
     'Each tip: {"kind": "good"|"tight"|"free"|"late"|"order"|"meal"|"tip", "text": Thai, friendly and specific, max ~140 characters, name the places, "fix": [] }.',
-    '"fix" is a short list of exact changes that would carry out the tip, only when it is clear and simple; otherwise []. Allowed changes, using only ids shown above (never flights or bookings):',
+    '"fix" is the list of exact changes that carry out the tip, so the person can apply it with one tap. Every tip that suggests a change MUST have a fix: a new start time, dropping or moving a place, adding a specific saved place or a specific real restaurant or sight by name with a time, or a travel duration. Only "good" tips, and advice that no allowed change can express, have []. Allowed changes, using only ids shown above (never flights or bookings):',
     '  {"op":"time","id":"","time":"HH:MM"} set a start time · {"op":"remove","id":""} take a place or travel leg out · {"op":"move","id":"","date":"YYYY-MM-DD"} move a place to another trip day',
     '  {"op":"add","date":"YYYY-MM-DD","ideaId":"","title":"","kind":"ที่เที่ยว|ร้านอาหาร|ช้อปปิ้ง","time":"HH:MM"} add a saved place (ideaId) or a real place by name · {"op":"duration","id":"","minutes":0} set a travel leg duration',
     'Also give each day a one-line Thai "summary" of how it looks (e.g. "แน่นไปนิด", "กำลังดี", "ว่างช่วงบ่าย").',
