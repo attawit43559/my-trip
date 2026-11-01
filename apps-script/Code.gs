@@ -1578,7 +1578,13 @@ function callGemini_(props, prompt, files, opts) {
   const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash'];
   const parts = [{ text: prompt }].concat([].concat.apply([], files.map((f, i) => [{ text: '[File ' + i + ']' }, { inline_data: { mime_type: f.mime, data: f.data } }])));
   let lastErr;
-  for (const model of models.filter((m, i) => models.indexOf(m) === i)) {
+  // the model is sometimes busy (503/429): wait and ask the same model again rather than give up
+  const tries = [];
+  models.filter((m, i) => models.indexOf(m) === i).forEach(m => { tries.push(m, m, m); });
+  for (let n = 0; n < tries.length; n++) {
+    const model = tries[n];
+    if (n % 3 && lastErr && !/_(503|429|500)\b/.test(String(lastErr.message))) continue;
+    if (n % 3) Utilities.sleep(n % 3 === 1 ? 2500 : 6000);
     try {
       const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
         headers: { 'x-goog-api-key': key },

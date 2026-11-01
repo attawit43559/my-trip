@@ -1430,7 +1430,7 @@ async function helpRun(){
     h.result = res; h.step = "result"; render();
   } catch(e){
     if(S.help !== h) return;
-    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : aiErr(e); render();
+    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : /^ai_error_5|rate_limited|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
   }
 }
 async function helpFix(di, ti){
@@ -3570,7 +3570,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help1";
+const BUILD = "2026-11-02-help2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
