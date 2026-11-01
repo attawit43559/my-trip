@@ -613,6 +613,8 @@ html.lock,html.lock body{overflow:hidden}
 
 .planner-search-field{display:grid;grid-template-columns:minmax(0,1fr);width:100%;max-width:100%;min-width:0;flex:none;padding:2px}.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent-line)}
 .compose-sheet{font-family:var(--body);font-size:14px;gap:14px}.compose-sheet .hd h2{font-family:var(--body);font-size:18px;font-weight:600}.compose-sheet .fld{font-size:13px;font-weight:500;gap:6px}.compose-sheet .fld input,.compose-sheet .fld select,.compose-sheet #paste-text{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);box-shadow:none;border-radius:14px;background:var(--tile);width:100%;min-width:0;max-width:100%;padding:10px 12px}.compose-sheet .fld input{height:46px}.compose-sheet :is(input,textarea,select):focus{outline:none;box-shadow:inset 0 0 0 1px var(--accent-line);border-color:var(--accent-line)}.compose-sheet .btn{font-family:var(--body);font-size:15px;font-weight:600;min-height:46px}.compose-sheet .chips{gap:6px}.compose-sheet .chips button{font-family:var(--body);font-size:13px;border:1px solid transparent;color:var(--ink);background:var(--tile);min-height:38px;padding:7px 10px}.compose-sheet .chips.t-idea button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);box-shadow:none}.compose-sheet .link-btn{font-family:var(--body);font-size:13px;color:var(--muted)}.booking-compose .drop{background:var(--tile);border:1px dashed var(--line);border-radius:14px;font-size:14px}.booking-compose #paste-text{min-height:112px;resize:vertical}.booking-compose .reading{border:0;box-shadow:none;background:var(--tile)}
+
+.idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}html.kb .idea-compose-sheet{padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet .hd h2{font-size:17px}html.kb .idea-compose-body{gap:8px}html.kb .idea-compose-sheet .fld{gap:4px}html.kb .idea-compose-sheet .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet .btn{height:42px;min-height:42px}
 </style>
 </head>
 <body>
@@ -2369,9 +2371,9 @@ function vSheet(){
   }
   const isMove = s.kind === "move";
   const dates = tripDates(t);
-  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
+  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
     <div class="hd"><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <form class="stack" data-form="sheet" style="gap:14px">
+    <form class="stack idea-compose-body" data-form="sheet">
       ${s.fromLink && S.trips.length > 1 ? `<label class="fld">ทริป<select id="sh-trip">${S.trips.map(x => `<option value="${esc(x.id)}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
       ${s.linking ? `<div class="link-wait"><div class="spinner sm" role="status" aria-label="กำลังอ่านลิงก์"></div><span class="muted small">กำลังอ่านลิงก์จาก Google Maps…</span></div>` : ""}
       ${s.linkErr ? `<div class="err" role="alert">${esc(s.linkErr)}</div>` : ""}
@@ -2750,8 +2752,18 @@ function showSuggest(input, list){
       if(ul.getBoundingClientRect().bottom > sh.getBoundingClientRect().bottom || lab.getBoundingClientRect().top < sh.getBoundingClientRect().top) sh.scrollTop = top; }
 }
 /* while a panel or sheet is open, only it scrolls; the page behind stays put (iPhone ignores overflow:hidden on its own) */
+let overlayTouchY=0;
+document.addEventListener('touchstart',e=>{overlayTouchY=e.touches[0]?.clientY||0;},{passive:true});
 function overlayTouchMove(e){
   if(!document.documentElement.classList.contains("lock"))return;
+  const compose=e.target.closest?.('.idea-compose-sheet');
+  if(compose){
+    const y=e.touches?.[0]?.clientY??overlayTouchY,dy=y-overlayTouchY;overlayTouchY=y;
+    const box=e.target.closest('.sugg,.idea-compose-body');
+    const canScroll=box&&box.scrollHeight>box.clientHeight+1&&((dy>0&&box.scrollTop>0)||(dy<0&&box.scrollTop+box.clientHeight<box.scrollHeight-1));
+    if(!canScroll&&e.cancelable)e.preventDefault();
+    return;
+  }
   // The picker scrolls inside the sheet; the sheet itself deliberately does not.
   const box=e.target.closest&&e.target.closest(".picker-list, .picker-filters, .planner-calendar, .dock-body, .sheet");
   if(!box||(box.scrollHeight<=box.clientHeight&&box.scrollWidth<=box.clientWidth)){
@@ -3277,7 +3289,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-bookingsave50";
+const BUILD = "2026-11-01-ideakeyboard51";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
