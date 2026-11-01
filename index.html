@@ -2812,9 +2812,15 @@ document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
 });
+/* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
+document.addEventListener('focusout',e=>{
+  const el=e.target;if(!el.classList?.contains('time-pick'))return;
+  const it=S.items.find(i=>i.id===el.dataset.timeId),t=S.trip,f=el.dataset.timeField==='endTime'?'endTime':'time';
+  if(it&&t&&(it[f]||'')!==el.value)store.updateItem(t.id,it.id,{[f]:el.value}).then(()=>toast(el.value?'ตั้งเวลา '+el.value+' แล้ว':'ลบเวลาแล้ว')).catch(fail);
+});
 document.addEventListener("change", e => {
-  /* tap the time in the day plan: the phone's time picker sets it straight away */
-  if(e.target.classList?.contains('time-pick')){const it=S.items.find(i=>i.id===e.target.dataset.timeId),t=S.trip,f=e.target.dataset.timeField==='endTime'?'endTime':'time';if(it&&t&&(it[f]||'')!==e.target.value){store.updateItem(t.id,it.id,{[f]:e.target.value}).then(()=>toast(e.target.value?'ตั้งเวลา '+e.target.value+' แล้ว':'ลบเวลาแล้ว')).catch(fail);}return;}
+  /* the time picker reports every turn of the wheel; nothing is saved until it closes */
+  if(e.target.classList?.contains('time-pick'))return;
   if(e.target.id==='ai-review-date'&&S.ai){S.ai.viewDay=e.target.value;S.ai.showRoute=false;S.ai.showRefine=false;S.ai.wish='';render();return;}
   if(e.target.id === "overview-date" && S.sheet){S.sheet.date=e.target.value;render();return;}
   if(e.target.id === "sh-trip" && S.sheet){ const keep = S.sheet; openTrip(e.target.value); S.sheet = keep; render(); return; }
@@ -3280,7 +3286,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-align1";
+const BUILD = "2026-11-01-time3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
