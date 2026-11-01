@@ -696,6 +696,8 @@ function planReviewRun_(req) {
     '"fix" is the list of exact changes that carry out the tip, so the person can apply it with one tap. Every tip that suggests a change MUST have a fix: a new start time, dropping or moving a place, adding a specific saved place or a specific real restaurant or sight by name with a time, or a travel duration. Only "good" tips, and advice that no allowed change can express, have []. Allowed changes, using only ids shown above (never flights or bookings):',
     '  {"op":"time","id":"","time":"HH:MM"} set a start time · {"op":"remove","id":""} take a place or travel leg out · {"op":"move","id":"","date":"YYYY-MM-DD"} move a place to another trip day',
     '  {"op":"add","date":"YYYY-MM-DD","ideaId":"","title":"","kind":"ที่เที่ยว|ร้านอาหาร|ช้อปปิ้ง","time":"HH:MM"} add a saved place (ideaId) or a real place by name · {"op":"duration","id":"","minutes":0} set a travel leg duration',
+    'What the fix should be, by kind: "late" → a "time" change (and a "duration" if the travel time is wrong); "tight" → "remove" the least important stop or "move" it to a lighter day; "free" → "add" one specific place (a saved place by ideaId, else a real nearby sight by name) with a time; "meal" → "add" a specific real restaurant near where they are, by name, with a lunch or dinner time; "order" → "time" changes that put the stops in a better order. Name the place in the text too.',
+    'Example: {"kind":"meal","text":"ยังไม่มีมื้อกลางวัน แวะ Queen of Hearts Banquet Hall ในสวนตอนเที่ยง","fix":[{"op":"add","date":"2026-11-24","ideaId":"","title":"Queen of Hearts Banquet Hall","kind":"ร้านอาหาร","time":"12:00"}]}',
     'Also give each day a one-line Thai "summary" of how it looks (e.g. "แน่นไปนิด", "กำลังดี", "ว่างช่วงบ่าย").',
     'Reply with only this JSON:',
     '{"days":[{"date":"YYYY-MM-DD","summary":"","tips":[{"kind":"tight","text":"","fix":[]}]}]}'
@@ -733,7 +735,6 @@ function planReviewRun_(req) {
     } : null).filter(Boolean);
     out.days.push({ date: d.date, summary: t(r.summary).slice(0, 60), tips });
   }));
-  if (req.debug) out.raws = raws;
   return out;
 }
 /* where a wish-list place, a planned place or a hotel is (its own pin when it has one) */
