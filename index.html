@@ -1427,7 +1427,8 @@ function helpState(){
 /* days that look empty (no place, or just one) start ticked for "let AI pick places" */
 function helpFill(h){
   const dates = tripDates(S.trip);
-  if(!Array.isArray(h.fill)) h.fill = dates.filter(d => dayEntries(d).filter(e => !e.night && e.it.type === "place").length <= 1);
+  const edge = d => (d === dates[0] || d === dates[dates.length - 1]) && dayEntries(d).some(e => e.it.type === "flight");
+  if(!Array.isArray(h.fill)) h.fill = dates.filter(d => !edge(d) && dayEntries(d).filter(e => !e.night && e.it.type === "place").length <= 1);
   return h.fill.filter(d => dates.includes(d));
 }
 function helpRows(date){
@@ -3599,7 +3600,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help4";
+const BUILD = "2026-11-02-help5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
