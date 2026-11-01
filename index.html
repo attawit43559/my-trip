@@ -710,7 +710,6 @@ html.kb .tabbar{display:none}
 .help-likes{gap:6px}
 .help-likes button{border:0}
 .help-likes button[aria-pressed="true"]{background:var(--place-soft);color:var(--place);font-weight:600}
-.help-fill button[aria-pressed="true"]{background:var(--place-soft);color:var(--place)}
 .help-adds{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .help-adds li{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:6px 6px 6px 10px;min-height:40px}
 .ha-time{font-size:12.5px;color:var(--muted);width:38px;text-align:center;font-variant-numeric:tabular-nums}
@@ -1411,6 +1410,7 @@ document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
 /* ---------- AI help: the person plans; AI reads every day and suggests, and fixes what they pick ---------- */
+const HELP_LIKES = ["ธรรมชาติ","ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่"];
 const HELP_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","อัดแน่น"]];
 const HELP_KIND = {plan:["spark","t-place","AI เลือกที่ให้"], good:["check","t-place","ดีแล้ว"], tight:["info","k-food","แน่นไป"], late:["clock","k-shop","ไม่ทันเวลา"], free:["plus","t-flight","ยังว่าง"], order:["move","t-move","ลำดับ"], meal:["food","k-food","มื้ออาหาร"], tip:["spark","t-stay","แนะนำ"]};
 function helpPrefsKey(){ return "mytrip-help:" + S.me + ":" + (S.trip && S.trip.id); }
@@ -1422,14 +1422,7 @@ function helpState(){
   const n = (k, d) => Number.isFinite(+saved[k]) ? Math.max(0, Math.min(20, +saved[k])) : d;
   return S.help = {tripId:t.id, step:"ask", pace:HELP_PACE.some(p => p[0] === saved.pace) ? saved.pace : "balanced",
     adults:n("adults", +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length)), children:n("children", +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0), elders:n("elders", 0),
-    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => AI_INTERESTS.includes(x)) : [], fill:null, result:null};
-}
-/* days that look empty (no place, or just one) start ticked for "let AI pick places" */
-function helpFill(h){
-  const dates = tripDates(S.trip);
-  const edge = d => (d === dates[0] || d === dates[dates.length - 1]) && dayEntries(d).some(e => e.it.type === "flight");
-  if(!Array.isArray(h.fill)) h.fill = dates.filter(d => !edge(d) && dayEntries(d).filter(e => !e.night && e.it.type === "place").length <= 1);
-  return h.fill.filter(d => dates.includes(d));
+    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => HELP_LIKES.includes(x)) : [], result:null};
 }
 function helpRows(date){
   return dayEntries(date).filter(e => !e.night).map(e => {
@@ -1444,7 +1437,7 @@ async function helpRun(){
   const dates = tripDates(t);
   h.step = "loading"; h.err = ""; h.ctl = new AbortController(); render();
   try {
-    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests, fill:helpFill(h)}, days:dates.map(date => ({date, rows:helpRows(date)}))});
+    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests}, days:dates.map(date => ({date, rows:helpRows(date)}))});
     if(S.help !== h) return;
     h.result = res; h.step = "result"; render();
   } catch(e){
@@ -1484,7 +1477,7 @@ async function helpFix(di, ti, fi){
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
   const wrap = body => `<div class="help-page">${body}</div>`;
-  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">${helpFill(h).length ? "ให้ AI เลือกที่ให้ด้วย อาจใช้เวลา 1–3 นาที" : "ใช้เวลาประมาณ 20–60 วินาที"}</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
+  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20 วินาที – 2 นาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
   if(h.step === "result" && h.result){
     const days = h.result.days.map((d, di) => {
       const i = dates.indexOf(d.date); if(i < 0 || (!d.tips.length && !d.summary)) return "";
@@ -1502,15 +1495,12 @@ function vHelpPage(){
       ${days || `<p class="muted">ไม่มีคำแนะนำ</p>`}
       <div class="help-actions"><button type="button" class="soft-btn help-again" data-act="help-ask">ปรับสไตล์ทริป</button><button type="button" class="soft-btn" data-act="help-run">${ic("spark",16)}ดูแผนอีกรอบ</button></div>`);
   }
-  const fill = helpFill(h);
   const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="help-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${h[k]}</output><button type="button" data-act="help-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-    <p class="muted small" style="margin:-4px 0 0">บอก AI ว่าทริปนี้เป็นแบบไหน แล้ว AI จะอ่านแผนทุกวัน และบอกว่าตรงไหนแน่นไป ว่างไป หรือไปไม่ทันเวลา</p>
+    <p class="muted small" style="margin:-4px 0 0">บอก AI ว่าทริปนี้เป็นแบบไหน แล้ว AI จะอ่านแผนทุกวัน บอกว่าตรงไหนแน่นไป ว่างไป หรือไปไม่ทันเวลา ส่วนวันที่ยังว่าง AI จะเลือกที่เที่ยวมาให้</p>
     <div class="help-q"><b>สไตล์เที่ยว</b><div class="help-pace">${HELP_PACE.map(([k,l]) => `<button type="button" data-act="help-pace" data-k="${k}" aria-pressed="${h.pace === k}">${l}</button>`).join("")}</div></div>
-    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="chips help-likes">${AI_INTERESTS.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="chips help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
     <div class="help-q"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
-    ${dates.length ? `<div class="help-q"><b>วันที่อยากให้ AI ช่วยเลือกที่เที่ยวให้</b><span class="muted small" style="margin-top:-4px">เลือกไว้ให้แล้วสำหรับวันที่ยังว่าง</span>
-      <div class="plan-days help-fill" role="group" aria-label="วันที่ให้ AI เลือกที่ให้">${dates.map(x => `<button type="button" data-act="help-fill" data-d="${x}" aria-pressed="${fill.includes(x)}" aria-label="${esc(dLong(x))}">${parseD(x).getDate()}</button>`).join("")}</div></div>` : ""}
     <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}ให้ AI ช่วยดูแผน</button>`);
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
@@ -3376,7 +3366,6 @@ document.addEventListener("click", async e => {
     case "help-stop": if(S.help && S.help.ctl) S.help.ctl.abort(); break;
     case "help-fix": helpFix(Number(el.dataset.i), Number(el.dataset.j), el.dataset.f != null ? Number(el.dataset.f) : undefined); break;
     case "help-like": { const h = S.help, v = el.dataset.v; h.interests = h.interests.includes(v) ? h.interests.filter(x => x !== v) : [...h.interests, v]; render(); break; }
-    case "help-fill": { const h = S.help, d = el.dataset.d, f = helpFill(h); h.fill = f.includes(d) ? f.filter(x => x !== d) : [...f, d]; render(); break; }
     case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; selectTab(""); break; }
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
@@ -3600,7 +3589,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help7";
+const BUILD = "2026-11-02-help8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

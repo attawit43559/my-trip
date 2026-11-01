@@ -668,7 +668,8 @@ function planReviewRun_(req) {
   const pace = { relaxed: 'relaxed (few stops, long breaks)', balanced: 'balanced', packed: 'packed (see as much as possible)' }[p.pace] || 'balanced';
   const kids = Number(p.children) || 0, elders = Number(p.elders) || 0;
   const likes = (Array.isArray(p.interests) ? p.interests : []).slice(0, 10).map(s).filter(Boolean);
-  const fill = {}; (Array.isArray(p.fill) ? p.fill : []).forEach(d => { if (c.all.indexOf(String(d)) >= 0) fill[String(d)] = true; });
+  // a day with no place, or just one, is still open: there AI picks places for it; on other days it only reviews what was planned
+  const fill = {}; days.forEach(d => { if (d.rows.filter(r => r.type === 'place').length <= 1) fill[d.date] = true; });
   const stops = { relaxed: '2-3', balanced: '3-4', packed: '5-6' }[p.pace] || '3-4';
   const line = r => {
     const when = (r.time || '--:--') + (r.until ? '–' + r.until : '');
@@ -687,12 +688,13 @@ function planReviewRun_(req) {
     p.note ? 'Other wishes: ' + s(p.note) : '',
     'Bookings:', bookingLines_(c.items),
     'The plan, day by day, in the order they will do it (times are when each starts; "–" gives when they leave):',
-    ds.map(d => `Day ${d.date}${fill[d.date] ? ' [PICK PLACES FOR THIS DAY]' : ''}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
+    ds.map(d => `Day ${d.date}${fill[d.date] ? ' [MOSTLY FREE]' : ''}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
     'Saved places not yet in the plan (can be suggested for a day):',
     ideas.map(i => `  ideaId=${i.id} · ${s((i.data || {}).kind) || 'ที่เที่ยว'} · "${s(i.title)}"${i.sub ? ' · note: ' + s(i.sub) : ''}`).join('\n') || '  none',
     'TRIP>>>',
     'Review every day listed. For each day give 0-5 tips, most important first.',
-    ds.some(d => fill[d.date]) ? `Days marked [PICK PLACES FOR THIS DAY]: the person wants you to choose places for that day. Put FIRST a tip of kind "plan" whose "fix" adds ${stops} stops in a sensible route order with start times (fewer if the day already has a flight, check-in or other plans, keeping them; work around booked times). Match what they like (${likes.join(', ') || 'a good mix'}), prefer their saved places by ideaId when one fits, otherwise real, well-known places by their usual English or local name. Keep the stops close together and near the hotel or the area of that day, include a real restaurant for lunch (and dinner if the day is long), and suit children or older people when there are any. Its "text" is one Thai line about the theme of the day (e.g. "วันธรรมชาติแถวฮาโกเน่ เดินไม่เยอะ เหมาะกับเด็ก"). Never suggest a place already in the plan on another day.` : '',
+    'First review what they planned (too packed, too loose, times that will not work, order, meals). Only where a day is really still open do you plan it for them.',
+    ds.some(d => fill[d.date]) ? `Days marked [MOSTLY FREE] have little or nothing planned. If such a day still has real free time (not just a flight or a long transfer), put FIRST a tip of kind "plan" whose "fix" adds ${stops} stops in a sensible route order with start times (fewer if the day already has a flight, check-in or other plans, keeping them; work around booked times). Match what they like (${likes.join(', ') || 'a good mix'}), prefer their saved places by ideaId when one fits, otherwise real, well-known places by their usual English or local name. Keep the stops close together and near the hotel or the area of that day, include a real restaurant for lunch (and dinner if the day is long), and suit children or older people when there are any. Its "text" is one Thai line about the theme of the day (e.g. "วันธรรมชาติแถวฮาโกเน่ เดินไม่เยอะ เหมาะกับเด็ก"). Never suggest a place already in the plan on another day. On a day with a full program already (e.g. a theme park visit, or mostly travelling) do not add a "plan" tip.` : '',
     'Look for:',
     '- too packed for this group and style (suggest what to drop or move to a lighter day), or too empty (suggest a saved place, or a real nearby place, that fits);',
     '- times that cannot work: compare each start time with the time before it plus the time spent there and the travel duration; check opening hours you know; on a departure day the group should reach the airport about 3 hours before an international flight; on an arrival day allow time after landing;',
