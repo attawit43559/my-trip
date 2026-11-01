@@ -611,7 +611,7 @@ html.lock,html.lock body{overflow:hidden}
 .dock.planning{height:min(360px,calc(var(--vvh,100dvh) - var(--calendar-bottom,220px) - 24px - env(safe-area-inset-bottom,0px)));min-height:110px}.dock.planning .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden;padding:4px}.planner-picker{flex:1;min-height:0;max-height:none;overflow:hidden!important;gap:8px}.planner-picker .picker-list{flex:1;min-height:0;max-height:none}.planner-picker .picker-toolbar,.planner-picker .workflow-search{flex:none}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--idea-soft);border-color:var(--idea-mid);color:var(--idea)}.dock.planning .seg{flex:none}html.kb .dock.planning .seg{display:none}
 .dock.open{top:var(--trip-panel-top,140px);height:auto;max-height:none;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}.dock.open .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden}.dock.open .dock-body{flex:1;min-height:0}.dock.planning{height:auto;min-height:0}.planner-calendar{flex:none;padding:0 4px 6px}.interest-tools{flex:none;display:flex;flex-direction:column;gap:8px;padding:2px 4px 6px}.interest-tools .workflow-search{min-height:38px;font-size:14px}.dock.open .seg,.dock.open .cat-add{flex:none}.dock.open .planner-picker{min-height:0}.dock.open .cal{margin:0}.dock.open .cal .tab{min-height:40px}.dock.open .planner-calendar{max-height:35%;overflow-y:auto;overscroll-behavior:contain}
 /* One warm accent for interaction; category colors identify content only. */
-.dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock .text-action{color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
+.dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;box-shadow:none;color:var(--ink)}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock .text-action{color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
 .travel-leg-link small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.travel-leg-link .grow,.travel-points{overflow-wrap:anywhere}.travel-points{margin:0;font-weight:500}.maps-travel-link{color:var(--ink);background:var(--tile);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14px;min-height:44px}
 .entry .time{text-align:center}.entry .time.dur{display:flex;flex-direction:column;align-items:center;line-height:1.1;color:var(--ink)}.entry .time.fixed{color:var(--muted)}
 .time-pick{position:absolute;left:0;top:0;bottom:0;width:66px;opacity:0;border:0;padding:0;margin:0;z-index:2;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}.entry .time.dur b{font-weight:400;font-size:12.5px}.entry .time.dur small{font-size:10.5px;font-family:var(--body);font-weight:400}
@@ -627,7 +627,7 @@ html.lock,html.lock body{overflow:hidden}
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:40;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px;border-radius:999px;
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
@@ -635,15 +635,17 @@ html.lock,html.lock body{overflow:hidden}
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
-  box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),inset 1.5px 0 0 rgba(140,205,255,.45),inset -1.5px 0 0 rgba(255,180,130,.45),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
-  transform:translateX(calc(var(--i) * 100%));transition:transform .5s cubic-bezier(.22,1.45,.36,1),scale .3s cubic-bezier(.22,1.45,.36,1)}
+  box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
+  transform:translateX(calc(var(--i) * 100%));transition:transform .5s cubic-bezier(.45,.05,.25,1),scale .25s ease-out}
+.tab-pill.flow{animation:tabDrop .5s cubic-bezier(.45,.05,.25,1)}
+@keyframes tabDrop{0%{scale:1 1}45%{scale:1.3 .88}100%{scale:1 1}}
 .tab-pill::before{content:"";position:absolute;left:10%;right:30%;top:7%;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.45}
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
-.tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .3s cubic-bezier(.22,1.45,.36,1);scale:1.16 1.12}
+.tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .16s ease-out;scale:var(--sx,1.1) var(--sy,1.06)}
 .tabbar.press:not(.drag) .tab-pill{scale:1.05}
 .tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
 .tb-ic{position:relative;width:21px;height:21px;display:block}
-.tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .3s cubic-bezier(.22,1.45,.36,1)}
+.tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .25s ease-out}
 .tb-ic .ic+.ic{opacity:0}
 .tabbar button[aria-current="page"],.tabbar button.hot{color:var(--ink);font-weight:600}
 .tabbar button[aria-current="page"] .tb-ic .ic:first-child,.tabbar button.hot .tb-ic .ic:first-child{opacity:0}
@@ -658,7 +660,7 @@ html.kb .tabbar{display:none}
 .page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
 .page .picker-list{max-height:none;overflow:visible;flex:none}
 .page-cal .cal{margin:0}
-.page-add{align-self:flex-start;background:var(--accent)!important;color:var(--on-accent)!important}.page-add .ic{color:currentColor!important}
+.page-add{align-self:flex-start;background:var(--accent-soft)!important;color:var(--ink)!important;box-shadow:none!important;border:0!important}.page-add .ic{color:currentColor!important}
 .page .booking-group{padding:14px 16px}
 </style>
 </head>
@@ -1313,7 +1315,7 @@ function selectTab(k, landed){
   S.catTab = k; S.sheet = null; S.dockHidden = false;
   if(k === "planning") S.planner ||= {query:"", filter:""};
   render(); if(k !== cur) window.scrollTo(0,0);
-  requestAnimationFrame(() => requestAnimationFrame(() => { const bar = document.querySelector(".tabbar"); if(bar) bar.style.setProperty("--i", bar.dataset.to); S.tabFrom = null; }));
+  requestAnimationFrame(() => requestAnimationFrame(() => { const bar = document.querySelector(".tabbar"); if(bar){ const pill = bar.querySelector(".tab-pill"); if(!landed && k !== cur && pill) pill.classList.add("flow"); bar.style.setProperty("--i", bar.dataset.to); } S.tabFrom = null; }));
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
 const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0};
@@ -1321,7 +1323,7 @@ function tabAt(bar, x){ const r = bar.getBoundingClientRect(); return Math.max(0
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar) return;
   const r = bar.getBoundingClientRect(); TB.cell = (r.width - 8) / TRIP_TABS.length; TB.max = TB.cell * (TRIP_TABS.length - 1);
-  TB.on = true; TB.moved = false; TB.x = e.clientX; TB.start = (+getComputedStyle(bar).getPropertyValue("--i") || 0) * TB.cell;
+  TB.on = true; TB.moved = false; TB.x = e.clientX; TB.lx = e.clientX; TB.t = 0; TB.start = (+getComputedStyle(bar).getPropertyValue("--i") || 0) * TB.cell;
   bar.classList.add("press"); });
 document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = document.querySelector(".tabbar"); if(!bar) return;
   if(!TB.moved && Math.abs(e.clientX - TB.x) > 6){ TB.moved = true; bar.style.setProperty("--x", TB.start + "px"); bar.classList.add("drag"); }
@@ -1329,13 +1331,18 @@ document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = d
   /* the lens sticks to the finger, with a little resistance past either end */
   let x = TB.start + (e.clientX - TB.x);
   if(x < 0) x = x / 3; else if(x > TB.max) x = TB.max + (x - TB.max) / 3;
-  cancelAnimationFrame(TB.raf);
-  TB.raf = requestAnimationFrame(() => { bar.style.setProperty("--x", x + "px"); tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell)); }); });
+  /* a drop stretches the faster it moves, and rounds up again when the finger rests */
+  const now = performance.now(), v = TB.t ? (e.clientX - TB.lx) / Math.max(1, now - TB.t) : 0; TB.t = now; TB.lx = e.clientX;
+  const st = Math.min(.32, Math.abs(v) * .22);
+  cancelAnimationFrame(TB.raf); clearTimeout(TB.rest);
+  TB.raf = requestAnimationFrame(() => { bar.style.setProperty("--x", x + "px"); bar.style.setProperty("--sx", (1.1 + st).toFixed(3)); bar.style.setProperty("--sy", (1.06 - st * .45).toFixed(3)); tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell)); });
+  TB.rest = setTimeout(() => { bar.style.setProperty("--sx", "1.1"); bar.style.setProperty("--sy", "1.06"); }, 90); });
 function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimationFrame(TB.raf);
   const bar = document.querySelector(".tabbar"); if(!bar) return; bar.classList.remove("press");
   if(!TB.moved) return;
   const x = parseFloat(bar.style.getPropertyValue("--x")) || 0, n = cancel ? +bar.dataset.to : Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell);
   bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
+  clearTimeout(TB.rest); bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   TB.suppress = true; setTimeout(() => TB.suppress = false, 400);
   if(!cancel) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 380); }
@@ -3419,7 +3426,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-tabs4";
+const BUILD = "2026-11-02-tabs5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
