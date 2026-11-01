@@ -610,6 +610,9 @@ html.lock,html.lock body{overflow:hidden}
 .travel-when{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--accent-soft)}.travel-when>b{font-size:14px}.travel-when .fld{font-size:12px}.travel-when input{min-height:40px}.travel-source-choices{display:grid;gap:8px}.travel-source{display:flex;align-items:center;gap:10px;min-height:64px;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;text-align:left;background:var(--surface);color:var(--ink);font:inherit}.travel-source>span{flex:1;min-width:0}.travel-source b{font-size:14px;display:block}.travel-source small{display:block;font-size:11px;color:var(--muted);margin-top:3px}.maps-source>.ic:first-child{color:var(--place)}.ai-source>.ic:first-child{color:var(--idea)}.travel-source[aria-pressed="true"]{border-color:var(--accent-line);background:var(--accent-soft)}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.external-maps{border-top:1px solid var(--line)}.travel-result>summary{cursor:pointer;list-style:revert}.travel-result-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-source{min-height:44px;padding:10px 12px}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--accent-soft);border-color:var(--accent-line)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}.booking-add-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.booking-add-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit}.booking-add-tabs button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent-line)}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
+
+.planner-search-field{display:grid;grid-template-columns:minmax(0,1fr);width:100%;max-width:100%;min-width:0;flex:none;padding:2px}.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent-line)}
+.compose-sheet{font-family:var(--body);font-size:14px;gap:14px}.compose-sheet .hd h2{font-family:var(--body);font-size:18px;font-weight:600}.compose-sheet .fld{font-size:13px;font-weight:500;gap:6px}.compose-sheet .fld input,.compose-sheet .fld select,.compose-sheet #paste-text{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);box-shadow:none;border-radius:14px;background:var(--tile);width:100%;min-width:0;max-width:100%;padding:10px 12px}.compose-sheet .fld input{height:46px}.compose-sheet :is(input,textarea,select):focus{outline:none;box-shadow:inset 0 0 0 1px var(--accent-line);border-color:var(--accent-line)}.compose-sheet .btn{font-family:var(--body);font-size:15px;font-weight:600;min-height:46px}.compose-sheet .chips{gap:6px}.compose-sheet .chips button{font-family:var(--body);font-size:13px;border:1px solid transparent;color:var(--ink);background:var(--tile);min-height:38px;padding:7px 10px}.compose-sheet .chips.t-idea button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);box-shadow:none}.compose-sheet .link-btn{font-family:var(--body);font-size:13px;color:var(--muted)}.booking-compose .drop{background:var(--tile);border:1px dashed var(--line);border-radius:14px;font-size:14px}.booking-compose #paste-text{min-height:112px;resize:vertical}.booking-compose .reading{border:0;box-shadow:none;background:var(--tile)}
 </style>
 </head>
 <body>
@@ -1270,25 +1273,25 @@ function vTrip(){
 
 function vUpload(){
   const u = S.upload;
-  const head = `<div class="top"><button class="round" data-act="trip" aria-label="กลับไปที่ทริป">${ic("back")}</button><h1>เพิ่มข้อมูลทริป</h1></div>`;
+  const wrap=(content)=>`${vTrip()}<div class="scrim" data-act="trip"><section class="sheet compose-sheet booking-compose" role="dialog" aria-modal="true" aria-label="เพิ่มข้อมูลทริป" data-stop="1">${content}</section></div>`;
+  const head = `<div class="hd"><h2>เพิ่มข้อมูลทริป</h2><button class="round" data-act="trip" aria-label="ปิด">${ic('close')}</button></div>`;
   if(u.status === "reading"){
-    return `<main class="screen">${head}
+    return wrap(`${head}
       <div class="card reading"><div class="spinner" role="status" aria-label="กำลังอ่าน"></div>
         <p class="muted small" id="read-step" aria-live="polite">${esc(u.step||"")}</p>
-        <button class="link-btn" data-act="stop">หยุด</button></div></main>`;
+        <button class="link-btn" data-act="stop">หยุด</button></div>`);
   }
   const files = u.files || [];
-  return `<main class="screen" style="gap:14px">${head}
+  return wrap(`${head}
     <div class="drop compact"><input type="file" id="file-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบไฟล์ใบจอง">
       ${ic("upload",22)}<b>แนบไฟล์</b><span class="muted small">PDF · JPG · PNG</span></div>
     ${files.length ? `<ul class="files">${files.map((f,i) => `<li class="file-chip">${ic("file",18)}<span class="grow">${esc(f.name || "ไฟล์")}</span>
       <button class="chip-x" data-act="rm-file" data-i="${i}" aria-label="เอา ${esc(f.name||"ไฟล์")} ออก">${ic("close",16)}</button></li>`).join("")}</ul>` : ""}
-    <label for="paste-text" class="sr">ข้อความการจอง</label>
-    <textarea id="paste-text" rows="3" placeholder="พิมพ์หรือวางรายละเอียดการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea>
+    <label class="fld" for="paste-text">รายละเอียดการจอง<textarea id="paste-text" rows="3" placeholder="พิมพ์หรือวางรายละเอียดการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea></label>
     ${u.status === "error" && u.err ? `<div class="err" role="alert">${esc(u.err)}</div>` : ""}
     <button class="btn primary" data-act="read-all">ให้ AI อ่านข้อมูล</button>
     <button class="link-btn" data-act="manual">กรอกเอง</button>
-  </main>`;
+  `);
 }
 
 function fld(label, path, val, type="text", cls=""){
@@ -1657,7 +1660,7 @@ function vDayIdeaRows(s){
   }).join('')||'<p class="muted small">ไม่มีสถานที่</p>';
 }
 function vDayIdeas(s){
-  return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="planner-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}">${ic('search',19)}</button></div>${s.searchOpen?`<input id="day-ideas-search" class="workflow-search" type="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1">`:''}<div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
+  return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="planner-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}">${ic('search',19)}</button></div>${s.searchOpen?`<div class="planner-search-field"><input id="day-ideas-search" class="workflow-search" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1"></div>`:''}<div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
 }
 const PLAN_TOGGLES=new Set();
 async function togglePlannerIdea(id){
@@ -1677,7 +1680,7 @@ function fitPlannerPanel(){
   const banner=document.querySelector('.trip-bar');if(banner)document.documentElement.style.setProperty('--trip-panel-top',Math.max(8,banner.getBoundingClientRect().bottom+10)+'px');
 }
 function ideaToolbar(){
-  return `<div class="interest-tools"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดที่สนใจ">${['',...IDEA_KINDS].map(k=>`<button data-act="ideas-filter" data-k="${esc(k)}" aria-pressed="${(S.ideaFilter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="ideas-search" aria-label="${S.ideaSearchOpen?'ซ่อนค้นหาที่สนใจ':'ค้นหาที่สนใจ'}" aria-expanded="${!!S.ideaSearchOpen}">${ic('search',19)}</button></div>${S.ideaSearchOpen?`<input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหา" value="${esc(S.ideaQuery||'')}" data-idea-search="1">`:''}</div>`;
+  return `<div class="interest-tools"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดที่สนใจ">${['',...IDEA_KINDS].map(k=>`<button data-act="ideas-filter" data-k="${esc(k)}" aria-pressed="${(S.ideaFilter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="ideas-search" aria-label="${S.ideaSearchOpen?'ซ่อนค้นหาที่สนใจ':'ค้นหาที่สนใจ'}" aria-expanded="${!!S.ideaSearchOpen}">${ic('search',19)}</button></div>${S.ideaSearchOpen?`<input id="ideas-search" class="workflow-search" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหา" value="${esc(S.ideaQuery||'')}" data-idea-search="1">`:''}</div>`;
 }
 window.addEventListener('resize',fitPlannerPanel);
 window.addEventListener('scroll',fitPlannerPanel,{passive:true});
@@ -2367,8 +2370,8 @@ function vSheet(){
   }
   const isMove = s.kind === "move";
   const dates = tripDates(t);
-  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
-    <div class="hd"><span class="thumb tc ${IDEA_TONE[s.ideaKind] || "k-sight"}">${ic(IDEA_ICON[s.ideaKind] || "pin")}</span><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+  if(s.kind === "idea") return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1">
+    <div class="hd"><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <form class="stack" data-form="sheet" style="gap:14px">
       ${s.fromLink && S.trips.length > 1 ? `<label class="fld">ทริป<select id="sh-trip">${S.trips.map(x => `<option value="${esc(x.id)}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
       ${s.linking ? `<div class="link-wait"><div class="spinner sm" role="status" aria-label="กำลังอ่านลิงก์"></div><span class="muted small">กำลังอ่านลิงก์จาก Google Maps…</span></div>` : ""}
@@ -2416,7 +2419,7 @@ function render(){
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
-  const modalSheet=S.sheet&&S.sheet.kind!=="day-ideas";
+  const modalSheet=S.view==="upload"||(S.sheet&&S.sheet.kind!=="day-ideas");
   document.body.style.overflow = modalSheet ? "hidden" : "";
   const overlayLocked=!!(modalSheet || (S.view === "trip" && S.catTab));
   document.documentElement.classList.toggle("lock",overlayLocked);lockOverlayPage(overlayLocked);
@@ -3021,6 +3024,7 @@ document.addEventListener("submit", async e => {
 });
 document.addEventListener("click", async e => {
   const el = e.target.closest("[data-act]");
+  if(el?.classList.contains("scrim")&&e.target.closest("[data-stop]"))return;
   if(!el){ return; }
   if(el.dataset.act === "close-sheet" && e.target.closest("[data-stop]") && !e.target.closest(".round")) return;
   if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
@@ -3274,7 +3278,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-bookingauto48";
+const BUILD = "2026-11-01-compose49";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
