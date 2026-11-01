@@ -1034,7 +1034,6 @@ function vTripMenu(s){
 function vTripMore(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
     <button data-act="export-open">${ic("image",20)}ส่งออกแผนเป็นรูป / PDF</button>
-    <button data-act="history-open">${ic("history",20)}ประวัติ / ย้อนแผน</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
     <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
     ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
@@ -3281,7 +3280,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-time2";
+const BUILD = "2026-11-01-menu1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
