@@ -691,6 +691,27 @@ html.kb .tabbar{display:none}
 .plan-time input{width:50px;text-align:center}
 .plan-time input::-webkit-date-and-time-value{text-align:center}
 .plan-time .tp{left:0;right:0;text-align:center}
+.help-btn{color:var(--flight)}
+.help-sheet{gap:14px}
+.help-q{display:flex;flex-direction:column;gap:8px}.help-q>b{font-size:14px;font-weight:600}
+.help-pace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.help-pace button{border:0;border-radius:14px;min-height:44px;background:var(--tile);color:var(--ink);font:inherit;font-size:14px}
+.help-pace button[aria-pressed="true"]{background:var(--flight-soft);color:var(--flight);font-weight:600}
+.help-start{min-height:50px;font-size:15px;background:var(--flight-soft);color:var(--flight)}
+.help-day{display:flex;flex-direction:column;gap:8px}
+.help-day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.help-go{border:0;background:none;padding:0;display:inline-flex;align-items:center;gap:4px;font:inherit;color:var(--ink)}
+.help-sum{font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:3px 10px}
+.help-tip{display:flex;gap:10px;align-items:flex-start;background:var(--tile);border-radius:16px;padding:12px}
+.help-tip.done{opacity:.6}
+.help-tip p{margin:2px 0 0;font-size:14px;line-height:1.5}
+.help-kind{font-size:11.5px;font-weight:600;color:var(--muted)}
+.help-fix{margin-top:8px;min-height:36px;font-size:13px}
+.help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
+.help-done{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:12.5px;color:var(--place);font-weight:600}
+.help-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.help-actions .soft-btn{background:var(--tile);color:var(--ink)}
+.help-actions .soft-btn:last-child{background:var(--flight-soft);color:var(--flight)}
 </style>
 </head>
 <body>
@@ -1011,7 +1032,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai","trip-edit","help"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1378,6 +1399,90 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimatio
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
+/* ---------- AI help: the person plans; AI reads every day and suggests, and fixes what they pick ---------- */
+const HELP_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","อัดแน่น"]];
+const HELP_KIND = {good:["check","t-place","ดีแล้ว"], tight:["info","k-food","แน่นไป"], late:["clock","k-shop","ไม่ทันเวลา"], free:["plus","t-flight","ยังว่าง"], order:["move","t-move","ลำดับ"], meal:["food","k-food","มื้ออาหาร"], tip:["spark","t-stay","แนะนำ"]};
+function helpPrefsKey(){ return "mytrip-help:" + S.me + ":" + (S.trip && S.trip.id); }
+function helpState(){
+  const t = S.trip;
+  if(S.help && S.help.tripId === t.id) return S.help;
+  let saved = {}; try { saved = JSON.parse(localStorage.getItem(helpPrefsKey())) || {}; } catch(_){}
+  const stay = S.items.find(i => i.type === "stay" && /\d/.test((i.data||{}).guests || "")), g = stay ? String(stay.data.guests) : "";
+  const n = (k, d) => Number.isFinite(+saved[k]) ? Math.max(0, Math.min(20, +saved[k])) : d;
+  return S.help = {tripId:t.id, step:"ask", pace:HELP_PACE.some(p => p[0] === saved.pace) ? saved.pace : "balanced",
+    adults:n("adults", +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length)), children:n("children", +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0), elders:n("elders", 0), result:null};
+}
+function helpRows(date){
+  return dayEntries(date).filter(e => !e.night).map(e => {
+    const it = e.it, d = it.data || {};
+    return {id:it.id, phase:e.phase || "", time:e.time || "", until:d.until || "", kind:d.kind || "", mode:d.mode || "", minutes:+d.durationMinutes || 0,
+      title:it.type === "move" && d.from && d.to ? d.from + " → " + d.to : (e.title || it.title), note:it.type === "place" ? s_(it.sub) : ""};
+  });
+}
+async function helpRun(){
+  const h = helpState(), t = S.trip; if(!t || h.step === "loading") return;
+  try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders})); } catch(_){}
+  const dates = tripDates(t);
+  h.step = "loading"; h.err = ""; h.ctl = new AbortController(); render();
+  try {
+    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders}, days:dates.map(date => ({date, rows:helpRows(date)}))});
+    if(S.help !== h) return;
+    h.result = res; h.step = "result"; render();
+  } catch(e){
+    if(S.help !== h) return;
+    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : aiErr(e); render();
+  }
+}
+async function helpFix(di, ti){
+  const h = S.help, t = S.trip, tip = h && h.result && h.result.days[di] && h.result.days[di].tips[ti];
+  if(!tip || tip.applied || tip.busy || !t) return;
+  tip.busy = true; render();
+  let done = 0;
+  try {
+    for(const f of tip.fix){
+      const it = f.id && S.items.find(i => i.id === f.id);
+      if(f.op === "time" && it){ await store.updateItem(t.id, it.id, {time:f.time}); done++; }
+      else if(f.op === "remove" && it){ await store.deleteItem(t.id, it.id); done++; }
+      else if(f.op === "move" && it){ await store.updateItem(t.id, it.id, {date:f.date}); done++; }
+      else if(f.op === "duration" && it){ await store.updateItem(t.id, it.id, {data:{...(it.data||{}), durationMinutes:f.minutes}}); done++; }
+      else if(f.op === "add"){
+        const idea = f.ideaId && S.items.find(i => i.id === f.ideaId && i.type === "idea"), d = (idea && idea.data) || {};
+        if(idea && plannedFrom(idea.id)) continue;
+        await store.addItem(t.id, {type:"place", date:f.date, time:f.time || "", title:idea ? idea.title : f.title, sub:idea ? (idea.sub || "") : "",
+          data:{address:d.address || "", lat:d.lat, lon:d.lon, placeId:d.placeId || "", mapsUrl:d.mapsUrl || "", kind:f.kind || d.kind || "ที่เที่ยว", ...(idea ? {fromIdea:idea.id} : {})},
+          createdBy:S.me, createdAt:Date.now(), source:idea ? "idea" : "manual"});
+        done++;
+      }
+    }
+    tip.applied = true; toast(done ? "แก้ตามคำแนะนำแล้ว" : "รายการนี้เปลี่ยนไปแล้ว ไม่มีอะไรต้องแก้");
+  } catch(err){ fail(err); }
+  finally { tip.busy = false; render(); }
+}
+function vHelp(){
+  const h = helpState(), dates = tripDates(S.trip);
+  const head = `<div class="hd"><span class="thumb tc t-flight">${ic("spark")}</span><h2>ผู้ช่วย AI</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
+  const wrap = body => `<div class="scrim" data-act="close-sheet"><div class="sheet help-sheet" role="dialog" aria-modal="true" aria-label="ผู้ช่วย AI" data-stop="1">${head}${body}</div></div>`;
+  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
+  if(h.step === "result" && h.result){
+    const days = h.result.days.map((d, di) => {
+      const i = dates.indexOf(d.date); if(i < 0 || (!d.tips.length && !d.summary)) return "";
+      return `<section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(d.date)}"><b>วันที่ ${i + 1} · ${esc(dShort(d.date))}</b>${ic("chev",16)}</button>${d.summary ? `<span class="help-sum">${esc(d.summary)}</span>` : ""}</div>
+        ${d.tips.map((tp, ti) => { const [icn, tone, label] = HELP_KIND[tp.kind] || HELP_KIND.tip;
+          return `<div class="help-tip${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
+            ${tp.fix.length ? (tp.applied ? `<span class="help-done">${ic("check",14)}แก้แล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังแก้…" : "แก้ให้เลย"}</button>`) : ""}</div></div>`; }).join("")}</section>`;
+    }).join("");
+    return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
+      <p class="muted small" style="margin:-4px 0 0">คำแนะนำจาก AI ไม่เปลี่ยนแผนเอง ถ้าเห็นด้วยข้อไหน กด <b>แก้ให้เลย</b></p>
+      ${days || `<p class="muted">ไม่มีคำแนะนำ</p>`}
+      <div class="help-actions"><button type="button" class="soft-btn help-again" data-act="help-ask">ปรับสไตล์ทริป</button><button type="button" class="soft-btn" data-act="help-run">${ic("spark",16)}ดูแผนอีกรอบ</button></div>`);
+  }
+  const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="help-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${h[k]}</output><button type="button" data-act="help-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
+  return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
+    <p class="muted small" style="margin:-4px 0 0">บอก AI ว่าทริปนี้เป็นแบบไหน แล้ว AI จะอ่านแผนทุกวัน และบอกว่าตรงไหนแน่นไป ว่างไป หรือไปไม่ทันเวลา</p>
+    <div class="help-q"><b>สไตล์เที่ยว</b><div class="help-pace">${HELP_PACE.map(([k,l]) => `<button type="button" data-act="help-pace" data-k="${k}" aria-pressed="${h.pace === k}">${l}</button>`).join("")}</div></div>
+    <div class="help-q"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
+    <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}ให้ AI ช่วยดูแผน</button>`);
+}
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
   const first = dates[0], last = dates[dates.length-1];
@@ -1429,6 +1534,7 @@ function vTrip(){
     <section class="trip-bar cv-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
+      <button class="round help-btn" data-act="help-open" aria-label="ผู้ช่วย AI">${ic("spark",20)}</button>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
     <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
@@ -2060,7 +2166,7 @@ async function planCall(s, action, body){
     if(!e || (e.code !== "offline" && e.code !== "server_error")) throw e;
     for(let i = 0; i < 45; i++){
       await new Promise(ok => setTimeout(ok, 4000));
-      if(s.ctl.signal.aborted || S.ai !== s) throw {code:"cancelled"};
+      if(s.ctl.signal.aborted || (S.ai !== s && S.help !== s)) throw {code:"cancelled"};
       let r = null; try { r = await api("planResult", {job}); } catch(_){ continue; }
       if(r && r.missing && i > 3) break;
       if(r && r.done){ if(r.error) throw {code:r.error}; return r.plan; }
@@ -2505,6 +2611,7 @@ function vSheet(){
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "trip-more") return vTripMore();
   if(s.kind === "trip-edit") return vTripEdit(s);
+  if(s.kind === "help") return vHelp();
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
@@ -3233,6 +3340,14 @@ document.addEventListener("click", async e => {
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "tab": selectTab(el.dataset.k); break;
+    case "help-open": helpState(); S.sheet = {kind:"help"}; render(); break;
+    case "help-pace": S.help.pace = el.dataset.k; render(); break;
+    case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
+    case "help-run": helpRun(); break;
+    case "help-ask": S.help.step = "ask"; S.help.err = ""; render(); break;
+    case "help-stop": if(S.help && S.help.ctl) S.help.ctl.abort(); break;
+    case "help-fix": helpFix(Number(el.dataset.i), Number(el.dataset.j)); break;
+    case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; S.sheet = null; selectTab(""); break; }
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
@@ -3455,7 +3570,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-time4";
+const BUILD = "2026-11-02-help1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
