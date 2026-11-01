@@ -749,7 +749,7 @@ function spanOf(items){
 const S = {
   view:"loading", me:null, myName:"", trips:[], tripsReady:false,
   tripId:null, trip:null, items:[], day:0,
-  newTrip:{ name:"", destination:"" },
+  newTrip:{ name:"", destination:"", start:"", end:"" },
   upload:null, review:null, sheet:null, toast:"", joinCode:"", joinTrip:null, joinMissing:false
 };
 let unsubTrips=null, unsubTrip=null, unsubItems=null;
@@ -872,9 +872,18 @@ const store = {
     return r.id;
   }
 };
+/* the trip's days: its bookings, widened by the rough dates typed when there were no bookings yet */
+function tripSpan(t, items){
+  const sp = spanOf(items), ds = [];
+  if(sp.startDate) ds.push(sp.startDate, addDays(sp.startDate, sp.days - 1));
+  if(validD(t.planStart)) ds.push(t.planStart, validD(t.planEnd) ? t.planEnd : t.planStart);
+  if(!ds.length) return {startDate:"", days:0};
+  ds.sort();
+  return {startDate:ds[0], days:daysBetween(ds[0], ds[ds.length-1]) + 1};
+}
 function syncDates(tripId){
   const t = C.trips[tripId]; if(!t || !t.autoDates) return;
-  const sp = spanOf(itemList(tripId));
+  const sp = tripSpan(t, itemList(tripId));
   if(sp.startDate !== (t.startDate||"") || sp.days !== (t.days||0)) store.updateTrip(tripId, sp);
 }
 async function refreshTrips(){
@@ -931,7 +940,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1033,6 +1042,7 @@ function vTripMenu(s){
 
 function vTripMore(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
+    <button data-act="trip-edit">${ic("edit",20)}แก้ไขชื่อ / วันเที่ยว</button>
     <button data-act="export-open">${ic("image",20)}ส่งออกแผนเป็นรูป / PDF</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
     <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
@@ -1047,15 +1057,33 @@ function stepRow(label, sub, key, min, max){
     <output aria-live="polite">${v}</output>
     <button type="button" aria-label="เพิ่ม${label}" data-act="step" data-k="${key}" data-d="1" data-min="${min}" data-max="${max}">${ic("plus",20)}</button></span></div>`;
 }
+function tripFields(root, n){
+  return `<label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="${root}:name"></label>
+      <label class="fld">ไปที่ไหน <span class="muted small" style="font-weight:400">ไม่ใส่ก็ได้</span><input maxlength="60" placeholder="เช่น โตเกียว" value="${esc(n.destination||"")}" data-bind="${root}:destination"></label>
+      <div class="grid2"><label class="fld">วันไป<input type="date" value="${esc(n.start||"")}" data-bind="${root}:start"></label><label class="fld">วันกลับ<input type="date" value="${esc(n.end||"")}" min="${esc(n.start||"")}" data-bind="${root}:end"></label></div>
+      <p class="muted small" style="margin:-6px 0 0">ยังไม่ต้องมีตั๋วหรือที่พัก ใส่วันคร่าวๆ ไว้วางแผนก่อนได้ พอเพิ่มเที่ยวบินหรือที่พักแล้ว วันของทริปจะขยายตามให้เอง</p>`;
+}
+/* rough dates typed by the person: end before start is swapped, a missing end means a one-day trip */
+function roughDates(n){
+  let a = validD(n.start) ? n.start : "", b = validD(n.end) ? n.end : "";
+  if(!a && b) a = b; if(a && !b) b = a; if(a && b && b < a) [a, b] = [b, a];
+  return {planStart:a, planEnd:b};
+}
 function vNew(){
   const n = S.newTrip;
   return `<main class="screen">
     <div class="top"><button class="round" data-act="home" aria-label="กลับ">${ic("back")}</button><h1>ทริปใหม่</h1></div>
     <form class="stack" data-form="new" style="gap:18px">
-      <label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="newTrip:name"></label>
+      ${tripFields("newTrip", n)}
       <button class="btn primary" type="submit">ตกลง</button>
     </form>
   </main>`;
+}
+function vTripEdit(s){
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แก้ไขทริป" data-stop="1">
+    <div class="hd"><h2>แก้ไขทริป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form class="stack" data-form="trip-edit" style="gap:16px">${tripFields("sheet", s)}<button class="btn primary" type="submit">บันทึก</button></form>
+  </div></div>`;
 }
 
 function vInvite(){
@@ -2347,6 +2375,7 @@ function vSheet(){
   if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "trip-more") return vTripMore();
+  if(s.kind === "trip-edit") return vTripEdit(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
@@ -2985,6 +3014,13 @@ document.addEventListener("submit", async e => {
   e.preventDefault();
   if(f === "join") return startJoin(S.joinCode);
   if(f === "review") return saveReview(false);
+  if(f === "trip-edit"){
+    const s = S.sheet, t = S.trip; if(!s || !t) return;
+    if(!s_(s.name)){ toast("ใส่ชื่อทริปก่อนนะ"); return; }
+    const rough = roughDates(s), patch = {name:s_(s.name), destination:s_(s.destination), ...rough, autoDates:true};
+    await store.updateTrip(t.id, {...patch, ...tripSpan({...t, ...patch}, S.items)});
+    S.sheet = null; render(); toast("บันทึกทริปแล้ว"); return;
+  }
   if(f === "item-edit"){
     const s = S.sheet, it = s && S.items.find(i => i.id === s.id); if(!it) return;
     if(it.type==="move" && (!Number.isFinite(+s.edit.durationMinutes)||+s.edit.durationMinutes<=0||+s.edit.durationMinutes>1440)){toast("ระบุเวลาเดินทาง 1–1440 นาที");return;}
@@ -3001,9 +3037,10 @@ document.addEventListener("submit", async e => {
     if(S.creating) return;
     S.creating = true; toast("กำลังสร้างทริป…");
     try{
-      const id = await store.createTrip({name:n.name.trim(), destination:"", startDate:"", days:0, autoDates:true,
+      const rough = roughDates(n), span = tripSpan(rough, []);
+      const id = await store.createTrip({name:n.name.trim(), destination:s_(n.destination), ...rough, ...span, autoDates:true,
         ownerId:S.me, memberIds:[S.me], createdAt:Date.now()});
-      S.newTrip = {name:"", destination:""};
+      S.newTrip = {name:"", destination:"", start:"", end:""};
       openTrip(id, "invite");
     } catch(err){ fail(err); }
     finally{ S.creating = false; }
@@ -3066,6 +3103,7 @@ document.addEventListener("click", async e => {
     case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(S.catTab!=="planning")S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
+    case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:"auto", status:"idle"}; go("upload"); break;
@@ -3286,7 +3324,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-time3";
+const BUILD = "2026-11-02-dates1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
