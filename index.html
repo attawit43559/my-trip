@@ -626,20 +626,24 @@ html.lock,html.lock body{overflow:hidden}
 .idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}html.kb .idea-compose-sheet{padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet .hd h2{font-size:17px}html.kb .idea-compose-body{gap:8px}html.kb .idea-compose-sheet .fld{gap:4px}html.kb .idea-compose-sheet .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet .btn{height:42px;min-height:42px}
 
 /* trip pages behind a floating glass tab bar */
-.screen.has-tabbar{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:40;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px;border-radius:999px;
-  background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.22));-webkit-backdrop-filter:blur(14px) saturate(1.9);backdrop-filter:blur(14px) saturate(1.9);
-  border:1px solid rgba(255,255,255,.65);box-shadow:0 12px 32px rgba(43,33,28,.14),0 1px 2px rgba(43,33,28,.06),inset 0 1px 1px rgba(255,255,255,.9),inset 0 -1px 1px rgba(255,255,255,.25);touch-action:none;user-select:none;-webkit-user-select:none}
-/* the selected page sits under a clear lens that slides like a drop of glass */
-.tab-pill{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 4);border-radius:999px;pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.18));-webkit-backdrop-filter:blur(3px) saturate(2) brightness(1.06);backdrop-filter:blur(3px) saturate(2) brightness(1.06);
-  border:1px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 1px rgba(255,255,255,.95),inset 0 -2px 6px rgba(255,255,255,.35),0 4px 14px rgba(43,33,28,.10);
+.screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:40;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
+  border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
+/* the selected page sits under a thick, clear piece of glass that slides */
+.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 4);border-radius:999px;pointer-events:none;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
+  -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),inset 1.5px 0 0 rgba(140,205,255,.45),inset -1.5px 0 0 rgba(255,180,130,.45),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
   transform:translateX(calc(var(--i) * 100%));transition:transform .5s cubic-bezier(.22,1.45,.36,1),scale .3s cubic-bezier(.22,1.45,.36,1)}
-.tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .3s cubic-bezier(.22,1.45,.36,1);scale:1.14 1.08}
+.tab-pill::before{content:"";position:absolute;left:10%;right:30%;top:7%;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.45}
+.tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
+.tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .3s cubic-bezier(.22,1.45,.36,1);scale:1.16 1.12}
 .tabbar.press:not(.drag) .tab-pill{scale:1.05}
-.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 5px;font-size:11.5px;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
-.tb-ic{position:relative;width:23px;height:23px;display:block}
-.tb-ic .ic{position:absolute;inset:0;transition:opacity .18s,transform .3s cubic-bezier(.22,1.45,.36,1)}
+.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
+.tb-ic{position:relative;width:21px;height:21px;display:block}
+.tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .3s cubic-bezier(.22,1.45,.36,1)}
 .tb-ic .ic+.ic{opacity:0}
 .tabbar button[aria-current="page"],.tabbar button.hot{color:var(--ink);font-weight:600}
 .tabbar button[aria-current="page"] .tb-ic .ic:first-child,.tabbar button.hot .tb-ic .ic:first-child{opacity:0}
@@ -1313,10 +1317,10 @@ function selectTab(k, landed){
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
 const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0};
-function tabAt(bar, x){ const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(TRIP_TABS.length - 1, Math.floor((x - r.left - 6) / ((r.width - 12) / TRIP_TABS.length)))); }
+function tabAt(bar, x){ const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(TRIP_TABS.length - 1, Math.floor((x - r.left - 4) / ((r.width - 8) / TRIP_TABS.length)))); }
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar) return;
-  const r = bar.getBoundingClientRect(); TB.cell = (r.width - 12) / TRIP_TABS.length; TB.max = TB.cell * (TRIP_TABS.length - 1);
+  const r = bar.getBoundingClientRect(); TB.cell = (r.width - 8) / TRIP_TABS.length; TB.max = TB.cell * (TRIP_TABS.length - 1);
   TB.on = true; TB.moved = false; TB.x = e.clientX; TB.start = (+getComputedStyle(bar).getPropertyValue("--i") || 0) * TB.cell;
   bar.classList.add("press"); });
 document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = document.querySelector(".tabbar"); if(!bar) return;
@@ -1331,6 +1335,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimatio
   const bar = document.querySelector(".tabbar"); if(!bar) return; bar.classList.remove("press");
   if(!TB.moved) return;
   const x = parseFloat(bar.style.getPropertyValue("--x")) || 0, n = cancel ? +bar.dataset.to : Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell);
+  bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   TB.suppress = true; setTimeout(() => TB.suppress = false, 400);
   if(!cancel) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 380); }
@@ -3414,7 +3419,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-tabs3";
+const BUILD = "2026-11-02-tabs4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
