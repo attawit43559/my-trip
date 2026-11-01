@@ -702,8 +702,9 @@ function planReviewRun_(req) {
   ].filter(Boolean).join('\n');
   const chunks = []; for (let i = 0; i < days.length; i += 3) chunks.push(days.slice(i, i + 3));
   const prompts = chunks.map(prompt);
-  const raws = callGeminiMany_(c.props, prompts).map((text, i) => { try { return parseJson_(text); } catch (e) {
-    try { return parseJson_(callGemini_(c.props, prompts[i], [], { temperature: 0.4, thinking: 'low', maxTokens: 16384 })); } catch (e2) { return { days: [] }; } } });
+  const busy = { fallback: ['gemini-3.5-flash'] };
+  const raws = callGeminiMany_(c.props, prompts, busy).map((text, i) => { try { return parseJson_(text); } catch (e) {
+    try { return parseJson_(callGemini_(c.props, prompts[i], [], Object.assign({ temperature: 0.4, thinking: 'low', maxTokens: 16384 }, busy))); } catch (e2) { return { days: [] }; } } });
   if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
   const kinds = ['good', 'tight', 'free', 'late', 'order', 'meal', 'tip'], placeKinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
   const ideaOk = {}; ideas.forEach(i => { ideaOk[i.id] = i; });
@@ -1575,16 +1576,16 @@ function callGemini_(props, prompt, files, opts) {
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
   // Keep the selected model explicit; do not silently downgrade planning quality.
-  const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash'];
+  const models = [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash'].concat(opts.fallback || []);
   const parts = [{ text: prompt }].concat([].concat.apply([], files.map((f, i) => [{ text: '[File ' + i + ']' }, { inline_data: { mime_type: f.mime, data: f.data } }])));
   let lastErr;
   // the model is sometimes busy (503/429): wait and ask the same model again rather than give up
   const tries = [];
-  models.filter((m, i) => models.indexOf(m) === i).forEach(m => { tries.push(m, m, m); });
+  models.filter((m, i) => models.indexOf(m) === i).forEach(m => { tries.push(m, m); });
   for (let n = 0; n < tries.length; n++) {
     const model = tries[n];
-    if (n % 3 && lastErr && !/_(503|429|500)\b/.test(String(lastErr.message))) continue;
-    if (n % 3) Utilities.sleep(n % 3 === 1 ? 2500 : 6000);
+    if (n % 2 && lastErr && !/_(503|429|500)\b/.test(String(lastErr.message))) continue;
+    if (n % 2) Utilities.sleep(3000);
     try {
       const res = fetchJson_('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
         headers: { 'x-goog-api-key': key },
@@ -1600,8 +1601,9 @@ function callGemini_(props, prompt, files, opts) {
 }
 
 /* several planner prompts sent to Gemini together (UrlFetchApp.fetchAll); a failed one is retried on its own */
-function callGeminiMany_(props, prompts) {
-  if (prompts.length === 1) return [callGemini_(props, prompts[0], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 })];
+function callGeminiMany_(props, prompts, extra) {
+  const more = extra || {};
+  if (prompts.length === 1) return [callGemini_(props, prompts[0], [], Object.assign({ temperature: 0.5, thinking: 'low', maxTokens: 16384 }, more))];
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
   const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
@@ -1618,7 +1620,7 @@ function callGeminiMany_(props, prompts) {
     } catch (e) {}
     // busy (too many at once on the free tier): wait a moment, then ask on its own
     if (r.getResponseCode() === 429) Utilities.sleep(2000 + i * 1500);
-    return callGemini_(props, prompts[i], [], { temperature: 0.5, thinking: 'low', maxTokens: 16384 });
+    return callGemini_(props, prompts[i], [], Object.assign({ temperature: 0.5, thinking: 'low', maxTokens: 16384 }, more));
   });
 }
 
