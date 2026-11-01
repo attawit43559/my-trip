@@ -1570,13 +1570,7 @@ function applyTravelChoice(ai,index){
   s.travelSource=ai?'AI วิเคราะห์จาก Google Maps · เวลาประมาณ':'Google Maps · เวลาประมาณ';
   s.travelCheckedAt=s.lookup.checkedAt;s.selectedIndex=ai?0:index;s.chosen=true;s.lookupKey=travelQueryKey(s);travelResultsCache.set(s.cacheKey,{result:s.lookup,selectedIndex:s.selectedIndex});render();
 }
-function manualTravelLinks(it){
-  const date=tripDates(S.trip)[S.day];
-  return manualTravelLegs(date).filter(l=>l.fromId===it.id||l.toId===it.id).map(l=>{
-    const d=l.saved?.data||{},sub=l.saved?[d.mode,d.durationMinutes?d.durationMinutes+' นาที':'',l.saved.time].filter(Boolean).join(' · '):'บันทึกการเดินทาง';
-    return `<button class="lnk travel-leg-link" data-act="travel-leg" data-key="${esc(l.key)}">${ic('move',20)}<span class="grow">${esc(briefName(l.from))} → ${esc(briefName(l.to))}<small>${esc(sub)}</small></span>${ic('chev',16)}</button>`;
-  }).join('');
-}
+
 function openTravelSheet(leg){
   const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||travelDepartureHint(leg),note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||'',chosen:!!leg.saved,approximateRoutes:true,departTime:leg.saved?.time||'',cacheKey:travelCacheKey(leg)};const cached=travelResultsCache.get(S.sheet.cacheKey);if(cached){S.sheet.lookup=cached.result;S.sheet.time=cached.result.time;S.sheet.lookupKey=travelQueryKey(S.sheet);if(cached.selectedIndex>=0)applyTravelChoice(false,cached.selectedIndex);else render();}else{render();lookupTravel();}
 }
@@ -1612,7 +1606,6 @@ function itemLinks(it){
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
   if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "ดูใน Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "นำทางใน Google Maps"));
-  if(['place','stay','flight'].includes(it.type)){const legs=manualTravelLinks(it);if(legs)out.push(legs);}
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
   files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
@@ -3289,7 +3282,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-ideakeyboard51";
+const BUILD = "2026-11-01-placeinfo52";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
