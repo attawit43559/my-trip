@@ -609,6 +609,7 @@ html.lock,html.lock body{overflow:hidden}
 .travel-gap{position:relative;list-style:none;padding:0 12px}.travel-gap button{display:flex;align-items:center;gap:9px;width:100%;padding:5px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--tile);color:var(--muted);text-align:left;font:inherit}.travel-gap b{font-size:12px;font-weight:500}.travel-gap small{display:block;font-size:11px;overflow-wrap:anywhere}.travel-results{display:flex;flex-direction:column;gap:10px}.travel-result{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:13px}.travel-result ol{padding-left:20px;margin:0}.travel-result li{margin:4px 0;overflow-wrap:anywhere}.travel-date{margin:0}.travel-results .pill-btn{min-height:38px}
 .travel-when{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--accent-soft)}.travel-when>b{font-size:14px}.travel-when .fld{font-size:12px}.travel-when input{min-height:40px}.travel-source-choices{display:grid;gap:8px}.travel-source{display:flex;align-items:center;gap:10px;min-height:64px;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;text-align:left;background:var(--surface);color:var(--ink);font:inherit}.travel-source>span{flex:1;min-width:0}.travel-source b{font-size:14px;display:block}.travel-source small{display:block;font-size:11px;color:var(--muted);margin-top:3px}.maps-source>.ic:first-child{color:var(--place)}.ai-source>.ic:first-child{color:var(--idea)}.travel-source[aria-pressed="true"]{border-color:var(--accent-line);background:var(--accent-soft)}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.external-maps{border-top:1px solid var(--line)}.travel-result>summary{cursor:pointer;list-style:revert}.travel-result-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-source{min-height:44px;padding:10px 12px}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--accent-soft);border-color:var(--accent-line)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}.booking-add-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.booking-add-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit}.booking-add-tabs button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent-line)}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
+.dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
 </style>
 </head>
 <body>
@@ -1180,14 +1181,7 @@ function entryHtml(e){
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time">${e.night ? "" : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>`);
 }
-function catCard(){
-  const tab = S.catTab || "";
-  const tabs = [["planning","วางแผน"],["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
-  const info = ["info","flight","stay"].includes(tab);
-  const list = tab === "idea"
-    ? S.items.filter(i => i.type === "idea" && (!S.ideaFilter||(i.data||{}).kind===S.ideaFilter) && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0))
-    : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
-  const row = it => {
+function catRow(it){
     if(it.type === "idea"){
       const p = plannedFrom(it.id), d = it.data || {};
       const meta = [p ? "ลงแผนแล้ว · " + dShort(p.date) : "", !p ? it.sub : ""].filter(Boolean).join(" · ");
@@ -1197,7 +1191,16 @@ function catCard(){
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
     return swipeItem(it, "c:" + it.id, `<button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(briefName(it.title))}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
-  };
+}
+function filteredIdeas(){return S.items.filter(i => i.type === "idea" && (!S.ideaFilter||(i.data||{}).kind===S.ideaFilter) && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0));}
+function catCard(){
+  const tab = S.catTab || "";
+  const tabs = [["planning","วางแผน"],["idea","ที่สนใจ"],["info","ข้อมูลทริป"]];
+  const info = ["info","flight","stay"].includes(tab);
+  const list = tab === "idea"
+    ? filteredIdeas()
+    : S.items.filter(i => i.type === tab).sort((a,b) => ((a.date||"9")+(a.time||"99")) < ((b.date||"9")+(b.time||"99")) ? -1 : 1);
+  const row = catRow;
   const add = (tab === "flight" || tab === "stay")
     ? `<button class="cat-add t-${tab}" data-act="upload" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`
     : `<button class="cat-add t-${tab}" data-act="sheet" data-k="${tab}">${ic("plus",18)}เพิ่ม</button>`;
@@ -1670,10 +1673,11 @@ async function togglePlannerIdea(id){
 }
 function fitPlannerPanel(){
   if(!S.catTab)return;
+  if(document.activeElement?.closest?.('.dock')&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName))return;
   const banner=document.querySelector('.trip-bar');if(banner)document.documentElement.style.setProperty('--trip-panel-top',Math.max(8,banner.getBoundingClientRect().bottom+10)+'px');
 }
 function ideaToolbar(){
-  return `<div class="interest-tools"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดที่สนใจ">${['',...IDEA_KINDS].map(k=>`<button data-act="ideas-filter" data-k="${esc(k)}" aria-pressed="${(S.ideaFilter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="ideas-search" aria-label="${S.ideaSearchOpen?'ซ่อนค้นหาที่สนใจ':'ค้นหาที่สนใจ'}" aria-expanded="${!!S.ideaSearchOpen}">${ic('search',19)}</button></div>${S.ideaSearchOpen?`<input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหา" value="${esc(S.ideaQuery||'')}" data-bind="root:ideaQuery" data-rerender="1">`:''}</div>`;
+  return `<div class="interest-tools"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดที่สนใจ">${['',...IDEA_KINDS].map(k=>`<button data-act="ideas-filter" data-k="${esc(k)}" aria-pressed="${(S.ideaFilter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="ideas-search" aria-label="${S.ideaSearchOpen?'ซ่อนค้นหาที่สนใจ':'ค้นหาที่สนใจ'}" aria-expanded="${!!S.ideaSearchOpen}">${ic('search',19)}</button></div>${S.ideaSearchOpen?`<input id="ideas-search" class="workflow-search" type="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหา" value="${esc(S.ideaQuery||'')}" data-idea-search="1">`:''}</div>`;
 }
 window.addEventListener('resize',fitPlannerPanel);
 window.addEventListener('scroll',fitPlannerPanel,{passive:true});
@@ -2395,6 +2399,12 @@ function vSheet(){
 }
 
 /* ---------- render ---------- */
+let overlayScrollY=null;
+function lockOverlayPage(locked){
+  const body=document.body;
+  if(locked&&overlayScrollY===null){overlayScrollY=window.scrollY;body.style.position='fixed';body.style.top=-overlayScrollY+'px';body.style.left='0';body.style.right='0';body.style.width='100%';}
+  else if(!locked&&overlayScrollY!==null){const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
+}
 function render(){
   const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
   const v = views[S.view];
@@ -2408,7 +2418,8 @@ function render(){
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
   const modalSheet=S.sheet&&S.sheet.kind!=="day-ideas";
   document.body.style.overflow = modalSheet ? "hidden" : "";
-  document.documentElement.classList.toggle("lock", !!(modalSheet || (S.view === "trip" && S.catTab)));
+  const overlayLocked=!!(modalSheet || (S.view === "trip" && S.catTab));
+  document.documentElement.classList.toggle("lock",overlayLocked);lockOverlayPage(overlayLocked);
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
 }
@@ -2632,6 +2643,9 @@ async function confirmJoin(){
 /* ---------- events ---------- */
 document.addEventListener("toggle",e=>{if(e.target.classList?.contains('travel-manual')&&S.sheet?.kind==='travel-leg'){S.sheet.manualOpen=e.target.open;const save=e.target.closest('form')?.querySelector('.travel-save');if(save)save.hidden=!S.sheet.chosen&&!e.target.open;}},true);
 document.addEventListener("input", e => {
+  if(e.target.dataset?.ideaSearch!==undefined&&S.catTab==='idea'){
+    S.ideaQuery=e.target.value;const box=document.querySelector('.dock-body');if(box){const list=filteredIdeas();box.innerHTML=list.length?`<ul class="cat-list">${list.map(catRow).join('')}</ul>`:'<p class="muted small">ไม่พบสถานที่</p>';box.scrollTop=0;}return;
+  }
   if(e.target.dataset?.daySearch!==undefined&&S.catTab==='planning'){
     const s=S.planner||(S.planner={});s.query=e.target.value;const list=document.querySelector('.picker-list');if(list)list.innerHTML=vDayIdeaRows(s);return;
   }
@@ -3260,7 +3274,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-tripinfo46";
+const BUILD = "2026-11-01-searchfix47";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
