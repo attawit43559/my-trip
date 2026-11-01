@@ -1484,7 +1484,7 @@ async function helpFix(di, ti, fi){
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
   const wrap = body => `<div class="help-page">${body}</div>`;
-  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
+  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">${helpFill(h).length ? "ให้ AI เลือกที่ให้ด้วย อาจใช้เวลา 1–3 นาที" : "ใช้เวลาประมาณ 20–60 วินาที"}</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
   if(h.step === "result" && h.result){
     const days = h.result.days.map((d, di) => {
       const i = dates.indexOf(d.date); if(i < 0 || (!d.tips.length && !d.summary)) return "";
@@ -3600,7 +3600,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help6";
+const BUILD = "2026-11-02-help7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

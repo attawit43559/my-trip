@@ -710,7 +710,8 @@ function planReviewRun_(req) {
   ].filter(Boolean).join('\n');
   const chunks = []; for (let i = 0; i < days.length; i += 3) chunks.push(days.slice(i, i + 3));
   const prompts = chunks.map(prompt);
-  const busy = { models: ['gemini-3.5-flash'], fallback: [c.props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash'], once: true };
+  // the bigger model is much slower when it is busy: ask the quick one again rather than wait minutes
+  const busy = { models: ['gemini-3.5-flash'] };
   const raws = callGeminiMany_(c.props, prompts, busy).map((text, i) => { try { return parseJson_(text); } catch (e) {
     try { return parseJson_(callGemini_(c.props, prompts[i], [], Object.assign({ temperature: 0.4, thinking: 'low', maxTokens: 16384 }, busy))); } catch (e2) { return { days: [] }; } } });
   if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
