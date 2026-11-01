@@ -624,6 +624,22 @@ html.lock,html.lock body{overflow:hidden}
 .compose-sheet{font-family:var(--body);font-size:14px;gap:14px}.compose-sheet .hd h2{font-family:var(--body);font-size:18px;font-weight:600}.compose-sheet .fld{font-size:13px;font-weight:500;gap:6px}.compose-sheet .fld input,.compose-sheet .fld select,.compose-sheet #paste-text{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);box-shadow:none;border-radius:14px;background:var(--tile);width:100%;min-width:0;max-width:100%;padding:10px 12px}.compose-sheet .fld input{height:46px}.compose-sheet :is(input,textarea,select):focus{outline:none;box-shadow:inset 0 0 0 1px var(--accent-line);border-color:var(--accent-line)}.compose-sheet .btn{font-family:var(--body);font-size:15px;font-weight:600;min-height:46px}.compose-sheet .chips{gap:6px}.compose-sheet .chips button{font-family:var(--body);font-size:13px;border:1px solid transparent;color:var(--ink);background:var(--tile);min-height:38px;padding:7px 10px}.compose-sheet .chips.t-idea button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);box-shadow:none}.compose-sheet .link-btn{font-family:var(--body);font-size:13px;color:var(--muted)}.booking-compose .drop{background:var(--tile);border:1px dashed var(--line);border-radius:14px;font-size:14px}.booking-compose #paste-text{min-height:112px;resize:vertical}.booking-compose .reading{border:0;box-shadow:none;background:var(--tile)}
 
 .idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}html.kb .idea-compose-sheet{padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet .hd h2{font-size:17px}html.kb .idea-compose-body{gap:8px}html.kb .idea-compose-sheet .fld{gap:4px}html.kb .idea-compose-sheet .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet .btn{height:42px;min-height:42px}
+
+/* trip pages behind a floating glass tab bar */
+.screen.has-tabbar{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+.tabbar{position:fixed;z-index:40;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px;border-radius:999px;background:color-mix(in srgb,var(--surface) 58%,transparent);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);border:1px solid color-mix(in srgb,#FFFFFF 70%,transparent);box-shadow:0 10px 30px rgba(43,33,28,.16),inset 0 1px 0 rgba(255,255,255,.75);touch-action:none;user-select:none;-webkit-user-select:none}
+.tab-pill{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 4);border-radius:999px;background:color-mix(in srgb,var(--accent) 26%,rgba(255,255,255,.6));box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 2px 8px rgba(43,33,28,.08);transform:translateX(calc(var(--i) * 100%));transition:transform .38s cubic-bezier(.3,1.35,.5,1)}
+.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;font-size:11.5px;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent}
+.tabbar button[aria-current="page"]{color:var(--ink);font-weight:600}
+.tabbar button .ic{width:22px;height:22px}
+html.kb .tabbar{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{border-color:rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}:root:not([data-theme="light"]) .tab-pill{background:color-mix(in srgb,var(--accent) 30%,rgba(255,255,255,.08))}}
+@media (prefers-reduced-motion:reduce){.tab-pill{transition:none}}
+.page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
+.page .picker-list{max-height:none;overflow:visible;flex:none}
+.page-cal .cal{margin:0}
+.page-add{align-self:flex-start}
+.page .booking-group{padding:14px 16px}
 </style>
 </head>
 <body>
@@ -684,7 +700,7 @@ const IC = {
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
   search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
-  chev:'<path d="M9 6l6 6-6 6"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>', home:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   stay:'<path d="M3 19V6"/><path d="M3 15h18v4"/><path d="M21 15v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11.5" r="2"/>',
   place:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
@@ -1266,6 +1282,26 @@ function catCard(){
     <div class="seg" role="group" aria-label="เปิดข้อมูลทริป">${tabs.map(([k,l])=>`<button class="t-${k==='planning'?'place':k==='info'?'flight':'idea'}" aria-expanded="${k==='info'?info:k===tab}" aria-controls="trip-dock-panel" data-act="cat" data-k="${k}">${ic(k==='planning'?'calendar':k==='info'?'file':'idea',18)}<span>${l}</span></button>`).join('')}</div>
   </nav>`;
 }
+function selectTab(k){
+  const cur = ["planning","idea","info"].includes(S.catTab) ? S.catTab : "";
+  k = k || "";
+  S.tabFrom = Math.max(0, TRIP_TABS.findIndex(x => x[0] === cur));
+  S.catTab = k; S.sheet = null; S.dockHidden = false;
+  if(k === "planning") S.planner ||= {query:"", filter:""};
+  render(); if(k !== cur) window.scrollTo(0,0);
+  requestAnimationFrame(() => requestAnimationFrame(() => { const bar = document.querySelector(".tabbar"); if(bar) bar.style.setProperty("--i", bar.dataset.to); S.tabFrom = null; }));
+}
+/* slide a finger along the bar: the pill follows, lifting the finger opens that page */
+const TB = {on:false, moved:false, x:0, suppress:false};
+function tabAt(bar, x){ const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(TRIP_TABS.length - 1, Math.floor((x - r.left - 6) / ((r.width - 12) / TRIP_TABS.length)))); }
+document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar) return; TB.on = true; TB.moved = false; TB.x = e.clientX; });
+document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = document.querySelector(".tabbar"); if(!bar) return;
+  if(Math.abs(e.clientX - TB.x) > 8) TB.moved = true;
+  if(TB.moved) bar.style.setProperty("--i", tabAt(bar, e.clientX)); });
+document.addEventListener("pointerup", e => { if(!TB.on) return; TB.on = false; const bar = document.querySelector(".tabbar"); if(!bar || !TB.moved) return;
+  TB.suppress = true; setTimeout(() => TB.suppress = false, 400); selectTab(TRIP_TABS[tabAt(bar, e.clientX)][0]); });
+document.addEventListener("pointercancel", () => { TB.on = false; const bar = document.querySelector(".tabbar"); if(bar && TB.moved) bar.style.setProperty("--i", bar.dataset.to); });
+document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
   const first = dates[0], last = dates[dates.length-1];
@@ -1292,22 +1328,42 @@ function vTrip(){
   const loose = dates.length ? S.items.filter(it => it.type !== "idea" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
-  return `<main class="screen has-dock">
+  const tab = ["planning","idea","info"].includes(S.catTab) ? S.catTab : "";
+  let page;
+  if(tab === "planning") page = dates.length
+    ? `<div class="page-cal">${calendar(dates)}</div>${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
+    : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
+  else if(tab === "idea"){
+    const list = filteredIdeas();
+    page = `${ideaToolbar()}<div class="dock-body page-list" data-k="idea">${list.length?`<ul class="cat-list">${list.map(catRow).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`}</div>
+      <button class="cat-add page-add t-idea" data-act="sheet" data-k="idea">${ic("plus",18)}เพิ่ม</button>`;
+  }
+  else if(tab === "info"){
+    const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
+      return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
+    page = `${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+  }
+  else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
+      ${calendar(dates)}
+      ${vSync()}
+      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
+    ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
+      <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
+  return `<main class="screen has-tabbar">
     <section class="trip-bar cv-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
-    <section class="stack" style="gap:14px;${S.catTab?'display:none':''}">
-      ${!dates.length ? `<button class="add-dash t-flight" data-act="upload" data-k="flight">${ic("plus",20)}เพิ่มเที่ยวบิน</button>` : `
-      ${calendar(dates)}
-      ${vSync()}
-      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}
-`}
-    </section>
-    ${loose.length&&!S.catTab ? `<section class="stack"><div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
-      <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul></section>` : ""}
-  </main>${catCard()}`;
+    <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
+  </main>${tabBar(tab)}`;
+}
+/* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
+const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูลทริป","file"]];
+function tabBar(tab){
+  const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
+  return `<nav class="tabbar" aria-label="หน้าในทริป" style="--i:${from}" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
+    `<button type="button" data-act="tab" data-k="${k}" aria-current="${n===i?"page":"false"}">${ic(icn,22)}<span>${l}</span></button>`).join("")}</nav>`;
 }
 
 function vUpload(){
@@ -3100,7 +3156,8 @@ document.addEventListener("click", async e => {
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
     case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(S.catTab!=="planning")S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
-    case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
+    case "trip-more": S.sheet={kind:"trip-more"};render();break;
+    case "tab": selectTab(el.dataset.k); break;
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
@@ -3322,7 +3379,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-dates3";
+const BUILD = "2026-11-02-tabs1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
