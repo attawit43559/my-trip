@@ -220,7 +220,6 @@ p{margin:0}
 /* while typing, the tab row steps aside so the panel gets the room */
 html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
-.dock.hide{transform:translate(-50%,calc(100% + 24px));opacity:0;pointer-events:none}
 .dock .seg{background:transparent;padding:0}
 .dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px)}
 .dock.anim .dock-panel{animation:dockUp .22s ease}
@@ -2778,29 +2777,14 @@ document.addEventListener("focusin", e => {
   if(!e.target.closest || !e.target.closest(".dock-body") || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   fieldToReveal = e.target; clearTimeout(revealTimer); revealTimer = setTimeout(revealField, 700);   // fallback when no keyboard appears
 });
-/* hide the bottom bar while scrolling down the plan, bring it back when scrolling up or at the bottom */
-(function(){
-  let lastY = window.scrollY, ticking = false;
-  window.addEventListener("scroll", () => {
-    if(ticking) return; ticking = true;
-    requestAnimationFrame(() => {
-      ticking = false;
-      const y = window.scrollY, dy = y - lastY;
-      if(S.view !== "trip" || S.catTab || Math.abs(dy) < 6){ if(Math.abs(dy) >= 6) lastY = y; return; }
-      const atEnd = window.innerHeight + y >= document.documentElement.scrollHeight - 40;
-      const hide = dy > 0 && y > 60 && !atEnd;
-      lastY = y;
-      if(hide !== !!S.dockHidden){ S.dockHidden = hide; const d = document.querySelector(".dock"); if(d) d.classList.toggle("hide", hide); }
-    });
-  }, {passive:true});
-})();
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
   const fit = () => {
     const r = document.documentElement.style; r.setProperty("--vvh", vv.height + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
-    const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
+    const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
     r.setProperty("--kb", (kb > 60 ? kb : 0) + "px");
     document.documentElement.classList.toggle("kb", kb > 60);
   };
@@ -3282,7 +3266,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-placeinfo52";
+const BUILD = "2026-11-01-fixeddock53";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
