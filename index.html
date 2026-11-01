@@ -636,8 +636,8 @@ html.lock,html.lock body{overflow:hidden}
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
-  transform:translateX(calc(var(--i) * 100%));transition:transform .32s cubic-bezier(.4,0,.2,1),scale .2s ease-out}
-.tab-pill.flow{animation:tabDrop .32s cubic-bezier(.4,0,.2,1)}
+  transform:translateX(calc(var(--i) * 100%));transition:transform .41s cubic-bezier(.42,.05,.22,1),scale .22s ease-out}
+.tab-pill.flow{animation:tabDrop .41s cubic-bezier(.42,.05,.22,1)}
 @keyframes tabDrop{0%{scale:1 1}45%{scale:1.08 .96}100%{scale:1 1}}
 .tab-pill::before{content:"";position:absolute;left:10%;right:30%;top:7%;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.45}
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
@@ -1369,7 +1369,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimatio
   clearTimeout(TB.rest); bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   TB.suppress = true; setTimeout(() => TB.suppress = false, 400);
-  if(!cancel) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 240); }
+  if(!cancel) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 310); }
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
@@ -3450,7 +3450,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-search2";
+const BUILD = "2026-11-02-glide3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
