@@ -9,8 +9,10 @@
   const C = {bg:"#FFFDF9", surface:"#FFFFFF", tile:"#F6F1EA", ink:"#2B211C", muted:"#6E6259", line:"#EFE9E0", accent:"#FFB020"};
   /* the app's category colours: deep / soft / mid */
   const TONES = {
-    "t-flight":["#1958BD","#E3EEFF","#2F80FF"], "t-stay":["#8A5300","#FFF1CC","#FFB020"], "t-place":["#2B7A1C","#E2F6D6","#3FB02A"],
-    "t-move":["#C23B1C","#FFE5DB","#FF6A3D"], "k-sight":["#14806F","#D9F6EF","#1FB89E"], "k-food":["#C2510F","#FFE8D4","#FF8A3D"], "k-shop":["#B4246A","#FFE2EF","#F0559A"]
+    "t-flight":["#1958BD","#E3EEFF","#2F80FF"], "t-stay":["#4B3FB5","#ECEAFE","#6C5CE7"], "t-place":["#2B7A1C","#E2F6D6","#3FB02A"],
+    "t-move":["#3F5568","#E8EEF3","#6B8599"], "k-sight":["#2B7A1C","#E2F6D6","#3FB02A"],
+    /* trip covers */
+    "cv-flight":["#1958BD","#E3EEFF","#2F80FF"], "cv-stay":["#8A5300","#FFF1CC","#FFB020"], "cv-place":["#2B7A1C","#E2F6D6","#3FB02A"], "cv-move":["#C23B1C","#FFE5DB","#FF6A3D"], "k-food":["#C2510F","#FFE8D4","#FF8A3D"], "k-shop":["#B4246A","#FFE2EF","#F0559A"]
   };
   const tone = k => TONES[k] || TONES["t-place"];
   const font = (w, px, fam = BODY) => `${w} ${Math.round(px)}px ${fam}`;
@@ -134,7 +136,7 @@
 
   /* the trip card at the top, like the one in the app: soft colour, mountains and sun */
   function header(x, day, X, Y, w, h){
-    const [deep, soft, mid] = tone("t-" + (day.tone || "flight"));
+    const [deep, soft, mid] = tone("cv-" + (day.tone || "flight"));
     card(x, X, Y, w, h, 56, soft);
     x.save(); rrect(x, X, Y, w, h, 56); x.clip();
     const k = 2.15, ax = X + w - 40 - 180 * k * 0.93, ay = Y + h - 110 * k;
@@ -214,7 +216,7 @@
           } else {
             rrect(x, tc - r.thumb / 2, ty, r.thumb, r.thumb, 22 * s); x.fillStyle = mid; x.fill();
             if(e.n){ x.fillStyle = "#FFFFFF"; x.font = font(600, 32 * s, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(e.n), tc, ty + r.thumb / 2 + 1); x.textAlign = "left"; x.textBaseline = "alphabetic"; }
-            else drawIcon(x, icons[e.icon], tc, ty + r.thumb / 2, 36 * s, e.tone === "t-stay" ? "#2B211C" : "#FFFFFF", 2.2);
+            else drawIcon(x, icons[e.icon], tc, ty + r.thumb / 2, 36 * s, "#FFFFFF", 2.2);
             x.fillStyle = C.ink; x.font = font(500, 32 * s, DISPLAY); x.fillText(e.time || "", L, ty + 44 * s);
           }
           x.fillStyle = C.ink; x.font = font(500, 36 * s);
@@ -234,7 +236,7 @@
     // a quiet day (often a travel day) leaves room at the bottom: soft mountains, like the trip card
     const used = entries.length ? ly + Math.min(foot - ly, listH()) : ly + 180;
     if(foot - used > 480){
-      const [, soft, mid] = tone("t-" + (day.tone || "flight")), k = 3.4, ax = W / 2 - 104 * k, ay = foot - 30 - 110 * k;
+      const [, soft, mid] = tone("cv-" + (day.tone || "flight")), k = 3.4, ax = W / 2 - 104 * k, ay = foot - 30 - 110 * k;
       x.save(); x.globalAlpha = 0.55; x.translate(ax, ay); x.scale(k, k);
       x.fillStyle = C.accent; x.beginPath(); x.arc(150, 30, 13, 0, Math.PI * 2); x.fill();
       x.fillStyle = soft; x.fill(new Path2D("M14 110 L80 46 L146 110 Z")); x.fill(new Path2D("M98 110 L146 66 L194 110 Z"));
