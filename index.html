@@ -1289,8 +1289,7 @@ function vUpload(){
       <button class="chip-x" data-act="rm-file" data-i="${i}" aria-label="เอา ${esc(f.name||"ไฟล์")} ออก">${ic("close",16)}</button></li>`).join("")}</ul>` : ""}
     <label class="fld" for="paste-text">รายละเอียดการจอง<textarea id="paste-text" rows="3" placeholder="พิมพ์หรือวางรายละเอียดการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea></label>
     ${u.status === "error" && u.err ? `<div class="err" role="alert">${esc(u.err)}</div>` : ""}
-    <button class="btn primary" data-act="read-all">ให้ AI อ่านข้อมูล</button>
-    <button class="link-btn" data-act="manual">กรอกเอง</button>
+    <button class="btn primary" data-act="read-all">บันทึก</button>
   `);
 }
 
@@ -3278,7 +3277,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-compose49";
+const BUILD = "2026-11-01-bookingsave50";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
