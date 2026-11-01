@@ -662,7 +662,7 @@ html.kb .tabbar{display:none}
 .page-cal .cal{margin:0}
 .page-add{align-self:flex-start;background:var(--soft)!important;color:var(--deep)!important;box-shadow:none!important;border:0!important}.page-add.t-idea{--soft:var(--place-soft);--deep:var(--place)}.page-add .ic{color:currentColor!important}
 .page .booking-group{padding:14px 16px}
-.workflow-search:focus,.workflow-search:focus-visible,.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none!important;box-shadow:none!important;border-color:transparent!important;background:var(--tile)}
+.workflow-search,.workflow-search:focus,.workflow-search:focus-visible,.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none!important;box-shadow:0 1px 3px rgba(43,33,28,.08)!important;border-color:transparent!important;background:var(--surface)!important}
 /* add a saved place to the plan: day chips, an optional time, one soft button */
 .plan-quick{display:flex;flex-direction:column;gap:10px}
 .plan-quick>b{font-size:15px}
@@ -671,8 +671,12 @@ html.kb .tabbar{display:none}
 .plan-days button{border:0;border-radius:12px;background:var(--tile);color:var(--ink);height:42px;font-family:var(--display);font-size:16px;font-weight:600}
 .plan-days button[aria-pressed="true"]{background:var(--accent-soft)}
 .plan-go{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
-.plan-time{display:flex;align-items:center;gap:6px;background:var(--tile);border-radius:999px;padding:0 12px;min-height:44px;font-size:13px;color:var(--muted)}
-.plan-time input{border:0;background:transparent;font:inherit;font-size:15px;color:var(--ink);min-width:0;width:82px;outline:none}
+.plan-time{position:relative;display:flex;align-items:center;gap:8px;background:var(--tile);border-radius:999px;padding:0 14px;min-height:44px;color:var(--muted)}
+.plan-time input{border:0;background:transparent;font:inherit;font-size:15px;color:var(--ink);min-width:0;width:74px;outline:none;-webkit-appearance:none;appearance:none}
+.plan-time input::-webkit-calendar-picker-indicator{display:none}
+.plan-time .tp{position:absolute;left:40px;font-size:15px;color:var(--muted);pointer-events:none;display:none}
+.plan-time:has(input:invalid) .tp{display:block}
+.plan-time input:invalid{color:transparent}
 .soft-btn{border:0;border-radius:999px;min-height:44px;padding:0 14px;background:var(--place-soft);color:var(--place);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:14px}
 .soft-btn:disabled{opacity:.5}
 .plan-done{display:flex;align-items:center;gap:12px;background:var(--place-soft);border-radius:16px;padding:12px 14px}
@@ -1778,7 +1782,7 @@ function planBox(it, s){
   const i = dates.indexOf(s.planDate);
   return `<div class="plan-quick"><b>เพิ่มลงแผน</b>
     <div class="plan-days" role="group" aria-label="เลือกวัน">${dates.map((x,n) => `<button type="button" data-act="plan-day" data-d="${x}" aria-pressed="${x===s.planDate}" aria-label="${esc(dLong(x))}">${parseD(x).getDate()}</button>`).join("")}</div>
-    <div class="plan-go"><label class="plan-time">เวลา<input id="pl-time" type="time" value="${esc(s.planTime)}" data-bind="sheet:planTime" aria-label="เวลา (ไม่ใส่ก็ได้)"></label>
+    <div class="plan-go"><label class="plan-time">${ic("clock",18)}<span class="tp" aria-hidden="true">--:--</span><input id="pl-time" type="time" required value="${esc(s.planTime)}" data-bind="sheet:planTime" aria-label="เวลา (ไม่ใส่ก็ได้)"></label>
     <button class="soft-btn" data-act="plan-idea" ${S.planAdding?"disabled":""}>${ic("plus",18)}${S.planAdding?"กำลังเพิ่ม…":`เพิ่มลงวันที่ ${s.planDate ? parseD(s.planDate).getDate() + " " + MON[parseD(s.planDate).getMonth()] : ""}`}</button></div></div>`;
 }
 async function planIdea(){
@@ -2507,7 +2511,7 @@ function vSheet(){
     if(it.type === "flight") rows = [["วันที่", dShort(it.date)],["สายการบิน", `${data.airline||""} ${data.flightNo||""}`.trim()],["ออก", `${data.from||""} ${it.time||""}`.trim()],["ถึง", `${data.to||""} ${arrDateOf(it) && arrDateOf(it) !== it.date ? dShort(arrDateOf(it)) + " " : ""}${data.arrTime||""}`.trim()],["ผู้โดยสาร", paxList(data.passengers)],["รหัสการจอง", data.bookingRef],["โน้ตขาออก", data.note],["โน้ตตอนถึง", data.arrNote]];
     else if(it.type === "stay") rows = [["เช็กอิน", `${dShort(it.date)} ${it.time||""}`],["เช็กเอาต์", `${dShort(it.endDate)} ${it.endTime||""}`],["ที่อยู่", data.address || "–"],["โทร", data.phone || "–"],["ห้องพัก", data.rooms || "–"],["ผู้เข้าพัก", s_(data.guests) || "–"],["รหัสการจอง", data.bookingRef],["โน้ตเช็กอิน", data.inNote],["โน้ตเช็กเอาต์", data.outNote]];
     else if(it.type === "move" && (data.from || data.to)) rows = [["เดินทางด้วย", data.mode],["ใช้เวลา",data.durationMinutes?data.durationMinutes+" นาที":""],["จาก", data.from],["ไป", data.to],["วันที่", dShort(it.date)],["เวลา", it.time],["โน้ต", it.sub]];
-    else if(it.type === "idea") rows = [["ประเภท", data.kind],["ที่อยู่", data.address || mapNameParts(it.title).address],["โน้ต", it.sub]];
+    else if(it.type === "idea") rows = [["ที่อยู่", data.address || mapNameParts(it.title).address],["โน้ต", it.sub]];
     else rows = [["วันที่", dShort(it.date)],["เวลา", it.time],["รายละเอียด", it.sub]];
     rows = rows.filter(r => Array.isArray(r[1]) ? r[1].length : (r[1] && String(r[1]).trim()));
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
@@ -3442,7 +3446,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-color5";
+const BUILD = "2026-11-02-search1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
