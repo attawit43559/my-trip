@@ -53,7 +53,7 @@ body{margin:0}
 [hidden]{display:none!important}
 img{max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent-line);outline-offset:2px}
@@ -3266,7 +3266,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-searchdock54";
+const BUILD = "2026-11-01-tap55";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
