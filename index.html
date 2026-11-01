@@ -417,7 +417,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .load{padding:80px 20px;text-align:center}
 /* compact phone sizing */
-html,body{overflow-x:hidden}
+html{overflow-x:hidden}body{overflow-x:clip}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{font-size:14px}
 input,select,textarea{font-size:16px!important}
@@ -709,6 +709,13 @@ html.kb .tabbar{display:none}
 .help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
 .help-likes{gap:6px}
 .help-likes button{border:0}
+.trip-top{position:sticky;top:0;z-index:12;display:flex;flex-direction:column;gap:10px;background:var(--bg);margin:calc(-12px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
+.pin-cal .cal{margin:0}
+.help-note{width:100%;min-width:0;border:0;border-radius:16px;background:var(--tile);color:var(--ink);padding:12px 14px;font:inherit;font-size:15px;line-height:1.45;resize:none}
+.help-note::placeholder{color:var(--muted)}
+.help-note:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.help-day-wait{padding:26px 0}
+.help-none{margin:4px 0}
 .help-like-in{height:44px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);padding:0 14px;font:inherit;font-size:15px;width:100%;min-width:0}
 .help-like-in::placeholder{color:var(--muted)}
 .help-like-in:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
@@ -1425,7 +1432,7 @@ function helpState(){
   const n = (k, d) => Number.isFinite(+saved[k]) ? Math.max(0, Math.min(20, +saved[k])) : d;
   return S.help = {tripId:t.id, step:"ask", pace:HELP_PACE.some(p => p[0] === saved.pace) ? saved.pace : "balanced",
     adults:n("adults", +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length)), children:n("children", +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0), elders:n("elders", 0),
-    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => HELP_LIKES.includes(x)) : [], likeNote:typeof saved.likeNote === "string" ? saved.likeNote.slice(0, 80) : "", result:null};
+    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => HELP_LIKES.includes(x)) : [], likeNote:typeof saved.likeNote === "string" ? saved.likeNote.slice(0, 80) : "", notes:{}, result:null};
 }
 function helpRows(date){
   return dayEntries(date).filter(e => !e.night).map(e => {
@@ -1434,17 +1441,30 @@ function helpRows(date){
       title:it.type === "move" && d.from && d.to ? d.from + " → " + d.to : (e.title || it.title), note:it.type === "place" ? s_(it.sub) : ""};
   });
 }
-async function helpRun(){
-  const h = helpState(), t = S.trip; if(!t || h.step === "loading") return;
+async function helpRun(oneDay){
+  const h = helpState(), t = S.trip; if(!t || h.step === "loading" || h.busyDay) return;
   try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests, likeNote:s_(h.likeNote)})); } catch(_){}
-  const dates = tripDates(t);
-  h.step = "loading"; h.err = ""; h.ctl = new AbortController(); render();
+  const dates = oneDay && h.result ? [oneDay] : tripDates(t), note = oneDay ? s_((h.notes || {})[oneDay]) : "";
+  if(oneDay && h.result) h.busyDay = oneDay; else h.step = "loading";
+  h.err = ""; h.ctl = new AbortController(); render();
   try {
-    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests}, days:dates.map(date => ({date, rows:helpRows(date)}))});
+    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(note ? {note} : {})}, days:dates.map(date => ({date, rows:helpRows(date)}))});
     if(S.help !== h) return;
-    h.result = res; h.step = "result"; render();
+    if(h.busyDay){
+      const got = (res.days || []).find(d => d.date === oneDay) || {date:oneDay, summary:"", tips:[]};
+      const i = h.result.days.findIndex(d => d.date === oneDay);
+      if(i >= 0) h.result.days[i] = got; else h.result.days.push(got);
+      h.busyDay = null;
+    } else {
+      h.result = res; h.step = "result";
+      // open on the first day that has something to fix
+      const all = tripDates(t), first = res.days.find(d => d.tips.some(tp => tp.kind !== "good"));
+      if(first && !(res.days.find(d => d.date === all[S.day]) || {tips:[]}).tips.some(tp => tp.kind !== "good")) S.day = Math.max(0, all.indexOf(first.date));
+    }
+    render();
   } catch(e){
     if(S.help !== h) return;
+    h.busyDay = null;
     h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : /^ai_error_5|rate_limited|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
   }
 }
@@ -1479,24 +1499,25 @@ async function helpFix(di, ti, fi){
 }
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
+  h.notes ||= {};
   const wrap = body => `<div class="help-page">${body}</div>`;
   if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20 วินาที – 2 นาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
   if(h.step === "result" && h.result){
-    const days = h.result.days.map((d, di) => {
-      const i = dates.indexOf(d.date); if(i < 0 || (!d.tips.length && !d.summary)) return "";
-      return `<section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(d.date)}"><b>วันที่ ${i + 1} · ${esc(dShort(d.date))}</b>${ic("chev",16)}</button>${d.summary ? `<span class="help-sum">${esc(d.summary)}</span>` : ""}</div>
-        ${d.tips.map((tp, ti) => { const [icn, tone, label] = HELP_KIND[tp.kind] || HELP_KIND.tip;
+    const date = dates[S.day] || dates[0], di = h.result.days.findIndex(d => d.date === date), day = di >= 0 ? h.result.days[di] : null;
+    const tipHtml = (tp, ti) => { const [icn, tone, label] = HELP_KIND[tp.kind] || HELP_KIND.tip;
           const adds = tp.fix.length > 1 && tp.fix.every(f => f.op === "add");
           if(adds) return `<div class="help-tip help-plan${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
             <ul class="help-adds">${tp.fix.map((f, fi) => { const k = [IDEA_ICON[f.kind] || "pin", IDEA_TONE[f.kind] || "k-sight"]; return `<li><span class="ha-time">${esc(f.time || "--:--")}</span><span class="ha-ic ${k[1]}" aria-hidden="true">${ic(k[0],15)}</span><span class="grow ha-t">${esc(String(f.title).split(", ")[0])}</span>${f.applied ? `<span class="ha-ok" aria-label="เพิ่มแล้ว">${ic("check",16)}</span>` : `<button type="button" class="ha-add" data-act="help-fix" data-i="${di}" data-j="${ti}" data-f="${fi}" ${tp.busy ? "disabled" : ""} aria-label="เพิ่ม ${esc(f.title)}">${ic("plus",16)}</button>`}</li>`; }).join("")}</ul>
             ${tp.applied ? `<span class="help-done">${ic("check",14)}เพิ่มลงแผนแล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังเพิ่ม…" : "เพิ่มทั้งหมด"}</button>`}</div></div>`;
           return `<div class="help-tip${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
-            ${tp.fix.length ? (tp.applied ? `<span class="help-done">${ic("check",14)}แก้แล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังแก้…" : "แก้ให้เลย"}</button>`) : ""}</div></div>`; }).join("")}</section>`;
-    }).join("");
+            ${tp.fix.length ? (tp.applied ? `<span class="help-done">${ic("check",14)}แก้แล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังแก้…" : "แก้ให้เลย"}</button>`) : ""}</div></div>`; };
+    const busy = h.busyDay === date;
+    const body = busy ? `<div class="ai-wait help-day-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังดูวันนี้อีกรอบ…</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`
+      : day && day.tips.length ? day.tips.map(tipHtml).join("") : `<p class="muted small help-none">ไม่มีคำแนะนำสำหรับวันนี้</p>`;
     return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-      <p class="muted small" style="margin:-4px 0 0">คำแนะนำจาก AI ไม่เปลี่ยนแผนเอง ถ้าเห็นด้วยข้อไหน กด <b>แก้ให้เลย</b></p>
-      ${days || `<p class="muted">ไม่มีคำแนะนำ</p>`}
-      <div class="help-actions"><button type="button" class="soft-btn help-again" data-act="help-ask">ปรับสไตล์ทริป</button><button type="button" class="soft-btn" data-act="help-run">${ic("spark",16)}ดูแผนอีกรอบ</button></div>`);
+      <section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(date)}"><b>วันที่ ${S.day + 1} · ${esc(dShort(date))}</b>${ic("chev",16)}</button>${day && day.summary && !busy ? `<span class="help-sum">${esc(day.summary)}</span>` : ""}</div>${body}</section>
+      <textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>
+      <div class="help-actions"><button type="button" class="soft-btn help-again" data-act="help-ask">ปรับสไตล์ทริป</button><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay ? "disabled" : ""}>${ic("spark",16)}ดูแผนอีกรอบ</button></div>`);
   }
   const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="help-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${h[k]}</output><button type="button" data-act="help-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
@@ -1535,8 +1556,10 @@ function vTrip(){
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   const tab = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
   let page;
+  // the trip name and the day calendar stay put at the top while the page scrolls under them
+  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
   if(tab === "planning") page = dates.length
-    ? `<div class="page-cal">${calendar(dates)}</div>${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
+    ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
     : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
   else if(tab === "idea"){
     const list = filteredIdeas();
@@ -1550,17 +1573,17 @@ function vTrip(){
     page = `${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
-      ${calendar(dates)}
       ${vSync()}
       ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
   return `<main class="screen has-tabbar">
+    <div class="trip-top">
     <section class="trip-bar cv-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
-    </section>
+    </section>${pin ? `<div class="pin-cal">${pin}</div>` : ""}</div>
     <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
   </main>${tabBar(tab)}`;
 }
@@ -3359,13 +3382,14 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(S.catTab!=="planning")S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
+    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "tab": selectTab(el.dataset.k); break;
     case "help-pace": S.help.pace = el.dataset.k; render(); break;
     case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
     case "help-run": helpRun(); break;
+    case "help-day-run": helpRun(el.dataset.d); break;
     case "help-ask": S.help.step = "ask"; S.help.err = ""; render(); break;
     case "help-stop": if(S.help && S.help.ctl) S.help.ctl.abort(); break;
     case "help-fix": helpFix(Number(el.dataset.i), Number(el.dataset.j), el.dataset.f != null ? Number(el.dataset.f) : undefined); break;
@@ -3593,7 +3617,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-icon14";
+const BUILD = "2026-11-02-pin1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
