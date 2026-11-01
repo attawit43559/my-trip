@@ -686,6 +686,11 @@ html.kb .tabbar{display:none}
 .plan-done{display:flex;align-items:center;gap:12px;background:var(--place-soft);border-radius:16px;padding:12px 14px}
 .item-edit-visible{border:0!important;box-shadow:none!important;background:var(--tile)!important;color:var(--ink)!important;border-radius:999px}
 .plan-done .soft-btn{background:var(--surface)}
+.plan-time{justify-content:center;padding:0 16px;gap:6px}
+.tp-wrap{width:50px;flex:none}
+.plan-time input{width:50px;text-align:center}
+.plan-time input::-webkit-date-and-time-value{text-align:center}
+.plan-time .tp{left:0;right:0;text-align:center}
 </style>
 </head>
 <body>
@@ -3450,7 +3455,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-glide3";
+const BUILD = "2026-11-02-time4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
