@@ -1269,8 +1269,8 @@ function vTrip(){
 }
 
 function vUpload(){
-  const u = S.upload, isF = u.kind === "flight";
-  const head = `<div class="top"><button class="round" data-act="trip" aria-label="กลับไปที่ทริป">${ic("back")}</button><h1>เพิ่ม</h1></div><div class="booking-add-tabs" role="tablist" aria-label="เพิ่มข้อมูลทริป">${[['flight','เพิ่มเที่ยวบิน'],['stay','เพิ่มที่พัก']].map(([kind,label])=>`<button type="button" role="tab" aria-selected="${u.kind===kind}" data-act="upload-kind" data-k="${kind}" ${u.status==='reading'?'disabled':''}>${ic(kind,18)}${label}</button>`).join('')}</div>`;
+  const u = S.upload;
+  const head = `<div class="top"><button class="round" data-act="trip" aria-label="กลับไปที่ทริป">${ic("back")}</button><h1>เพิ่มข้อมูลทริป</h1></div>`;
   if(u.status === "reading"){
     return `<main class="screen">${head}
       <div class="card reading"><div class="spinner" role="status" aria-label="กำลังอ่าน"></div>
@@ -1284,9 +1284,9 @@ function vUpload(){
     ${files.length ? `<ul class="files">${files.map((f,i) => `<li class="file-chip">${ic("file",18)}<span class="grow">${esc(f.name || "ไฟล์")}</span>
       <button class="chip-x" data-act="rm-file" data-i="${i}" aria-label="เอา ${esc(f.name||"ไฟล์")} ออก">${ic("close",16)}</button></li>`).join("")}</ul>` : ""}
     <label for="paste-text" class="sr">ข้อความการจอง</label>
-    <textarea id="paste-text" rows="3" placeholder="หรือวางข้อความการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea>
+    <textarea id="paste-text" rows="3" placeholder="พิมพ์หรือวางรายละเอียดการจอง" data-bind="upload:text">${esc(u.text||"")}</textarea>
     ${u.status === "error" && u.err ? `<div class="err" role="alert">${esc(u.err)}</div>` : ""}
-    <button class="btn primary" data-act="read-all">ตกลง</button>
+    <button class="btn primary" data-act="read-all">ให้ AI อ่านข้อมูล</button>
     <button class="link-btn" data-act="manual">กรอกเอง</button>
   </main>`;
 }
@@ -3056,8 +3056,8 @@ document.addEventListener("click", async e => {
     case "trip-more": S.catTab="";S.sheet={kind:"trip-more"};render();break;
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
-    case "upload": S.uploadDrafts={};S.upload = {kind:el.dataset.k, status:"idle"}; go("upload"); break;
-    case "upload-kind": if(S.upload?.status!=='reading'&&el.dataset.k!==S.upload?.kind){S.uploadDrafts||={};S.uploadDrafts[S.upload.kind]=S.upload;S.upload=S.uploadDrafts[el.dataset.k]||{kind:el.dataset.k,status:'idle'};render();}break;
+    case "upload": S.upload = {kind:"auto", status:"idle"}; go("upload"); break;
+
     case "manual":
       S.review = {kind:S.upload.kind, flights:S.upload.kind==="flight" ? [emptyFlight()] : [], stays:S.upload.kind==="stay" ? [emptyStay(t)] : [], passengers:"", bookingRef:"", uncertain:new Set()};
       go("review"); break;
@@ -3274,7 +3274,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-01-searchfix47";
+const BUILD = "2026-11-01-bookingauto48";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
