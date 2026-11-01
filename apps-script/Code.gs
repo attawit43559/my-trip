@@ -710,7 +710,7 @@ function planReviewRun_(req) {
   if (!raws.some(r => r && r.days && r.days.length)) throw new Error('invalid_json');
   const kinds = ['good', 'tight', 'free', 'late', 'order', 'meal', 'tip'], placeKinds = ['ที่เที่ยว', 'ร้านอาหาร', 'ช้อปปิ้ง'];
   const ideaOk = {}; ideas.forEach(i => { ideaOk[i.id] = i; });
-  const out = { days: [] };
+  const out = { days: [] }, suggested = {};
   chunks.forEach((ds, ci) => ds.forEach(d => {
     const r = ((raws[ci] && raws[ci].days) || []).find(x => x && String(x.date) === d.date) || {};
     const own = {}; d.rows.forEach(x => { if (x.type === 'place' || x.type === 'move') own[x.id] = x.type; });
@@ -733,7 +733,13 @@ function planReviewRun_(req) {
       kind: kinds.indexOf(t(x.kind)) >= 0 ? t(x.kind) : 'tip', text: t(x.text).slice(0, 220),
       fix: (Array.isArray(x.fix) ? x.fix : []).slice(0, 5).map(fixOk).filter(Boolean)
     } : null).filter(Boolean);
-    out.days.push({ date: d.date, summary: t(r.summary).slice(0, 60), tips });
+    // the days are read in parts at the same time, so one saved place can be offered for several days: keep the first offer only
+    const kept = tips.filter(tp => {
+      const adds = tp.fix.filter(f => f.op === 'add').map(f => f.ideaId || f.title.toLowerCase());
+      if (adds.some(k => suggested[k])) return false;
+      adds.forEach(k => { suggested[k] = true; }); return true;
+    });
+    out.days.push({ date: d.date, summary: t(r.summary).slice(0, 60), tips: kept });
   }));
   return out;
 }
