@@ -627,11 +627,11 @@ html.lock,html.lock body{overflow:hidden}
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px;border-radius:999px;
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
-.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 4);border-radius:999px;pointer-events:none;overflow:hidden;
+.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 5);border-radius:999px;pointer-events:none;overflow:hidden;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
@@ -691,8 +691,7 @@ html.kb .tabbar{display:none}
 .plan-time input{width:50px;text-align:center}
 .plan-time input::-webkit-date-and-time-value{text-align:center}
 .plan-time .tp{left:0;right:0;text-align:center}
-.help-btn{color:var(--flight)}
-.help-sheet{gap:14px}
+.help-page{display:flex;flex-direction:column;gap:14px}
 .help-q{display:flex;flex-direction:column;gap:8px}.help-q>b{font-size:14px;font-weight:600}
 .help-pace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .help-pace button{border:0;border-radius:14px;min-height:44px;background:var(--tile);color:var(--ink);font:inherit;font-size:14px}
@@ -772,6 +771,7 @@ const IC = {
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
   search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  sparkF:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" style="fill:currentColor"/><path d="M19 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" style="fill:currentColor"/>',
   homeF:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" style="fill:currentColor"/><path d="M9.5 21v-6h5v6" style="stroke:var(--tab-cut);fill:var(--tab-cut)"/>',
   calendarF:'<rect x="3" y="5" width="18" height="16" rx="2" style="fill:currentColor"/><path d="M7 3v4M17 3v4"/><path d="M3 11h18M7 15h2M13 15h2" style="stroke:var(--tab-cut)"/>',
   ideaF:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z" style="fill:currentColor"/>',
@@ -1032,7 +1032,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.sheet && (["place","move","idea","ai","trip-edit","help"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.catTab === "help" && S.help && S.help.step !== "ask") || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1359,7 +1359,7 @@ function catCard(){
   </nav>`;
 }
 function selectTab(k, landed){
-  const cur = ["planning","idea","info"].includes(S.catTab) ? S.catTab : "";
+  const cur = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
   k = k || "";
   S.tabFrom = landed ? TRIP_TABS.findIndex(x => x[0] === k) : Math.max(0, TRIP_TABS.findIndex(x => x[0] === cur));
   S.catTab = k; S.sheet = null; S.dockHidden = false;
@@ -1458,10 +1458,9 @@ async function helpFix(di, ti){
   } catch(err){ fail(err); }
   finally { tip.busy = false; render(); }
 }
-function vHelp(){
+function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
-  const head = `<div class="hd"><span class="thumb tc t-flight">${ic("spark")}</span><h2>ผู้ช่วย AI</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
-  const wrap = body => `<div class="scrim" data-act="close-sheet"><div class="sheet help-sheet" role="dialog" aria-modal="true" aria-label="ผู้ช่วย AI" data-stop="1">${head}${body}</div></div>`;
+  const wrap = body => `<div class="help-page">${body}</div>`;
   if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20–60 วินาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
   if(h.step === "result" && h.result){
     const days = h.result.days.map((d, di) => {
@@ -1509,7 +1508,7 @@ function vTrip(){
   const loose = dates.length ? S.items.filter(it => it.type !== "idea" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
-  const tab = ["planning","idea","info"].includes(S.catTab) ? S.catTab : "";
+  const tab = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
   let page;
   if(tab === "planning") page = dates.length
     ? `<div class="page-cal">${calendar(dates)}</div>${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
@@ -1519,6 +1518,7 @@ function vTrip(){
     page = `${ideaToolbar()}<div class="dock-body page-list" data-k="idea">${list.length?`<ul class="cat-list">${list.map(catRow).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`}</div>
       <button class="cat-add page-add t-idea" data-act="sheet" data-k="idea">${ic("plus",18)}เพิ่ม</button>`;
   }
+  else if(tab === "help") page = vHelpPage();
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
@@ -1534,14 +1534,13 @@ function vTrip(){
     <section class="trip-bar cv-${tone(t.id)}">${MOUNTAINS}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span></div>
-      <button class="round help-btn" data-act="help-open" aria-label="ผู้ช่วย AI">${ic("spark",20)}</button>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>
     <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
   </main>${tabBar(tab)}`;
 }
 /* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
-const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูลทริป","file"]];
+const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูลทริป","file"],["help","ผู้ช่วย","spark"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
   return `<nav class="tabbar" aria-label="หน้าในทริป" style="--i:${from}" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
@@ -2611,7 +2610,6 @@ function vSheet(){
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "trip-more") return vTripMore();
   if(s.kind === "trip-edit") return vTripEdit(s);
-  if(s.kind === "help") return vHelp();
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
@@ -3340,14 +3338,13 @@ document.addEventListener("click", async e => {
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "tab": selectTab(el.dataset.k); break;
-    case "help-open": helpState(); S.sheet = {kind:"help"}; render(); break;
     case "help-pace": S.help.pace = el.dataset.k; render(); break;
     case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
     case "help-run": helpRun(); break;
     case "help-ask": S.help.step = "ask"; S.help.err = ""; render(); break;
     case "help-stop": if(S.help && S.help.ctl) S.help.ctl.abort(); break;
     case "help-fix": helpFix(Number(el.dataset.i), Number(el.dataset.j)); break;
-    case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; S.sheet = null; selectTab(""); break; }
+    case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; selectTab(""); break; }
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
     case "cat-close": S.catTab = ""; render(); break;
@@ -3570,7 +3567,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help2";
+const BUILD = "2026-11-02-help3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
