@@ -709,6 +709,9 @@ html.kb .tabbar{display:none}
 .help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
 .help-likes{gap:6px}
 .help-likes button{border:0}
+.help-like-in{height:44px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);padding:0 14px;font:inherit;font-size:15px;width:100%;min-width:0}
+.help-like-in::placeholder{color:var(--muted)}
+.help-like-in:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .help-likes button[aria-pressed="true"]{background:var(--place-soft);color:var(--place);font-weight:600}
 .help-adds{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .help-adds li{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:6px 6px 6px 10px;min-height:40px}
@@ -1042,7 +1045,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || (S.catTab === "help" && S.help && S.help.step !== "ask") || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1422,7 +1425,7 @@ function helpState(){
   const n = (k, d) => Number.isFinite(+saved[k]) ? Math.max(0, Math.min(20, +saved[k])) : d;
   return S.help = {tripId:t.id, step:"ask", pace:HELP_PACE.some(p => p[0] === saved.pace) ? saved.pace : "balanced",
     adults:n("adults", +(g.match(/(\d+)\s*ผู้ใหญ่/) || [])[1] || Math.max(1, (t.memberIds||[]).length)), children:n("children", +(g.match(/(\d+)\s*เด็ก/) || [])[1] || 0), elders:n("elders", 0),
-    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => HELP_LIKES.includes(x)) : [], result:null};
+    interests:Array.isArray(saved.interests) ? saved.interests.filter(x => HELP_LIKES.includes(x)) : [], likeNote:typeof saved.likeNote === "string" ? saved.likeNote.slice(0, 80) : "", result:null};
 }
 function helpRows(date){
   return dayEntries(date).filter(e => !e.night).map(e => {
@@ -1433,11 +1436,11 @@ function helpRows(date){
 }
 async function helpRun(){
   const h = helpState(), t = S.trip; if(!t || h.step === "loading") return;
-  try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests})); } catch(_){}
+  try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests, likeNote:s_(h.likeNote)})); } catch(_){}
   const dates = tripDates(t);
   h.step = "loading"; h.err = ""; h.ctl = new AbortController(); render();
   try {
-    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests}, days:dates.map(date => ({date, rows:helpRows(date)}))});
+    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests}, days:dates.map(date => ({date, rows:helpRows(date)}))});
     if(S.help !== h) return;
     h.result = res; h.step = "result"; render();
   } catch(e){
@@ -1497,11 +1500,12 @@ function vHelpPage(){
   }
   const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="help-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${h[k]}</output><button type="button" data-act="help-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-    <p class="muted small" style="margin:-4px 0 0">บอก AI ว่าทริปนี้เป็นแบบไหน แล้ว AI จะอ่านแผนทุกวัน บอกว่าตรงไหนแน่นไป ว่างไป หรือไปไม่ทันเวลา ส่วนวันที่ยังว่าง AI จะเลือกที่เที่ยวมาให้</p>
+    <p class="muted small" style="margin:-4px 0 0">AI จะอ่านแผนทุกวัน แล้วบอกจุดที่ควรปรับ</p>
     <div class="help-q"><b>สไตล์เที่ยว</b><div class="help-pace">${HELP_PACE.map(([k,l]) => `<button type="button" data-act="help-pace" data-k="${k}" aria-pressed="${h.pace === k}">${l}</button>`).join("")}</div></div>
-    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="chips help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="chips help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+      <input class="help-like-in" type="text" maxlength="80" placeholder="อื่นๆ พิมพ์เพิ่มเองได้" value="${esc(h.likeNote || "")}" data-bind="help:likeNote" aria-label="แนวเที่ยวอื่นๆ"></div>
     <div class="help-q"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
-    <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}ให้ AI ช่วยดูแผน</button>`);
+    <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}เริ่ม</button>`);
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 function calendar(dates){
@@ -3589,7 +3593,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-help8";
+const BUILD = "2026-11-02-help9";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
