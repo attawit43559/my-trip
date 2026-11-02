@@ -199,6 +199,17 @@ const ACTIONS = {
     return { id: file.getId(), url: 'https://drive.google.com/file/d/' + file.getId() + '/view' };
   },
 
+  // a booking file of a trip the person belongs to, as base64, so the phone can keep it for offline use
+  getFile: (req) => {
+    const tripId = String(req.tripId || ''), fid = String(req.fileId || '');
+    mustBeMember_(tripId, req.me);
+    const owns = rows_(ITEMS).some(r => r.tripId === tripId && (r.obj.fileId === fid || (r.obj.fileIds || []).indexOf(fid) >= 0));
+    if (!owns) throw new Error('not_found');
+    const f = DriveApp.getFileById(fid), blob = f.getBlob();
+    if (blob.getBytes().length > 15 * 1024 * 1024) throw new Error('too_big');
+    return { id: fid, name: f.getName(), mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) };
+  },
+
   readBooking: (req) => readBooking_(req),
 
   // draft a day-by-day plan from what the trip already holds; nothing is saved until the person picks items
@@ -656,7 +667,7 @@ function planReviewRun_(req) {
   const byId = {}; c.items.forEach(i => { byId[i.id] = i; });
   // the days as the person sees them (in their order), sent by the app; every id must be this trip's
   const days = (Array.isArray(req.days) ? req.days : []).slice(0, 31).filter(d => d && c.all.indexOf(String(d.date)) >= 0).map(d => ({
-    date: String(d.date),
+    date: String(d.date), weather: t(d.weather).slice(0, 80),
     rows: (Array.isArray(d.rows) ? d.rows : []).slice(0, 40).filter(r => r && byId[String(r.id)]).map(r => ({
       id: String(r.id), type: byId[String(r.id)].type, phase: t(r.phase).slice(0, 4), time: hm(r.time), until: hm(r.until), title: s(r.title),
       kind: s(r.kind), note: s(r.note), mode: s(r.mode), minutes: Math.max(0, Math.min(1440, Number(r.minutes) || 0))
@@ -688,7 +699,7 @@ function planReviewRun_(req) {
     p.note ? 'Other wishes: ' + s(p.note) : '',
     'Bookings:', bookingLines_(c.items),
     'The plan, day by day, in the order they will do it (times are when each starts; "–" gives when they leave):',
-    ds.map(d => `Day ${d.date}${fill[d.date] ? ' [MOSTLY FREE]' : ''}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
+    ds.map(d => `Day ${d.date}${d.weather ? ' (forecast: ' + d.weather + ')' : ''}${fill[d.date] ? ' [MOSTLY FREE]' : ''}:\n` + (d.rows.length ? d.rows.map(line).join('\n') : '  (nothing planned)')).join('\n'),
     'Saved places not yet in the plan (can be suggested for a day):',
     ideas.map(i => `  ideaId=${i.id} · ${s((i.data || {}).kind) || 'ที่เที่ยว'} · "${s(i.title)}"${i.sub ? ' · note: ' + s(i.sub) : ''}`).join('\n') || '  none',
     'TRIP>>>',
@@ -699,6 +710,7 @@ function planReviewRun_(req) {
     '- too packed for this group and style (suggest what to drop or move to a lighter day), or too empty (suggest a saved place, or a real nearby place, that fits);',
     '- times that cannot work: compare each start time with the time before it plus the time spent there and the travel duration; check opening hours you know; on a departure day the group should reach the airport about 3 hours before an international flight; on an arrival day allow time after landing;',
     '- order that back-tracks across the city, places far apart on one day, missing meals around lunch and dinner, and too much walking with children or older people;',
+    '- where a day has a forecast with rain or strong cold, say so and suggest an indoor swap or warm clothes for the child (kind "tip");',
     '- also say briefly what is good about a day when it is well planned (kind "good").',
     'Each tip: {"kind": "plan"|"good"|"tight"|"free"|"late"|"order"|"meal"|"tip", "text": Thai, friendly and specific, max ~140 characters, name the places, "fix": [] }.',
     '"fix" is the list of exact changes that carry out the tip, so the person can apply it with one tap. Every tip that suggests a change MUST have a fix: a new start time, dropping or moving a place, adding a specific saved place or a specific real restaurant or sight by name with a time, or a travel duration. Only "good" tips, and advice that no allowed change can express, have []. Allowed changes, using only ids shown above (never flights or bookings):',

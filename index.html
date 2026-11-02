@@ -709,6 +709,37 @@ html.kb .tabbar{display:none}
 .help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
 .help-likes{gap:6px}
 .help-likes button{border:0}
+.entry-doc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:var(--flight-soft);color:var(--flight);display:grid;place-items:center;padding:0;z-index:2}
+.trow-slide:has(.entry-doc) .entry{padding-right:54px}
+.trow-slide{position:relative}
+.doc-off{display:block;font-size:11.5px;color:var(--place);font-weight:500}
+.docs-state{display:flex;align-items:center;gap:6px;margin:0 4px}
+.doc-sheet{position:fixed;inset:0;z-index:30;background:#FFFFFF;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.doc-hd{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
+.doc-hd b{font-size:16px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-hd .round{background:var(--tile);color:var(--ink)}
+.doc-tabs{display:flex;gap:6px;margin-top:6px}
+.doc-tabs button{border:0;border-radius:999px;background:var(--tile);font:inherit;font-size:13px;height:30px;padding:0 12px}
+.doc-tabs button[aria-pressed="true"]{background:var(--flight-soft);color:var(--flight);font-weight:600}
+.doc-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#F4F1EC;padding-bottom:env(safe-area-inset-bottom,0px)}
+.doc-pages{display:flex;flex-direction:column;gap:10px;padding:10px}
+.doc-page{display:block;width:100%;height:auto;background:#FFFFFF;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.doc-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:80px 24px;color:var(--muted)}
+.doc-msg p{margin:0}.doc-msg .soft-btn{text-decoration:none;padding:10px 16px}
+.now-line{list-style:none;display:flex;align-items:center;gap:8px;padding:4px 14px;margin:0}
+.now-line::after{content:"";flex:1;border-top:2px solid var(--accent)}
+.now-line span{flex:none;background:var(--accent);color:var(--on-accent,#2B211C);font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px}
+.next-card{display:flex;align-items:center;gap:12px;background:var(--accent-soft);border-radius:20px;padding:12px 12px 12px 14px}
+.next-card .grow{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.next-card b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-when{font-size:12.5px;font-weight:600;color:var(--accent-ink,#8A5300)}
+.next-btn{background:var(--surface);color:var(--ink);flex:none;text-decoration:none}
+.wx-row{display:flex;align-items:center;gap:8px;margin:0 4px;font-size:14px;color:var(--ink)}
+.wx-row .ic{color:#E0A030}.wx-row.wet .ic{color:#5F8FC0}
+.wx-row span{color:var(--muted)}
+.wx-rain{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.wx-rain .ic{color:#5F8FC0!important}
+.wx-wait .ic{color:var(--muted)}
 .trip-top{position:sticky;top:0;z-index:12;display:flex;flex-direction:column;gap:10px;background:var(--bg);margin:calc(-12px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
 .pin-cal .cal{margin:0}
 .cal-nav{display:flex;align-items:center;gap:6px;min-height:34px}
@@ -817,6 +848,14 @@ const IC = {
   move:'<path d="M5 17h14v-5l-2-5H7l-2 5z"/><path d="M5 12h14"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
+  navi:'<path d="M12 3 5 20l7-4 7 4z"/>',
+  ticket:'<path d="M3 9V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a3 3 0 0 0 0 6v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a3 3 0 0 0 0-6z"/><path d="M15 7.5v1.5M15 11.2v1.6M15 15v1.5"/>',
+  wxSun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+  wxPart:'<path d="M8 4.5v1.2M3.5 9H4.7M4.8 5.8l.9.9M11.2 5.8l-.9.9"/><path d="M5.6 11a2.6 2.6 0 0 1 5-1.6"/><path d="M8 19h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8 12.5 3.3 3.3 0 0 0 8 19z"/>',
+  wxCloud:'<path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/>',
+  wxRain:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"/>',
+  wxSnow:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M9 19h.01M13 20h.01M16 18.5h.01M11 21.5h.01"/>',
+  wxDrop:'<path d="M12 3.5s-5.5 6.2-5.5 10a5.5 5.5 0 0 0 11 0c0-3.8-5.5-10-5.5-10z"/>',
   file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   trash:'<path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/>',
@@ -1063,7 +1102,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit","doc"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1096,7 +1135,7 @@ function openTrip(id, view="trip"){
     S.ai = null; S.catTab = "";   // a planner draft belongs to the trip it was made for
     S.tripMissing = false;
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
-    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); });
+    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); docsPrefetchSoon(); clearTimeout(wxLoad.t); wxLoad.t = setTimeout(wxLoad, 800); });
   } else refreshTrip(id);   // reopening the same trip still fetches who joined since
   try {
     if(localStorage.getItem("mytrip-share-on") && localStorage.getItem("mytrip-last-trip") !== id) api("shareTrip", {tripId:id}).catch(() => {});
@@ -1344,7 +1383,7 @@ function entryHtml(e){
   if(e.it.type==='move'&&!e.night){const n=+d.durationMinutes>0?+d.durationMinutes:(/\d\s*(นาที|ชม|ชั่วโมง|min|hour|hr)/i.test(e.it.sub||'')?travelMinutes({note:e.it.sub}):0);
     e={...e,sub:''};if(!e.time&&n)e.dur=n>=60?[Math.floor(n/60)+(n%60?':'+String(n%60).padStart(2,'0'):''),'ชม.']:[String(n),'นาที'];}
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out')))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}`);
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out')))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}${!e.night&&itemFiles(e.it).length?`<button type="button" class="entry-doc" data-act="doc-open" data-id="${esc(e.it.id)}" aria-label="เปิดตั๋ว / ใบจอง ${esc(title)}">${ic("ticket",19)}</button>`:''}`);
 }
 function catRow(it){
     if(it.type === "idea"){
@@ -1430,6 +1469,192 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimatio
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
+/* ---------- booking files kept on the phone (IndexedDB) and opened in the app, also without internet ---------- */
+const DOCS = {db:null, have:new Set(), busy:new Set(), el:null, elFor:"", urls:[]};
+const itemFiles = it => [...new Set([...(it.fileIds || []), ...(it.fileId ? [it.fileId] : [])])];
+function docsDb(){
+  return DOCS.db || (DOCS.db = new Promise((ok, no) => { try { const r = indexedDB.open("mytrip-docs", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("files"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch(e){ no(e); } }));
+}
+async function docGet(id){
+  try { const db = await docsDb(); return await new Promise(ok => { const q = db.transaction("files").objectStore("files").get(id); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); }
+  catch(_){ return null; }
+}
+async function docPut(id, rec){
+  try { const db = await docsDb(); await new Promise(ok => { const tx = db.transaction("files", "readwrite"); tx.objectStore("files").put(rec, id); tx.oncomplete = ok; tx.onerror = ok; }); DOCS.have.add(id); } catch(_){}
+}
+async function docKeys(){
+  try { const db = await docsDb(); return await new Promise(ok => { const q = db.transaction("files").objectStore("files").getAllKeys(); q.onsuccess = () => ok(q.result || []); q.onerror = () => ok([]); }); }
+  catch(_){ return []; }
+}
+async function docFetch(tripId, id){
+  if(DOCS.busy.has(id)) return null;
+  DOCS.busy.add(id);
+  try {
+    const r = await api("getFile", {tripId, fileId:id});
+    const bin = atob(r.data), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const rec = {blob:new Blob([u], {type:r.mime || "application/octet-stream"}), mime:r.mime || "", name:r.name || "", at:Date.now()};
+    await docPut(id, rec); return rec;
+  } finally { DOCS.busy.delete(id); }
+}
+/* every booking file of the open trip is kept on the phone, quietly, while there is internet */
+async function docsPrefetch(){
+  const t = S.trip; if(!t) return;
+  (await docKeys()).forEach(k => DOCS.have.add(k));
+  if(!CONNECTED || !S.token || !navigator.onLine) return;
+  const need = [...new Set(S.items.flatMap(itemFiles))].filter(id => !DOCS.have.has(id)).slice(0, 40);
+  let got = 0;
+  for(const id of need){ if(S.trip !== t) return; try { if(await docFetch(t.id, id)) got++; } catch(_){} }
+  if(got) softRender();
+}
+function docsPrefetchSoon(){ clearTimeout(docsPrefetchSoon.t); docsPrefetchSoon.t = setTimeout(docsPrefetch, 1500); }
+function docOpen(itemId, n){
+  const it = S.items.find(i => i.id === itemId); if(!it) return;
+  const files = itemFiles(it); if(!files.length) return;
+  S.sheet = {kind:"doc", itemId, files, i:Math.max(0, Math.min(files.length - 1, n || 0)), state:"loading"};
+  DOCS.elFor = ""; render(); docShow();
+}
+async function docShow(){
+  const s = S.sheet; if(!s || s.kind !== "doc") return;
+  const id = s.files[s.i], key = id + ":" + s.i;
+  let rec = await docGet(id);
+  if(!rec){
+    if(!navigator.onLine || !CONNECTED){ s.state = "missing"; render(); return; }
+    try { rec = await docFetch(S.trip.id, id); } catch(_){ rec = null; }
+    if(!rec){ if(S.sheet === s){ s.state = "error"; render(); } return; }
+  }
+  if(S.sheet !== s || s.files[s.i] !== id) return;
+  DOCS.urls.forEach(u => URL.revokeObjectURL(u)); DOCS.urls = [];
+  const box = document.createElement("div"); box.className = "doc-pages";
+  try {
+    if(/pdf/i.test(rec.mime) || /\.pdf$/i.test(rec.name)){
+      if(!window.pdfjsLib) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await pdfjsLib.getDocument({data:new Uint8Array(await rec.blob.arrayBuffer())}).promise;
+      const wide = Math.min(window.innerWidth, 720) * Math.min(3, window.devicePixelRatio || 2);
+      for(let p = 1; p <= Math.min(pdf.numPages, 20); p++){
+        const page = await pdf.getPage(p), v0 = page.getViewport({scale:1}), view = page.getViewport({scale:wide / v0.width});
+        const c = document.createElement("canvas"); c.width = view.width; c.height = view.height; c.className = "doc-page";
+        await page.render({canvasContext:c.getContext("2d"), viewport:view}).promise;
+        box.appendChild(c);
+      }
+    } else {
+      const u = URL.createObjectURL(rec.blob); DOCS.urls.push(u);
+      const img = document.createElement("img"); img.src = u; img.alt = "ใบจอง"; img.className = "doc-page"; box.appendChild(img);
+    }
+  } catch(_){ if(S.sheet === s){ s.state = "error"; render(); } return; }
+  if(S.sheet !== s) return;
+  DOCS.el = box; DOCS.elFor = key; s.state = "ready"; render();
+}
+/* the drawn pages live outside the page markup, so a redraw of the screen does not redraw the PDF */
+function docMount(){
+  const s = S.sheet, slot = document.getElementById("doc-view");
+  if(!slot || !s || s.state !== "ready" || !DOCS.el || DOCS.elFor !== s.files[s.i] + ":" + s.i) return;
+  slot.appendChild(DOCS.el);
+}
+function vDoc(s){
+  const it = S.items.find(i => i.id === s.itemId) || {title:""};
+  const body = s.state === "ready" ? "" : s.state === "missing"
+    ? `<div class="doc-msg">${ic("file",28)}<p>ไฟล์นี้ยังไม่ได้เก็บไว้ในเครื่อง</p><p class="muted small">ต่อเน็ตแล้วเปิดอีกครั้ง แอปจะเก็บไว้ให้ดูตอนออฟไลน์</p></div>`
+    : s.state === "error" ? `<div class="doc-msg">${ic("file",28)}<p>เปิดไฟล์ในแอปไม่ได้</p><a class="soft-btn" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener">เปิดใน Google Drive</a></div>`
+    : `<div class="doc-msg"><div class="spinner" role="status" aria-label="กำลังเปิด"></div></div>`;
+  return `<div class="doc-sheet" role="dialog" aria-modal="true" aria-label="ใบจอง ${esc(it.title)}">
+    <div class="doc-hd"><div class="grow"><b>${esc(briefName(it.title))}</b>${s.files.length > 1 ? `<div class="doc-tabs">${s.files.map((_, n) => `<button type="button" data-act="doc-file" data-n="${n}" aria-pressed="${n === s.i}">ไฟล์ ${n + 1}</button>`).join("")}</div>` : ""}</div>
+      <a class="round" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener" aria-label="เปิดใน Google Drive">${ic("ext",18)}</a>
+      <button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="doc-body" id="doc-view">${body}</div></div>`;
+}
+
+/* ---------- today: where you are in the day ---------- */
+const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const hmMin = s => /^\d\d:\d\d$/.test(s || "") ? +s.slice(0, 2) * 60 + +s.slice(3) : null;
+/* the next thing with a start time that has not started yet (travel without its own time is skipped) */
+function nextEntry(entries){
+  const now = hmMin(nowHM());
+  return entries.find(e => !e.night && hmMin(e.time) != null && hmMin(e.time) >= now) || null;
+}
+function inMin(t){
+  const m = hmMin(t) - hmMin(nowHM()); if(m <= 0) return "ตอนนี้";
+  return m < 60 ? `อีก ${m} นาที` : `อีก ${Math.floor(m / 60)} ชม.${m % 60 ? ` ${m % 60} น.` : ""}`;
+}
+function vNext(e){
+  if(!e) return "";
+  const it = e.it, files = itemFiles(it), d = it.data || {};
+  const title = it.type === "move" && d.from && d.to ? briefName(d.from) + " → " + briefName(d.to) : briefName(e.title);
+  const go = it.type === "move" ? routeLink(it) : ["place", "stay"].includes(it.type) ? mapsLink(it) : "";
+  return `<section class="next-card" aria-label="รายการถัดไป">
+    <span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it),20)}</span>
+    <div class="grow"><span class="next-when">ถัดไป · ${esc(inMin(e.time))}</span><b>${esc(title)}</b><span class="muted small">${esc(e.time)}</span></div>
+    ${files.length ? `<button class="round next-btn" data-act="doc-open" data-id="${esc(it.id)}" aria-label="เปิดตั๋ว / ใบจอง">${ic("ticket",20)}</button>` : ""}
+    ${go ? `<a class="round next-btn" href="${esc(go)}" target="_blank" rel="noopener" aria-label="นำทาง">${ic("navi",20)}</a>` : ""}
+  </section>`;
+}
+/* while today's plan is on screen, move the "now" line once a minute */
+setInterval(() => {
+  if(S.view !== "trip" || S.catTab || !S.trip || S.sheet || busyForm()) return;
+  if(tripDates(S.trip)[S.day] !== today()) return;
+  const a = document.activeElement; if(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  softRender();
+}, 60000);
+
+/* ---------- weather for each day (Open-Meteo, no key), about 16 days ahead ---------- */
+const WX_KEY = "mytrip-wx";
+const WX = (() => { try { return JSON.parse(localStorage.getItem(WX_KEY)) || {}; } catch(_){ return {}; } })();
+WX.spots ||= {}; WX.geo ||= {};
+const wxSave = () => { try { localStorage.setItem(WX_KEY, JSON.stringify(WX)); } catch(_){} };
+/* where a day is: its places, else the hotel that night, else anywhere in the trip, else the trip's name looked up */
+function wxSpot(date){
+  const has = i => i.data && i.data.lat !== "" && i.data.lat != null && isFinite(+i.data.lat) && isFinite(+i.data.lon);
+  const p = S.items.find(i => i.type === "place" && i.date === date && has(i))
+    || S.items.find(i => i.type === "stay" && i.date <= date && (i.endDate || i.date) >= date && has(i))
+    || S.items.find(i => ["place", "stay", "idea"].includes(i.type) && has(i));
+  if(p) return {lat:+(+p.data.lat).toFixed(2), lon:+(+p.data.lon).toFixed(2)};
+  const g = WX.geo[wxName()]; return g && g.lat != null ? g : null;
+}
+const wxName = () => String((S.trip && (S.trip.destination || S.trip.name)) || "").replace(/\d{4}|\d+\s*(วัน|days?)/gi, "").replace(/ทริป|trip/gi, "").trim();
+async function wxLoad(){
+  const t = S.trip; if(!t || !navigator.onLine) return;
+  const dates = tripDates(t), first = today(), last = addDays(first, 15);
+  const want = dates.filter(d => d >= first && d <= last); if(!want.length) return;
+  const name = wxName();
+  if(!S.items.some(i => i.data && i.data.lat != null && i.data.lat !== "") && name && !WX.geo[name]){
+    try { const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(name)).then(r => r.json());
+      const g = (r.results || [])[0]; WX.geo[name] = g ? {lat:+g.latitude.toFixed(2), lon:+g.longitude.toFixed(2)} : {lat:null}; wxSave(); } catch(_){ return; }
+  }
+  const spots = {}; want.forEach(d => { const p = wxSpot(d); if(p) (spots[p.lat + "," + p.lon] ||= {p, dates:[]}).dates.push(d); });
+  let changed = false;
+  for(const [k, {p, dates:ds}] of Object.entries(spots)){
+    const old = WX.spots[k]; if(old && Date.now() - old.at < 3 * 3600e3 && ds.every(d => old.days[d])) continue;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16`).then(r => r.json());
+      const dd = r.daily || {}, days = {};
+      (dd.time || []).forEach((d, i) => { days[d] = {code:dd.weather_code[i], max:Math.round(dd.temperature_2m_max[i]), min:Math.round(dd.temperature_2m_min[i]), rain:dd.precipitation_probability_max[i]}; });
+      WX.spots[k] = {at:Date.now(), days}; changed = true;
+    } catch(_){}
+  }
+  if(changed){ wxSave(); softRender(); }
+}
+function wxFor(date){ const p = wxSpot(date); const s = p && WX.spots[p.lat + "," + p.lon]; return s && s.days[date] || null; }
+/* WMO weather codes in a few words and an icon */
+function wxKind(c){
+  if(c === 0) return ["wxSun", "แดดจัด", "sunny"];
+  if(c <= 2) return ["wxPart", "มีเมฆบางส่วน", "partly cloudy"];
+  if(c === 3) return ["wxCloud", "เมฆมาก", "cloudy"];
+  if(c === 45 || c === 48) return ["wxCloud", "มีหมอก", "fog"];
+  if(c >= 71 && c <= 77 || c === 85 || c === 86) return ["wxSnow", "หิมะ", "snow"];
+  if(c >= 95) return ["wxRain", "พายุฝนฟ้าคะนอง", "thunderstorm"];
+  if(c >= 51) return ["wxRain", c <= 57 ? "ฝนปรอย" : "ฝนตก", c <= 57 ? "drizzle" : "rain"];
+  return ["wxPart", "", ""];
+}
+function vWx(date){
+  if(!date || date < today()) return "";
+  const w = wxFor(date);
+  if(!w) return date > addDays(today(), 15) ? `<p class="wx-row wx-wait muted small">${ic("wxPart",18)}พยากรณ์อากาศจะขึ้นเมื่อใกล้วัน (ไม่เกิน 16 วันล่วงหน้า)</p>` : "";
+  const [icn, th] = wxKind(w.code), wet = w.rain >= 50;
+  return `<p class="wx-row${wet ? " wet" : ""}">${ic(icn,22)}<b>${w.max}° / ${w.min}°</b><span>${esc(th)}</span>${w.rain != null ? `<span class="wx-rain">${ic("wxDrop",14)}ฝน ${w.rain}%</span>` : ""}</p>`;
+}
+/* the same, in a line for the AI helper */
+function wxText(date){ const w = wxFor(date); if(!w) return ""; const [, , en] = wxKind(w.code); return `${en}, ${w.max}/${w.min}°C, rain chance ${w.rain}%`; }
 /* swipe the one-week row of a long trip to move a week */
 { let sx = null, sy = 0;
   document.addEventListener("touchstart", e => { const c = e.target.closest?.(".cal.long:not(.open) .tabs"); if(!c){ sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
@@ -1464,7 +1689,7 @@ async function helpRun(oneDay){
   if(oneDay && h.result) h.busyDay = oneDay; else h.step = "loading";
   h.err = ""; h.ctl = new AbortController(); render();
   try {
-    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(note ? {note} : {})}, days:dates.map(date => ({date, rows:helpRows(date)}))});
+    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(note ? {note} : {})}, days:dates.map(date => ({date, rows:helpRows(date), weather:wxText(date)}))});
     if(S.help !== h) return;
     if(h.busyDay){
       const got = (res.days || []).find(d => d.date === oneDay) || {date:oneDay, summary:"", tips:[]};
@@ -1585,6 +1810,7 @@ function vTrip(){
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   const tab = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
+  const isToday = d === today(), next = isToday ? nextEntry(entries) : null;
   let page;
   // the trip name and the day calendar stay put at the top while the page scrolls under them
   const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
@@ -1600,11 +1826,14 @@ function vTrip(){
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
-    page = `${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    const allFiles = [...new Set(S.items.flatMap(itemFiles))], kept = allFiles.filter(id => DOCS.have.has(id)).length;
+    page = `${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}${allFiles.length ? `<p class="docs-state muted small">${ic("ticket",16)}ตั๋ว / ใบจอง ${allFiles.length} ไฟล์ · ${kept === allFiles.length ? "เก็บไว้ในเครื่องแล้ว ดูได้ตอนไม่มีเน็ต" : `เก็บไว้ในเครื่องแล้ว ${kept} ไฟล์ (ต่อเน็ตไว้ แอปจะเก็บที่เหลือให้)`}</p>` : ""}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
-      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
+      ${vWx(d)}
+      ${isToday && next ? vNext(next) : ""}
+      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
   return `<main class="screen has-tabbar">
@@ -1857,12 +2086,14 @@ function manualTravelLegs(date){
     return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
   }).filter(l=>l.fromId!==l.toId);
 }
-function dailyEntryRows(entries,date){
+function dailyEntryRows(entries,date,nowAt){
   const missing=manualTravelLegs(date).filter(l=>!l.saved);
+  const nowLine=`<li class="now-line" aria-label="ตอนนี้ ${nowHM()}"><span>ตอนนี้ ${nowHM()}</span></li>`;
   return entries.map(e=>{
+    const here=nowAt===e?nowLine:'';
     const before=missing.filter(l=>l.beforeKey?l.beforeKey===dayEntryKey(e):e.night&&l.toId===e.it.id);
-    return before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}">${ic('move',17)}<span class="grow"><b>การเดินทาง</b></span></button></li>`).join('')+entryHtml(e);
-  }).join('');
+    return here+before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}">${ic('move',17)}<span class="grow"><b>การเดินทาง</b></span></button></li>`).join('')+entryHtml(e);
+  }).join('')+(nowAt==='end'?nowLine:'');
 }
 function travelTimezone(leg){
   if(S.trip.timezone)return S.trip.timezone;
@@ -1959,7 +2190,7 @@ function itemLinks(it){
   if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "ดูใน Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "นำทางใน Google Maps"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
-  files.forEach((id, i) => out.push(lnk(fileUrl(id), "file", "ใบจอง" + (files.length > 1 ? " " + (i+1) : ""))));
+  files.forEach((id, i) => out.push(`<button class="lnk" data-act="doc-open" data-id="${esc(it.id)}" data-n="${i}">${ic("ticket",20)}<span class="grow">ตั๋ว / ใบจอง${files.length > 1 ? " " + (i+1) : ""}${DOCS.have.has(id) ? `<small class="doc-off">ดูได้ตอนออฟไลน์</small>` : ""}</span>${ic("chev",16)}</button>`));
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
   return out.length ? `<div class="links">${out.join("")}</div>` : "";
 }
@@ -2688,6 +2919,7 @@ function addFromLink(url){
 }
 function vSheet(){
   const s = S.sheet; if(!s) return "";
+  if(s.kind === "doc") return vDoc(s);
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "day-ideas") return "";
   if(s.kind === "overview") return vOverview(s);
@@ -2776,6 +3008,7 @@ function render(){
   document.body.style.overflow = modalSheet ? "hidden" : "";
   const overlayLocked=!!modalSheet;
   document.documentElement.classList.toggle("lock",overlayLocked);lockOverlayPage(overlayLocked);
+  if(S.sheet && S.sheet.kind === "doc") docMount();
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
 }
@@ -3524,6 +3757,8 @@ document.addEventListener("click", async e => {
       setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
     case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
     case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet = null; render(); break;
+    case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
+    case "doc-file": if(S.sheet && S.sheet.kind === "doc"){ S.sheet.i = Number(el.dataset.n) || 0; S.sheet.state = "loading"; render(); docShow(); } break;
     case "sheet-cancel": S.sheet = null; render(); break;
     case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
     case "rm-cancel": S.rmAsk = null; render(); break;
@@ -3656,7 +3891,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-cal1";
+const BUILD = "2026-11-02-trip1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -3674,7 +3909,9 @@ async function checkUpdate(){
   unsubTrips = store.watchMyTrips(list => { S.trips = list; if(S.view === "home") softRender(); });
   const refresh = () => { checkUpdate(); if(!S.token) return; flush(); if(S.view !== "home" && S.tripId && !busyForm()) refreshTrip(S.tripId); else if(S.view === "home") refreshTrips(); };
   document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
-  window.addEventListener("online", () => {updateSync();flush();});
+  window.addEventListener("online", () => {updateSync();flush();docsPrefetchSoon();wxLoad();});
+  // keep the app itself on the phone so it opens without internet
+  if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   window.addEventListener("offline", updateSync);
   setInterval(refresh, 60000);
   flush();
