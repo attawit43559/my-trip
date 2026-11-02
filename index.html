@@ -2531,16 +2531,25 @@ function exportEntries(d){
   return dayEntries(d).map(e => {
     const it = e.it, data = it.data || {};
     const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
-    if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay"};
-    if(it.type === "move") return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", minutes:+data.durationMinutes || 0, icon:itemIcon(it)};
+    if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay", spot:"night"};
+    if(it.type === "move"){
+      // what the ride looks like on the page, and the word for it
+      const how = [data.mode, it.sub, it.title].map(s_).join(" ");
+      const ride = /รถไฟ|ชินคันเซ็น|train|rail|metro|subway|monorail/i.test(how) ? "train" : /รถบัส|รถเมล์|รถประจำทาง|bus|coach/i.test(how) ? "bus"
+        : /เดิน|walk/i.test(how) ? "walk" : /เรือ|ferry|boat/i.test(how) ? "boat" : /เครื่องบิน|flight|plane/i.test(how) ? "plane" : /ขนส่งสาธารณะ|transit/i.test(how) ? "train" : "car";
+      const mode = {train:"รถไฟ", bus:"รถบัส", walk:"เดิน", boat:"เรือ", plane:"เครื่องบิน", car:"รถ"}[ride];
+      return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", minutes:+data.durationMinutes || 0, icon:itemIcon(it), ride, mode};
+    }
     if(it.type === "flight"){
       // pin the airport: where you land on the arrival row, otherwise whichever end of the flight is nearer the rest of the day
       const ap = c => s_(c) ? s_(c).toUpperCase() + " airport" : "";
       const ends = e.phase === "arr" ? [ap(data.to)] : [ap(data.from), arrDateOf(it) === d ? ap(data.to) : ""].filter(Boolean);
-      return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight", qs:ends};
+      return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight", spot:"plane", qs:ends};
     }
     const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
-    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), kind:it.type === "place" ? s_(data.kind) : "", icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
+    const spot = it.type === "stay" ? "hotel" : data.kind === "ร้านอาหาร" ? "food" : data.kind === "ช้อปปิ้ง" ? "shop"
+      : /disney|universal|สวนสนุก|theme park|amusement|fuji-q|legoland|sanrio puroland/i.test(it.title || "") ? "park" : "sight";
+    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
 }
 async function exportPlaces(days){
@@ -3615,7 +3624,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-exp1";
+const BUILD = "2026-11-02-cozy1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
