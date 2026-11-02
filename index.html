@@ -2520,7 +2520,7 @@ function vExport(s){
     : `<div class="grid2"><button class="pill-btn ex-go" data-act="export-run" data-k="img">${ic("image",18)}รูปภาพ</button><button class="pill-btn ex-go" data-act="export-run" data-k="pdf">${ic("file",18)}PDF</button></div>`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกแผนเป็นรูป" data-stop="1">
     <div class="hd"><span class="thumb tc t-place">${ic("image")}</span><h2>บันทึกแผนเป็นรูป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <p class="muted small" style="margin-top:-8px">วันละ 1 หน้า พร้อมแผนที่ของวันนั้น</p>
+    <p class="muted small" style="margin-top:-8px">วันละ 1 หน้า เป็นตารางเดินทางของวันนั้น</p>
     <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     ${body}
@@ -2532,7 +2532,7 @@ function exportEntries(d){
     const it = e.it, data = it.data || {};
     const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
     if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay"};
-    if(it.type === "move") return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", icon:itemIcon(it)};
+    if(it.type === "move") return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", minutes:+data.durationMinutes || 0, icon:itemIcon(it)};
     if(it.type === "flight"){
       // pin the airport: where you land on the arrival row, otherwise whichever end of the flight is nearer the rest of the day
       const ap = c => s_(c) ? s_(c).toUpperCase() + " airport" : "";
@@ -2540,7 +2540,7 @@ function exportEntries(d){
       return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight", qs:ends};
     }
     const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
-    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
+    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), kind:it.type === "place" ? s_(data.kind) : "", icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
 }
 async function exportPlaces(days){
@@ -2577,8 +2577,6 @@ async function exportRun(kind){
   try{
     await exportLibs(kind === "pdf");
     const days = pick.map(d => ({tripName:t.name, tone:tone(t.id), dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
-    s.busy = "กำลังหาตำแหน่งบนแผนที่…"; render();
-    await exportPlaces(days);
     const blobs = [];
     for(const [i, d] of days.entries()){
       if(S.sheet !== s) return;
@@ -3617,7 +3615,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-pin1";
+const BUILD = "2026-11-02-exp1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
