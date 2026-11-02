@@ -711,6 +711,17 @@ html.kb .tabbar{display:none}
 .help-likes button{border:0}
 .trip-top{position:sticky;top:0;z-index:12;display:flex;flex-direction:column;gap:10px;background:var(--bg);margin:calc(-12px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
 .pin-cal .cal{margin:0}
+.cal-nav{display:flex;align-items:center;gap:6px;min-height:34px}
+.cal-label{flex:1;display:flex;align-items:baseline;justify-content:center;gap:8px;font-weight:600;font-size:15px}
+.cal-label small{font-size:12px;font-weight:400;color:var(--muted)}
+.cal.open .cal-label{justify-content:flex-start;padding-left:4px}
+.cal-arrow{width:34px;height:34px;border:0;border-radius:12px;background:var(--tile);color:var(--ink);display:grid;place-items:center;padding:0}
+.cal-arrow.fwd .ic{transform:scaleX(-1)}
+.cal-arrow:disabled{opacity:.35}
+.cal-all{border:0;border-radius:999px;background:var(--tile);color:var(--ink);font:inherit;font-size:13px;height:34px;padding:0 10px 0 12px;display:inline-flex;align-items:center;gap:2px}
+.cal-all .ic{transform:rotate(90deg);transition:transform .2s}
+.cal.open .cal-all .ic{transform:rotate(-90deg)}
+.cal.open .tabs{max-height:min(46vh,330px);overflow-y:auto;overscroll-behavior:contain}
 .help-note{width:100%;min-width:0;border:0;border-radius:16px;background:var(--tile);color:var(--ink);padding:12px 14px;font:inherit;font-size:15px;line-height:1.45;resize:none}
 .help-note::placeholder{color:var(--muted)}
 .help-note:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
@@ -1419,6 +1430,11 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimatio
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
+/* swipe the one-week row of a long trip to move a week */
+{ let sx = null, sy = 0;
+  document.addEventListener("touchstart", e => { const c = e.target.closest?.(".cal.long:not(.open) .tabs"); if(!c){ sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+  document.addEventListener("touchend", e => { if(sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){ const b = document.querySelector(`.cal.long [data-act="cal-week"][data-d="${dx < 0 ? 1 : -1}"]`); if(b && !b.disabled) b.click(); } }, {passive:true}); }
 /* ---------- AI help: the person plans; AI reads every day and suggests, and fixes what they pick ---------- */
 const HELP_LIKES = ["ธรรมชาติ","ประวัติศาสตร์","สวนสนุก","พิพิธภัณฑ์","ช้อปปิ้ง","ของกิน","คาเฟ่"];
 const HELP_PACE = [["relaxed","ชิลๆ"],["balanced","กำลังดี"],["packed","อัดแน่น"]];
@@ -1529,6 +1545,9 @@ function vHelpPage(){
     <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}เริ่ม</button>`);
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
+/* trip days laid out as a Sunday-first calendar, 7 per row.
+   A long trip (more than two weeks) shows one week at a time: arrows or a swipe move between weeks,
+   and "ทั้งหมด" opens the whole calendar until a day is picked */
 function calendar(dates){
   const first = dates[0], last = dates[dates.length-1];
   const lead = parseD(first).getDay();
@@ -1536,13 +1555,24 @@ function calendar(dates){
   const trail = (7 - (lead + dates.length) % 7) % 7;
   const after = Array.from({length:trail}, (_,k) => addDays(last, k + 1));
   const out = x => `<span class="tab out" aria-hidden="true"><b>${parseD(x).getDate()}</b></span>`;
-  return `<div class="cal">
-    <div class="cal-head" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div>
-    <div class="tabs" role="tablist" aria-label="เลือกวัน">
-      ${before.map(out).join("")}
-      ${dates.map((x,i) => `<button class="tab${x < today() ? " past" : ""}" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}${x < today() ? " ผ่านไปแล้ว" : ""}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`).join("")}
-      ${after.map(out).join("")}
-    </div></div>`;
+  const cells = [...before.map(out), ...dates.map((x,i) => `<button class="tab${x < today() ? " past" : ""}" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}${x < today() ? " ผ่านไปแล้ว" : ""}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`), ...after.map(out)];
+  const weeks = Math.ceil(cells.length / 7), long = dates.length > 14;
+  const head = `<div class="cal-head" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div>`;
+  if(!long) return `<div class="cal">${head}<div class="tabs" role="tablist" aria-label="เลือกวัน">${cells.join("")}</div></div>`;
+  const dayWeek = Math.floor((lead + S.day) / 7);
+  const w = Math.max(0, Math.min(weeks - 1, S.calWeek ?? dayWeek));
+  const open = !!S.calOpen;
+  // the label: the dates this week covers (trip days only)
+  const inWeek = dates.filter((_, i) => Math.floor((lead + i) / 7) === w), a0 = parseD(inWeek[0]), a1 = parseD(inWeek[inWeek.length - 1]);
+  const span = a0.getMonth() === a1.getMonth() ? `${a0.getDate()}–${a1.getDate()} ${MON[a1.getMonth()]}` : `${a0.getDate()} ${MON[a0.getMonth()]} – ${a1.getDate()} ${MON[a1.getMonth()]}`;
+  const nav = `<div class="cal-nav">
+      ${open ? `<span class="cal-label">ทั้งหมด ${dates.length} วัน</span>` : `<button type="button" class="cal-arrow" data-act="cal-week" data-d="-1" ${w ? "" : "disabled"} aria-label="สัปดาห์ก่อน">${ic("back",18)}</button>
+      <span class="cal-label">${esc(span)}<small>สัปดาห์ ${w + 1}/${weeks}</small></span>
+      <button type="button" class="cal-arrow fwd" data-act="cal-week" data-d="1" ${w < weeks - 1 ? "" : "disabled"} aria-label="สัปดาห์ถัดไป">${ic("back",18)}</button>`}
+      <button type="button" class="cal-all" data-act="cal-open" aria-expanded="${open}">${open ? "ย่อ" : "ทั้งหมด"}${ic("chev",14)}</button>
+    </div>`;
+  const shown = open ? cells : cells.slice(w * 7, w * 7 + 7);
+  return `<div class="cal long${open ? " open" : ""}">${nav}${head}<div class="tabs" role="tablist" aria-label="เลือกวัน">${shown.join("")}</div></div>`;
 }
 function vTrip(){
   const t = S.trip; if(!t) return vLoadingTrip();
@@ -3389,7 +3419,9 @@ document.addEventListener("click", async e => {
     case "step": {
       const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
       S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
-    case "day": if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
+    case "cal-week": S.calWeek = Math.max(0, (S.calWeek ?? Math.floor((parseD(tripDates(t)[0]).getDay() + S.day) / 7)) + Number(el.dataset.d)); render(); break;
+    case "cal-open": S.calOpen = !S.calOpen; S.calWeek = null; render(); break;
+    case "day": S.calOpen = false; S.calWeek = null; if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "tab": selectTab(el.dataset.k); break;
@@ -3624,7 +3656,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-02-cozy1";
+const BUILD = "2026-11-02-cal1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
