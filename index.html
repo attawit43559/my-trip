@@ -1882,6 +1882,7 @@ function sosNeedsLocal(){
 async function sosLocalize(){
   if(sosLocalize.busy) return; sosLocalize.busy = true; S.sosLocalErr = false;
   try { await sosLocalizeRun(); } finally { sosLocalize.busy = false; }
+  if(S.sosLocalErr && !sosLocalize.retried){ sosLocalize.retried = true; setTimeout(() => { if(sosNeedsLocal()){ S.sosLocalErr = false; if(S.sheet && S.sheet.kind === "sos") render(); sosLocalize(); } }, 6000); }
 }
 async function sosLocalizeRun(){
   const t = S.trip, sos = (t && t.sos) || {}; if(!t || !navigator.onLine || !CONNECTED) return;
@@ -2118,8 +2119,7 @@ function vTrip(){
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
-    const allFiles = [...new Set(S.items.flatMap(itemFiles))], kept = allFiles.filter(id => DOCS.have.has(id)).length;
-    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}${allFiles.length ? `<p class="docs-state muted small">${ic("ticket",16)}ตั๋ว / ใบจอง ${allFiles.length} ไฟล์ · ${kept === allFiles.length ? "เก็บไว้ในเครื่องแล้ว ดูได้ตอนไม่มีเน็ต" : `เก็บไว้ในเครื่องแล้ว ${kept} ไฟล์ (ต่อเน็ตไว้ แอปจะเก็บที่เหลือให้)`}</p>` : ""}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
@@ -4206,7 +4206,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-sos3";
+const BUILD = "2026-11-03-sos4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
