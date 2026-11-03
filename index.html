@@ -656,8 +656,8 @@ html.kb .tabbar{display:none}
 .sos-local{font-size:18px!important;font-weight:600;margin-top:6px!important}
 .sos-line{margin:0;font-size:14px;padding:0 4px}
 .sos-sheet .soft-btn{border-radius:14px}.sos-cancel{background:var(--tile)!important;color:var(--ink)!important}
-.entry-doc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:var(--flight-soft);color:var(--flight);display:grid;place-items:center;padding:0;z-index:2}
-.trow-slide:has(.entry-doc) .entry{padding-right:54px}
+.entry-doc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:none;color:var(--flight);display:grid;place-items:center;padding:0;z-index:2}
+.trow-slide:has(.entry-doc) .entry{padding-right:48px}
 .trow-slide{position:relative}
 .doc-off{display:block;font-size:11.5px;color:var(--place);font-weight:500}
 .docs-state{display:flex;align-items:center;gap:6px;margin:0 4px}
@@ -3750,7 +3750,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-lean1";
+const BUILD = "2026-11-03-tix2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
