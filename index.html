@@ -1033,8 +1033,14 @@ async function refreshTrip(id){
     const keep = pendingIds(), local = C.items[id] || {}, next = {};
     r.items.forEach(it => { if(!keep.has(it.id)) next[it.id] = it; });
     Object.values(local).forEach(it => { if(keep.has(it.id)) next[it.id] = it; });
-    C.items[id] = next; C.revisions[id]=r.revision; emit();
+    C.items[id] = next; C.revisions[id]=r.revision; emit();secureTripFiles(r.trip,r.items);
   } catch(_) { S.tripLoading = false; emit(); }
+}
+const securingTrips=new Set();
+async function secureTripFiles(trip,items){
+  if(trip.ownerId!==S.me||securingTrips.has(trip.id))return;
+  const key=JSON.stringify([...new Set(items.flatMap(it=>[it.fileId,...(it.fileIds||[])]).filter(Boolean))].sort());C.privateFiles||={};if(C.privateFiles[trip.id]===key)return;
+  securingTrips.add(trip.id);try{let offset=0;for(let i=0;i<100;i++){const r=await api('secureBookingFiles',{tripId:trip.id,offset});if(r.done){C.privateFiles[trip.id]=key;persist();break;}if(r.offset<=offset)break;offset=r.offset;}}catch(_){}finally{securingTrips.delete(trip.id);}
 }
 function fail(e){ toast(e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : e && e.code === "not_connected" ? "ยังไม่ได้เชื่อม Google Sheet" : "เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง"); }
 
@@ -1868,6 +1874,7 @@ async function helpRun(oneDay){
   try {
     const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(note ? {note} : {})}, days:dates.map(date => ({date, rows:helpRows(date), weather:wxText(date)}))});
     if(S.help !== h) return;
+    if(h.result)h.result.revision=res.revision;
     if(h.busyDay){
       const got = (res.days || []).find(d => d.date === oneDay) || {date:oneDay, summary:"", tips:[]};
       const i = h.result.days.findIndex(d => d.date === oneDay);
@@ -1886,35 +1893,20 @@ async function helpRun(oneDay){
     h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : /^ai_error_5|rate_limited|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
   }
 }
-async function helpFix(di, ti, fi){
-  const h = S.help, t = S.trip, tip = h && h.result && h.result.days[di] && h.result.days[di].tips[ti];
-  if(!tip || tip.applied || tip.busy || !t) return;
-  const one = Number.isInteger(fi) ? tip.fix[fi] : null; if(one && one.applied) return;
-  tip.busy = true; render();
-  let done = 0;
-  try {
-    for(const f of (one ? [one] : tip.fix.filter(x => !x.applied))){
-      const it = f.id && S.items.find(i => i.id === f.id);
-      if(f.op === "time" && it){ await store.updateItem(t.id, it.id, {time:f.time}); done++; }
-      else if(f.op === "remove" && it){ await store.deleteItem(t.id, it.id); done++; }
-      else if(f.op === "move" && it){ await store.updateItem(t.id, it.id, {date:f.date}); done++; }
-      else if(f.op === "duration" && it){ await store.updateItem(t.id, it.id, {data:{...(it.data||{}), durationMinutes:f.minutes}}); done++; }
-      else if(f.op === "add"){
-        const idea = f.ideaId && S.items.find(i => i.id === f.ideaId && i.type === "idea"), d = (idea && idea.data) || {};
-        if(idea && plannedFrom(idea.id)) continue;
-        await store.addItem(t.id, {type:"place", date:f.date, time:f.time || "", title:idea ? idea.title : f.title, sub:idea ? (idea.sub || "") : "",
-          data:{address:d.address || "", lat:d.lat, lon:d.lon, placeId:d.placeId || "", mapsUrl:d.mapsUrl || "", kind:f.kind || d.kind || "ที่เที่ยว", ...(idea ? {fromIdea:idea.id} : {})},
-          createdBy:S.me, createdAt:Date.now(), source:idea ? "idea" : "manual"});
-        done++;
-      }
-      f.applied = true;
-    }
-    tip.fix.forEach(x => { if(!one) x.applied = true; });
-    tip.applied = tip.fix.every(x => x.applied);
-    toast(done ? (one ? "เพิ่มลงแผนแล้ว" : tip.kind === "plan" ? "เพิ่มลงแผนแล้ว" : "แก้ตามคำแนะนำแล้ว") : "รายการนี้เปลี่ยนไปแล้ว ไม่มีอะไรต้องแก้");
-  } catch(err){ fail(err); }
-  finally { tip.busy = false; render(); }
+async function helpFix(di,ti,fi){
+  const h=S.help,t=S.trip,tip=h&&h.result&&h.result.days[di]?.tips[ti];if(!tip||tip.applied||tip.busy||!t)return;
+  const one=Number.isInteger(fi)?tip.fix[fi]:null;if(one?.applied)return;const fixes=one?[one]:tip.fix.filter(x=>!x.applied);if(!fixes.length)return;
+  tip.busy=true;tip.operations||={};const key=one?String(fi):'all',operation=tip.operations[key]||(tip.operations[key]=rid());render();
+  try{
+    await flush();if(C.outbox.length)throw {code:'pending_sync'};
+    if(S.help!==h||S.trip?.id!==t.id)throw {code:'cancelled'};
+    const res=await api('applyReviewFix',{tripId:t.id,revision:h.result.revision,date:h.result.days[di].date,fixes,operation});
+    applyPlanResponse(t.id,res);if(S.help!==h||S.trip?.id!==t.id)return;
+    h.result.revision=res.revision;fixes.forEach(f=>f.applied=true);tip.applied=tip.fix.every(f=>f.applied);toast('แก้ตามคำแนะนำแล้ว');
+  }catch(e){if(e.code==='plan_changed')await refreshTrip(t.id);if(S.help===h&&e.code!=='cancelled')toast(({locked_booking_conflict:'รายการนี้ล็อกเวลาจองไว้ AI เปลี่ยนไม่ได้',plan_outside_flight_window:'วันนี้ยังไม่ถึงปลายทางหรือกลับแล้ว กรุณาให้ผู้ช่วยตรวจใหม่',plan_before_arrival:'กิจกรรมอยู่ก่อนเวลาผ่านขั้นตอนหลังลงเครื่อง',plan_before_departure:'ต้องเผื่อเวลาไปสนามบินก่อนขึ้นเครื่อง',plan_changed:'แผนเปลี่ยนแล้ว กรุณาให้ผู้ช่วยตรวจใหม่',pending_sync:'รอบันทึกข้อมูลเดิมให้ครบก่อน',already_planned:'สถานที่นี้ลงแผนแล้ว'})[e.code]||'ยังบันทึกไม่ได้ ลองอีกครั้ง');}
+  finally{tip.busy=false;if(S.help===h)render();}
 }
+
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
   h.notes ||= {};
@@ -3019,43 +3011,29 @@ function autoSaveable(r){
   return r.flights.every(f => f.date && f.depTime && (f.from || f.to)) && r.stays.every(st => st.checkInDate && st.checkOutDate);
 }
 async function readAll(){
-  const u = S.upload; if(!u || u.status === "reading") return;
-  const files = u.files || [], pasted = s_(u.text);
-  if(!files.length && !pasted){ u.status = "error"; u.err = errCopy("empty"); render(); return; }
-  if(!files.length && pasted.replace(/\s/g,"").length < 30){ u.status = "error"; u.err = errCopy("too_short"); render(); return; }
-  u.status = "reading"; u.err = ""; u.step = "กำลังเตรียมไฟล์…"; u.ctl = new AbortController();
-  render();
-  const signal = u.ctl.signal;
+  const u=S.upload,t=S.trip,me=S.me;if(!u||!t||u.status==='reading')return;
+  const files=u.files||[],pasted=s_(u.text);if(!files.length&&!pasted){u.status='error';u.err=errCopy('empty');render();return;}
+  if(!files.length&&pasted.replace(/\s/g,'').length<30){u.status='error';u.err=errCopy('too_short');render();return;}
+  u.tripId=t.id;u.status='reading';u.err='';u.step='กำลังเตรียมไฟล์…';u.ctl=new AbortController();const signal=u.ctl.signal;
+  const active=()=>S.upload===u&&S.trip?.id===t.id&&S.me===me&&!signal.aborted;
+  const check=()=>{if(!active())throw {code:'cancelled'};};render();
   try{
-    const prepared = [];
-    for(const f of files){ prepared.push(await prepFile(f)); if(signal.aborted) throw {code:"cancelled"}; }
-    // keep the booking files in Drive while the AI reads them
-    const uploads = prepared.map((p, i) => api("uploadFile", {name:files[i].name || "booking", mime:p.mime, data:p.data}).then(r => r.id).catch(() => null));
-    setStep("กำลังอ่านใบจอง…");
-    const t = S.trip;
-    const res = await api("readBooking", {kind:u.kind, trip:{name:t.name, destination:t.destination, startDate:t.startDate, days:t.days},
-      files:prepared, text:pasted}, signal);
-    const r = buildReview(u.kind, res);
-    if(!r.flights.length && !r.stays.length) throw {code:"nothing"};
-    r.fileName = files.length ? files.map(f => f.name).join(", ") : "ข้อความที่วาง";
-    setStep("กำลังเก็บใบจอง…");
-    r.fileSlots = await Promise.all(uploads);           // Drive id per attached file, in order (null if that upload failed)
-    r.fileIds = r.fileSlots.filter(Boolean);
-    r.sourceText = pasted ? pasted.slice(0, 30000) : "";
-    S.review = r;
-    if(autoSaveable(r)) { await saveReview(true); return; }
-    u.status = "idle";
-    go("review");
-  } catch(e){
-    if(e && e.code === "cancelled"){ u.status = "idle"; }
-    else { u.status = "error"; u.err = errCopy(e && e.code); }
-    render();
-  }
+    const prepared=[];for(const f of files){prepared.push(await prepFile(f));check();}
+    u.uploadedFiles||=new Map();
+    const uploads=prepared.map((p,i)=>u.uploadedFiles.get(files[i])?Promise.resolve({id:u.uploadedFiles.get(files[i])}):api('uploadFile',{name:files[i].name||'booking',mime:p.mime,data:p.data},signal).then(r=>{if(!r?.id)throw {code:'upload_failed'};u.uploadedFiles.set(files[i],r.id);return r;}).catch(e=>({error:e})));
+    setStep('กำลังอ่านใบจอง…');const res=await api('readBooking',{kind:u.kind,trip:{name:t.name,destination:t.destination,startDate:t.startDate,days:t.days},files:prepared,text:pasted},signal);check();
+    const r=buildReview(u.kind,res);r.tripId=t.id;r.ownerMe=me;if(!r.flights.length&&!r.stays.length)throw {code:'nothing'};
+    r.fileName=files.length?files.map(f=>f.name).join(', '):'ข้อความที่วาง';setStep('กำลังเก็บใบจอง…');
+    const uploaded=await Promise.all(uploads);check();if(uploaded.some(x=>!x.id))throw {code:'upload_failed'};
+    r.fileSlots=uploaded.map(x=>x.id);r.fileIds=r.fileSlots.slice();r.sourceText=pasted?pasted.slice(0,30000):'';S.review=r;
+    if(autoSaveable(r)){await saveReview(true);return;}u.status='idle';go('review');
+  }catch(e){if(S.upload!==u||S.trip?.id!==t.id||S.me!==me)return;const cancelled=signal.aborted||e.code==='cancelled';u.status=cancelled?'idle':'error';u.err=cancelled?'':e.code==='upload_failed'?'อัปโหลดใบจองไม่ครบ ยังไม่ได้บันทึก กรุณาลองอีกครั้ง':errCopy(e.code);render();}
 }
 
 /* ---------- saving ---------- */
 async function saveReview(auto){
   const r = S.review, t = S.trip; if(!r || !t) return;
+  if(r.tripId&&r.tripId!==t.id||r.ownerMe&&r.ownerMe!==S.me){toast('ทริปหรือบัญชีเปลี่ยนแล้ว กรุณาเพิ่มข้อมูลใหม่');return;}
   const base = {createdBy:S.me, createdAt:Date.now(), source:r.fileName ? "upload" : "manual"};
   // each flight or stay keeps only the files it was read from; if the reader did not say, it keeps them all
   const idsFor = x => {
@@ -3298,12 +3276,13 @@ document.addEventListener("change", e => {
     const fl = Array.from(e.target.files || []); e.target.value = "";
     const it = S.sheet && S.items.find(i => i.id === S.sheet.id);
     if(fl.length && it && CONNECTED){
-      toast("กำลังแนบ…");
+      const tripId=S.trip.id,me=S.me;toast("กำลังแนบ…");
       Promise.all(fl.map(f => store.uploadFile(f).catch(() => null))).then(async ids => {
+        if(S.trip?.id!==tripId||S.me!==me)return;const failed=ids.filter(x=>!x).length;
         ids = ids.filter(Boolean);
         if(!ids.length){ toast("แนบไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
         const all = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : []), ...ids])];
-        try { await store.updateItem(S.trip.id, it.id, {fileIds: all}); toast("แนบใบจองแล้ว"); } catch(err){ fail(err); }
+        try { await store.updateItem(tripId, it.id, {fileIds: all}); toast(failed?`แนบได้ ${ids.length} ไฟล์ อีก ${failed} ไฟล์ไม่สำเร็จ กรุณาลองใหม่`:"แนบใบจองแล้ว"); } catch(err){ fail(err); }
       });
     }
   }
@@ -3753,7 +3732,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-wx2";
+const BUILD = "2026-11-03-safety1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
