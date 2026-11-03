@@ -689,6 +689,7 @@ html.kb .tabbar{display:none}
 .next-btn{background:var(--surface);color:var(--ink);flex:none;text-decoration:none}
 .tb-wx{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;font-size:12px;color:var(--ink);background:rgba(255,255,255,.7);border-radius:999px;padding:2px 9px 2px 7px;position:relative;z-index:1}
 .tb-wx .ic{color:var(--deep,#8A5300);vertical-align:-3px;margin-right:4px}
+.tb-wx.none{color:var(--muted)}.tb-wx.none .ic{color:var(--muted);opacity:.7}
 .wx-row{display:flex;align-items:center;gap:8px;margin:0 4px;font-size:14px;color:var(--ink)}
 .wx-row .ic{color:#E0A030}.wx-row.wet .ic{color:#5F8FC0}
 .wx-row span{color:var(--muted)}
@@ -1638,7 +1639,9 @@ function tripArt(w){
 }
 /* the forecast in a few words under the trip name */
 function tbWx(date){
-  const w = date && date >= today() ? wxFor(date) : null; if(!w) return "";
+  const w = date && date >= today() ? wxFor(date) : null;
+  // no forecast (a past day, too far ahead, or offline): the same pill with a dash, so the bar keeps its size
+  if(!w) return `<span class="tb-wx none" aria-label="ยังไม่มีข้อมูลอากาศ">${ic("wxCloud",15)}— · ${date && date < today() ? "ไม่มีข้อมูลอากาศย้อนหลัง" : "ยังไม่มีข้อมูลอากาศ"}</span>`;
   const [icn, th] = wxKind(w.code);
   // on a windy day with a quiet sky, the wind is the news; with rain or snow the sky picture already shows the gusts
   const windy = w.wind >= 35, word = windy && ["wxSun","wxPart","wxCloud"].includes(icn) ? "ลมแรง" : th;
@@ -3750,7 +3753,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-tix2";
+const BUILD = "2026-11-03-wx";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
