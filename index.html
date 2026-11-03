@@ -728,6 +728,8 @@ html.kb .tabbar{display:none}
 .sos-card{display:flex;align-items:center;gap:12px;border:0;background:var(--surface);border-radius:20px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--lift)}
 .sos-card .grow{display:flex;flex-direction:column;line-height:1.35}
 .sos-sheet{gap:12px}
+.sos-doc-btn{border-radius:14px;background:var(--flight-soft);color:var(--flight)}
+.doc-note{border-bottom:1px solid var(--line);padding-bottom:16px}.doc-local{margin:0 0 6px;font-size:30px;line-height:1.4;font-weight:700;color:var(--ink)}
 .sos-tag{display:flex;align-items:center;gap:6px;margin:4px 2px 0;font-size:12px;color:#A0642A}
 .sos-wait{display:flex;align-items:center;gap:8px}.spinner.sm{width:14px;height:14px;border-width:2px}
 .sos-group{display:flex;flex-direction:column;gap:6px}.sos-group h3{margin:4px 0 0;font-size:14px}
@@ -1145,7 +1147,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit","doc","taxi","sos"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit","doc","taxi","sos","sos-doctor"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1872,7 +1874,16 @@ async function sosSave(){
   S.sheet = {kind:"sos", edit:false, form:sos}; render(); toast("บันทึกแล้ว");
   if(changed) sosLocalize();
 }
+/* a health note without its translation (a save made offline, or before the translator was ready) is translated when the page opens */
+function sosNeedsLocal(){
+  const sos = (S.trip && S.trip.sos) || {}, local = sos.local || {};
+  return navigator.onLine && SOS_FIELDS.some(([k, , , big]) => big && s_(sos[k]) && !local[k]);
+}
 async function sosLocalize(){
+  if(sosLocalize.busy) return; sosLocalize.busy = true; S.sosLocalErr = false;
+  try { await sosLocalizeRun(); } finally { sosLocalize.busy = false; }
+}
+async function sosLocalizeRun(){
   const t = S.trip, sos = (t && t.sos) || {}; if(!t || !navigator.onLine || !CONNECTED) return;
   const notes = SOS_FIELDS.filter(f => f[3] && s_(sos[f[0]])).map(([k]) => ({key:k, text:s_(sos[k])}));
   if(!notes.length) return;
@@ -1880,10 +1891,17 @@ async function sosLocalize(){
     const r = await api("localize", {tripId:t.id, places:[], notes});
     const local = {}; (r.notes || []).forEach(n => { local[n.key] = n.text; });
     await store.updateTrip(t.id, {sos:{...sos, local}}); if(r.langName) await store.updateTrip(t.id, {local:{...(t.local || {}), langName:r.langName, takeMe:r.takeMe || (t.local || {}).takeMe, thanks:r.thanks}});
-    if(S.sheet && S.sheet.kind === "sos") render();
-  } catch(_){}
+    if(S.sheet && (S.sheet.kind === "sos" || S.sheet.kind === "sos-doctor")) render();
+  } catch(_){ S.sosLocalErr = true; if(S.sheet && S.sheet.kind === "sos") render(); }
 }
 const tel = (label, n) => `<a class="sos-row" href="tel:${esc(String(n).replace(/[^\d+]/g, ""))}"><span class="grow">${esc(label)}</span><b>${esc(n)}</b>${ic("phone",18)}</a>`;
+function vSosDoctor(){
+  const sos = (S.trip && S.trip.sos) || {}, local = sos.local || {}, tl = (S.trip && S.trip.local) || {};
+  const rows = SOS_FIELDS.filter(([k, , , big]) => big && s_(sos[k]));
+  return `<div class="big-sheet" role="dialog" aria-modal="true" aria-label="ข้อมูลสุขภาพสำหรับหมอ">
+    <div class="big-hd"><span class="muted small">ให้หมอ / เภสัชกรดู${tl.langName ? " · " + esc(tl.langName) : ""}</span><button class="round" data-act="sos-open" aria-label="กลับ">${ic("close")}</button></div>
+    <div class="big-body">${rows.map(([k, label]) => `<section class="doc-note"><p class="doc-local">${esc(local[k] || sos[k])}</p><p class="muted small">${esc(label)} · ${esc(sos[k])}</p></section>`).join("")}</div></div>`;
+}
 function sosCalls(){
   const t = S.trip || {}, c = tripCountry(), auto = t.sosAuto && t.sosAuto.key === sosAutoKey() ? t.sosAuto : null;
   if(c && c[0] === "JP") return `<section class="sos-group"><h3>โทรด่วน · ญี่ปุ่น</h3>${SOS_JAPAN.concat(SOS_HOME).map(([l, n]) => tel(l, n)).join("")}
@@ -1918,7 +1936,10 @@ function vSos(s){
     ${sosCalls()}
     ${stays.length ? `<section class="sos-group"><h3>ที่พักของเรา</h3>${stays.map(i => { const d = i.data || {}, L = d.local && d.local.src === localKey(i) ? d.local : null;
       return `<div class="sos-stay"><button type="button" class="grow sos-stay-t" data-act="taxi-open" data-id="${esc(i.id)}"><b>${esc(briefName(i.title))}</b><span class="muted small">${esc(dShort(i.date))} – ${esc(dShort(i.endDate || i.date))}${L ? " · " + esc(L.name) : ""}</span></button>${d.phone ? `<a class="round" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ""))}" aria-label="โทรหา ${esc(briefName(i.title))}">${ic("phone",18)}</a>` : ""}</div>`; }).join("")}</section>` : ""}
-    ${health.length ? `<section class="sos-group"><h3>ข้อมูลสุขภาพ${tl.langName ? ` · แสดงหมอเป็น${esc(tl.langName)}` : ""}</h3>${health.map(([k, label]) => `<div class="sos-health"><span class="muted small">${esc(label)}</span><p>${esc(sos[k])}</p>${local[k] ? `<p class="sos-local">${esc(local[k])}</p>` : ""}</div>`).join("")}</section>` : ""}
+    ${health.length ? `<section class="sos-group"><h3>ข้อมูลสุขภาพ</h3>${health.map(([k, label]) => `<div class="sos-health"><span class="muted small">${esc(label)}</span><p>${esc(sos[k])}</p>${local[k] ? `<p class="sos-local">${esc(local[k])}</p>` : ""}</div>`).join("")}
+      ${health.every(([k]) => local[k]) ? `<button type="button" class="soft-btn sos-doc-btn" data-act="sos-doctor">${ic("sos",16)}เปิดเต็มจอให้หมอ / เภสัชกรดู${tl.langName ? " · " + esc(tl.langName) : ""}</button>`
+        : navigator.onLine && !S.sosLocalErr ? `<p class="muted small sos-wait"><span class="spinner sm" aria-hidden="true"></span>กำลังแปลเป็นภาษาท้องถิ่น…</p>`
+        : `<p class="muted small">ยังแปลไม่ได้ ต่อเน็ตแล้วเปิดหน้านี้อีกครั้ง</p>`}</section>` : ""}
     ${["insurer","policy","insPhone","contactName","contactPhone","note"].some(k => s_(sos[k])) ? `<section class="sos-group"><h3>ประกันและผู้ติดต่อ</h3>
       ${s_(sos.insurer) || s_(sos.policy) ? `<p class="sos-line">${esc([sos.insurer, sos.policy && "กรมธรรม์ " + sos.policy].filter(Boolean).join(" · "))}</p>` : ""}
       ${s_(sos.insPhone) ? tel("โทรประกัน", sos.insPhone) : ""}${s_(sos.contactPhone) ? tel(sos.contactName ? "ติดต่อ " + sos.contactName : "ผู้ติดต่อที่ไทย", sos.contactPhone) : ""}
@@ -3204,6 +3225,7 @@ function vSheet(){
   if(s.kind === "doc") return vDoc(s);
   if(s.kind === "taxi") return vTaxi(s);
   if(s.kind === "sos") return vSos(s);
+  if(s.kind === "sos-doctor") return vSosDoctor();
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "day-ideas") return "";
   if(s.kind === "overview") return vOverview(s);
@@ -4045,7 +4067,8 @@ document.addEventListener("click", async e => {
     case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
     case "taxi-open": taxiOpen(el.dataset.id); break;
-    case "sos-open": sosOpen(false); if(navigator.onLine && S.trip && S.trip.sos && !S.trip.sos.local) sosLocalize(); sosAutoLoad(); break;
+    case "sos-open": sosOpen(false); if(sosNeedsLocal()) sosLocalize(); sosAutoLoad(); break;
+    case "sos-doctor": S.sheet = {kind:"sos-doctor"}; render(); break;
     case "sos-edit": sosOpen(true); break;
     case "sos-view": sosOpen(false); break;
     case "book-open": S.sheet = {kind:"export", scope:"book", files:null, busy:""}; render(); break;
@@ -4183,7 +4206,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-sos2";
+const BUILD = "2026-11-03-sos3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
