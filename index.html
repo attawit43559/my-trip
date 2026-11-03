@@ -722,11 +722,13 @@ html.kb .tabbar{display:none}
 .doc-off{display:block;font-size:11.5px;color:var(--place);font-weight:500}
 .docs-state{display:flex;align-items:center;gap:6px;margin:0 4px}
 .doc-sheet{position:fixed;inset:0;z-index:30;background:#FFFFFF;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.doc-hd>.grow{min-width:0}
 .doc-hd{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
 .doc-hd b{font-size:16px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .doc-hd .round{background:var(--tile);color:var(--ink)}
 .doc-tabs{display:flex;gap:6px;margin-top:6px}
-.doc-tabs button{border:0;border-radius:999px;background:var(--tile);font:inherit;font-size:13px;height:30px;padding:0 12px}
+.doc-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.doc-tabs::-webkit-scrollbar{display:none}
+.doc-tabs button{flex:none;white-space:nowrap;border:0;border-radius:999px;background:var(--tile);color:var(--ink);font:inherit;font-size:13px;line-height:1;height:30px;padding:0 12px}
 .doc-tabs button[aria-pressed="true"]{background:var(--flight-soft);color:var(--flight);font-weight:600}
 .doc-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#F4F1EC;padding-bottom:env(safe-area-inset-bottom,0px)}
 .doc-pages{display:flex;flex-direction:column;gap:10px;padding:10px;box-sizing:border-box;width:100%}
@@ -1603,7 +1605,6 @@ function vDoc(s){
     : `<div class="doc-msg"><div class="spinner" role="status" aria-label="กำลังเปิด"></div></div>`;
   return `<div class="doc-sheet" role="dialog" aria-modal="true" aria-label="ใบจอง ${esc(it.title)}">
     <div class="doc-hd"><div class="grow"><b>${esc(briefName(it.title))}</b>${s.files.length > 1 ? `<div class="doc-tabs">${s.files.map((_, n) => `<button type="button" data-act="doc-file" data-n="${n}" aria-pressed="${n === s.i}">ไฟล์ ${n + 1}</button>`).join("")}</div>` : ""}</div>
-      ${s.state === "ready" ? `<div class="doc-zoom"><button type="button" data-act="doc-zoom" data-d="-1" aria-label="ย่อ">${ic("minus",16)}</button><button type="button" data-act="doc-zoom" data-d="1" aria-label="ขยาย">${ic("plus",16)}</button></div>` : ""}
       <a class="round" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener" aria-label="เปิดใน Google Drive">${ic("ext",18)}</a>
       <button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <div class="doc-body" id="doc-view">${body}</div></div>`;
@@ -3968,7 +3969,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-help10";
+const BUILD = "2026-11-03-doc3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
