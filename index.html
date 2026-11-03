@@ -716,6 +716,28 @@ html.kb .tabbar{display:none}
   .help-like-in{font-size:16px!important;width:calc(100% / .875);height:calc(44px / .875);border-radius:16px;padding:0 16px;transform:scale(.875);transform-origin:0 0;margin-bottom:calc(44px - 44px / .875)}
 }
 .help-start,.help-actions .soft-btn,.help-fix{border-radius:14px}
+.big-sheet{position:fixed;inset:0;z-index:30;background:#FFFFFF;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.big-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 10px 18px}
+.big-hd .round{background:var(--tile);color:var(--ink)}
+.big-body{flex:1;overflow:auto;padding:12px 22px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.taxi-ask{margin:8px 0 0;font-size:20px;color:var(--muted)}
+.taxi-name{margin:0;font-size:40px;line-height:1.25;font-weight:700;color:var(--ink);word-break:break-word}
+.taxi-addr{margin:0;font-size:26px;line-height:1.45;color:var(--ink);word-break:break-word}
+.taxi-orig{margin:10px 0 0;font-size:14px;line-height:1.5;border-top:1px solid var(--line);padding-top:14px}
+.taxi-acts{display:flex;flex-direction:column;gap:8px;margin-top:6px}.taxi-acts .soft-btn{text-decoration:none;border-radius:14px;background:var(--tile);color:var(--ink)}
+.sos-card{display:flex;align-items:center;gap:12px;border:0;background:var(--surface);border-radius:20px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--lift)}
+.sos-card .grow{display:flex;flex-direction:column;line-height:1.35}
+.sos-sheet{gap:12px}
+.sos-group{display:flex;flex-direction:column;gap:6px}.sos-group h3{margin:4px 0 0;font-size:14px}
+.sos-row{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 14px;color:var(--ink);text-decoration:none;font-size:14px}
+.sos-row b{font-variant-numeric:tabular-nums}.sos-row .ic{color:var(--place)}
+.sos-stay{display:flex;align-items:center;gap:8px;background:var(--tile);border-radius:14px;padding:6px 6px 6px 14px}
+.sos-stay-t{border:0;background:none;padding:6px 0;text-align:left;font:inherit;color:var(--ink);display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.sos-stay .round{background:var(--surface);color:var(--place)}
+.sos-health{background:var(--tile);border-radius:14px;padding:10px 14px}.sos-health p{margin:2px 0 0;font-size:15px}
+.sos-local{font-size:18px!important;font-weight:600;margin-top:6px!important}
+.sos-line{margin:0;font-size:14px;padding:0 4px}
+.sos-sheet .soft-btn{border-radius:14px}.sos-cancel{background:var(--tile)!important;color:var(--ink)!important}
 .entry-doc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:var(--flight-soft);color:var(--flight);display:grid;place-items:center;padding:0;z-index:2}
 .trow-slide:has(.entry-doc) .entry{padding-right:54px}
 .trow-slide{position:relative}
@@ -864,6 +886,10 @@ const IC = {
   wxDrizzle:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M10 18.5l-.6 1.5M14.5 18.5l-.6 1.5"/>',
   wxStorm:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M13 13l-3 4.5h3.5L11 22"/>',
   wxSleet:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M9 18l-1 2.5M15 18l-1 2.5M12 19.5h.01"/>',
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  sos:'<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M12 9v6M9 12h6"/>',
+  taxi:'<path d="M5 17h14v-5l-2-5H7l-2 5z"/><path d="M9 7l.5-2h5l.5 2"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/><path d="M5 12h14"/>',
+  book:'<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/>',
   ticket:'<path d="M3 9V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a3 3 0 0 0 0 6v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a3 3 0 0 0 0-6z"/><path d="M15 7.5v1.5M15 11.2v1.6M15 15v1.5"/>',
   wxSun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
   wxPart:'<path d="M8 4.5v1.2M3.5 9H4.7M4.8 5.8l.9.9M11.2 5.8l-.9.9"/><path d="M5.6 11a2.6 2.6 0 0 1 5-1.6"/><path d="M8 19h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8 12.5 3.3 3.3 0 0 0 8 19z"/>',
@@ -1117,7 +1143,7 @@ const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit","doc"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "ai" || S.catTab === "help" || (S.sheet && (["place","move","idea","ai","trip-edit","doc","taxi","sos"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -1150,7 +1176,7 @@ function openTrip(id, view="trip"){
     S.ai = null; S.catTab = "";   // a planner draft belongs to the trip it was made for
     S.tripMissing = false;
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
-    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); docsPrefetchSoon(); clearTimeout(wxLoad.t); wxLoad.t = setTimeout(wxLoad, 800); });
+    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); docsPrefetchSoon(); localizeSoon(); clearTimeout(wxLoad.t); wxLoad.t = setTimeout(wxLoad, 800); });
   } else refreshTrip(id);   // reopening the same trip still fetches who joined since
   try {
     if(localStorage.getItem("mytrip-share-on") && localStorage.getItem("mytrip-last-trip") !== id) api("shareTrip", {tripId:id}).catch(() => {});
@@ -1221,6 +1247,8 @@ function vTripMore(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
     <button data-act="trip-edit">${ic("edit",20)}แก้ไขชื่อ / วันเที่ยว</button>
     <button data-act="export-open">${ic("image",20)}ส่งออกแผนเป็นรูป / PDF</button>
+    <button data-act="book-open">${ic("book",20)}สรุปทริปเป็นเล่ม</button>
+    <button data-act="sos-open">${ic("sos",20)}ข้อมูลฉุกเฉิน</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
     <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
     ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
@@ -1630,6 +1658,7 @@ function vNext(e){
   return `<section class="next-card" aria-label="รายการถัดไป">
     <span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it),20)}</span>
     <div class="grow"><span class="next-when">ถัดไป · ${esc(inMin(e.time))}</span><b>${esc(title)}</b><span class="muted small">${esc(e.time)}</span></div>
+    ${["place","stay"].includes(it.type) ? `<button class="round next-btn" data-act="taxi-open" data-id="${esc(it.id)}" aria-label="การ์ดยื่นแท็กซี่">${ic("taxi",20)}</button>` : ""}
     ${files.length ? `<button class="round next-btn" data-act="doc-open" data-id="${esc(it.id)}" aria-label="เปิดตั๋ว / ใบจอง">${ic("ticket",20)}</button>` : ""}
     ${go ? `<a class="round next-btn" href="${esc(go)}" target="_blank" rel="noopener" aria-label="นำทาง">${ic("navi",20)}</a>` : ""}
   </section>`;
@@ -1732,6 +1761,110 @@ function tbWx(date){
 }
 /* the same, in a line for the AI helper */
 function wxText(date){ const w = wxFor(date); if(!w) return ""; const [, , en] = wxKind(w.code); return `${en}, ${w.max}/${w.min}°C, rain chance ${w.rain}%${w.wind >= 35 ? ", strong wind " + w.wind + " km/h" : ""}`; }
+/* ---------- the taxi card: a place's name and address in the local language, big, to show a driver ---------- */
+const placeAddr = it => s_((it.data || {}).address);
+const localKey = it => briefName(it.title) + "|" + placeAddr(it);
+/* fetch local names for the open trip's hotels and planned places, a few at a time, saved on each item so they work offline */
+async function localizeTrip(only){
+  const t = S.trip; if(!t || !CONNECTED || !S.token || !navigator.onLine) return false;
+  const want = (only ? [only] : S.items.filter(i => ["stay", "place"].includes(i.type)))
+    .filter(i => !(i.data && i.data.local && i.data.local.src === localKey(i))).slice(0, 40);
+  if(!want.length) return true;
+  const r = await api("localize", {tripId:t.id, places:want.map(i => ({id:i.id, title:briefName(i.title), address:placeAddr(i)}))});
+  if(S.trip !== t) return false;
+  if(r.takeMe && (!t.local || t.local.takeMe !== r.takeMe)) store.updateTrip(t.id, {local:{langName:r.langName, takeMe:r.takeMe, thanks:r.thanks}});
+  for(const p of r.places || []){
+    const it = S.items.find(i => i.id === p.id); if(!it) continue;
+    await store.updateItem(t.id, it.id, {data:{...(it.data || {}), local:{name:p.name, address:p.address, lang:p.lang, sure:p.sure, src:localKey(it)}}});
+  }
+  return true;
+}
+function localizeSoon(){ clearTimeout(localizeSoon.t); localizeSoon.t = setTimeout(() => { if(localizeSoon.done === S.tripId) return; localizeSoon.done = S.tripId; localizeTrip().catch(() => { localizeSoon.done = null; }); }, 4000); }
+async function taxiOpen(id){
+  const it = S.items.find(i => i.id === id); if(!it) return;
+  S.sheet = {kind:"taxi", itemId:id}; render();
+  if(!(it.data && it.data.local && it.data.local.src === localKey(it)) && navigator.onLine){
+    S.sheet.loading = true; render();
+    try { await localizeTrip(it); } catch(_){ if(S.sheet && S.sheet.kind === "taxi") S.sheet.err = "ตอนนี้แปลไม่ได้ ใช้ชื่อเดิมไปก่อน"; }
+    if(S.sheet && S.sheet.kind === "taxi"){ S.sheet.loading = false; render(); }
+  }
+}
+function vTaxi(s){
+  const it = S.items.find(i => i.id === s.itemId); if(!it) return "";
+  const d = it.data || {}, L = d.local && d.local.src === localKey(it) ? d.local : null, tl = (S.trip && S.trip.local) || {};
+  const go = mapsLink(it);
+  return `<div class="big-sheet taxi" role="dialog" aria-modal="true" aria-label="การ์ดแท็กซี่ ${esc(it.title)}">
+    <div class="big-hd"><span class="muted small">การ์ดยื่นให้คนขับ${tl.langName ? " · " + esc(tl.langName) : ""}</span><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="big-body">
+      ${s.loading ? `<div class="doc-msg"><div class="spinner" role="status" aria-label="กำลังแปล"></div><p class="muted small">กำลังแปลชื่อและที่อยู่…</p></div>` : `
+      ${tl.takeMe && L ? `<p class="taxi-ask">${esc(tl.takeMe)}</p>` : ""}
+      <h2 class="taxi-name" lang="${esc((L && L.lang) || "")}">${esc(L ? L.name : briefName(it.title))}</h2>
+      ${(L ? L.address : placeAddr(it)) ? `<p class="taxi-addr" lang="${esc((L && L.lang) || "")}">${esc(L ? L.address : placeAddr(it))}</p>` : ""}
+      ${L && !L.sure ? `<p class="muted small">ที่อยู่อาจไม่ครบ ถ้ามีเบอร์โทร ให้คนขับโทรถามได้</p>` : ""}
+      ${s.err ? `<p class="muted small">${esc(s.err)}</p>` : ""}
+      ${L ? `<p class="taxi-orig muted">${esc(briefName(it.title))}${placeAddr(it) ? `<br>${esc(placeAddr(it))}` : ""}</p>` : ""}
+      <div class="taxi-acts">${d.phone ? `<a class="soft-btn" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ""))}">${ic("phone",18)}โทร ${esc(d.phone)}</a>` : ""}${go ? `<a class="soft-btn" href="${esc(go)}" target="_blank" rel="noopener">${ic("navi",18)}เปิดใน Google Maps</a>` : ""}</div>`}
+    </div></div>`;
+}
+
+/* ---------- emergency: who to call there, our hotels, and our health notes in the local language ---------- */
+const SOS_FIELDS = [["allergies","แพ้ยา / แพ้อาหาร","เช่น ลูกแพ้ถั่ว, แพ้ยา penicillin",true],["meds","ยาที่ใช้ประจำ","",true],["conditions","โรคประจำตัว","",true],
+  ["insurer","บริษัทประกันเดินทาง",""],["policy","เลขกรมธรรม์",""],["insPhone","เบอร์ประกัน 24 ชม.",""],["contactName","ผู้ติดต่อที่ไทย",""],["contactPhone","เบอร์ผู้ติดต่อที่ไทย",""],["note","โน้ตอื่นๆ",""]];
+const inJapan = () => { const t = S.trip || {}; return /japan|tokyo|osaka|kyoto|hokkaido|sapporo|fukuoka|okinawa|nagoya|ญี่ปุ่น|โตเกียว|โอซาก้า|เกียวโต/i.test((t.destination || "") + " " + (t.name || ""))
+  || S.items.some(i => { const d = i.data || {}; return +d.lat >= 24 && +d.lat <= 46 && +d.lon >= 122 && +d.lon <= 146; }) || S.items.some(i => i.type === "flight" && /^(HND|NRT|KIX|ITM|NGO|CTS|FUK|OKA)$/i.test(s_((i.data || {}).to))); };
+/* numbers checked Nov 2026: 110/119 and the Japan Visitor Hotline from JNTO; the embassy's numbers from a listing — worth a look at thaiembassy.jp */
+const SOS_JAPAN = [["ตำรวจ","110"],["รถพยาบาล / ดับเพลิง","119"],["Japan Visitor Hotline (24 ชม. อังกฤษ)","050-3816-2787"],["สถานทูตไทย โตเกียว","03-5789-2433"],["สถานทูตไทย โตเกียว · ฉุกเฉิน","090-4435-7812"],["สถานกงสุลใหญ่ โอซาก้า · ฉุกเฉิน","090-1895-0987"]];
+const SOS_HOME = [["ศูนย์กงสุล กระทรวงต่างประเทศ (24 ชม.)","+66 2 572 8442"]];
+function sosOpen(edit){ const t = S.trip; S.sheet = {kind:"sos", edit:!!edit, form:{...((t && t.sos) || {})}}; render(); }
+async function sosSave(){
+  const s = S.sheet, t = S.trip; if(!s || !t) return;
+  const sos = {}; SOS_FIELDS.forEach(([k]) => { sos[k] = s_(s.form[k]); });
+  const old = t.sos || {};
+  const changed = SOS_FIELDS.filter(f => f[3]).some(([k]) => sos[k] !== s_(old[k]));
+  await store.updateTrip(t.id, {sos:{...sos, local:changed ? {} : (old.local || {})}});
+  S.sheet = {kind:"sos", edit:false, form:sos}; render(); toast("บันทึกแล้ว");
+  if(changed) sosLocalize();
+}
+async function sosLocalize(){
+  const t = S.trip, sos = (t && t.sos) || {}; if(!t || !navigator.onLine || !CONNECTED) return;
+  const notes = SOS_FIELDS.filter(f => f[3] && s_(sos[f[0]])).map(([k]) => ({key:k, text:s_(sos[k])}));
+  if(!notes.length) return;
+  try {
+    const r = await api("localize", {tripId:t.id, places:[], notes});
+    const local = {}; (r.notes || []).forEach(n => { local[n.key] = n.text; });
+    await store.updateTrip(t.id, {sos:{...sos, local}}); if(r.langName) await store.updateTrip(t.id, {local:{...(t.local || {}), langName:r.langName, takeMe:r.takeMe || (t.local || {}).takeMe, thanks:r.thanks}});
+    if(S.sheet && S.sheet.kind === "sos") render();
+  } catch(_){}
+}
+const tel = (label, n) => `<a class="sos-row" href="tel:${esc(String(n).replace(/[^\d+]/g, ""))}"><span class="grow">${esc(label)}</span><b>${esc(n)}</b>${ic("phone",18)}</a>`;
+function vSos(s){
+  const t = S.trip, sos = (t && t.sos) || {}, local = sos.local || {}, tl = (t && t.local) || {};
+  const head = `<div class="hd"><span class="thumb tc k-shop">${ic("sos")}</span><h2>ข้อมูลฉุกเฉิน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
+  if(s.edit){
+    return `<div class="scrim" data-act="close-sheet"><form class="sheet sos-sheet" data-form="sos" role="dialog" aria-modal="true" aria-label="แก้ข้อมูลฉุกเฉิน" data-stop="1">${head}
+      <p class="muted small" style="margin:-6px 0 0">คนในทริปเห็นข้อมูลนี้ด้วย ข้อมูลสุขภาพจะแปลเป็นภาษาท้องถิ่นให้ไว้ยื่นหมอหรือเภสัชกร</p>
+      ${SOS_FIELDS.map(([k, label, ph, big]) => big
+        ? `<label class="fld sm">${esc(label)}<textarea rows="2" class="ed-area" placeholder="${esc(ph)}" data-bind="sheet:form.${k}">${esc(s.form[k] || "")}</textarea></label>`
+        : `<label class="fld sm">${esc(label)}<input type="${/Phone$/.test(k) ? "tel" : "text"}" value="${esc(s.form[k] || "")}" data-bind="sheet:form.${k}"></label>`).join("")}
+      <div class="grid2"><button type="button" class="soft-btn sos-cancel" data-act="sos-view">ยกเลิก</button><button type="submit" class="soft-btn">บันทึก</button></div>
+    </form></div>`;
+  }
+  const stays = S.items.filter(i => i.type === "stay");
+  const health = SOS_FIELDS.filter(f => f[3] && s_(sos[f[0]]));
+  const hasMine = SOS_FIELDS.some(([k]) => s_(sos[k]));
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet sos-sheet" role="dialog" aria-modal="true" aria-label="ข้อมูลฉุกเฉิน" data-stop="1">${head}
+    <section class="sos-group"><h3>โทรด่วน</h3>${(inJapan() ? SOS_JAPAN : []).concat(SOS_HOME).map(([l, n]) => tel(l, n)).join("")}
+      ${inJapan() ? `<p class="muted small">เบอร์สถานทูตควรเช็กอีกครั้งที่ thaiembassy.jp ก่อนเดินทาง</p>` : ""}</section>
+    ${stays.length ? `<section class="sos-group"><h3>ที่พักของเรา</h3>${stays.map(i => { const d = i.data || {}, L = d.local && d.local.src === localKey(i) ? d.local : null;
+      return `<div class="sos-stay"><button type="button" class="grow sos-stay-t" data-act="taxi-open" data-id="${esc(i.id)}"><b>${esc(briefName(i.title))}</b><span class="muted small">${esc(dShort(i.date))} – ${esc(dShort(i.endDate || i.date))}${L ? " · " + esc(L.name) : ""}</span></button>${d.phone ? `<a class="round" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ""))}" aria-label="โทรหา ${esc(briefName(i.title))}">${ic("phone",18)}</a>` : ""}</div>`; }).join("")}</section>` : ""}
+    ${health.length ? `<section class="sos-group"><h3>ข้อมูลสุขภาพ${tl.langName ? ` · แสดงหมอเป็น${esc(tl.langName)}` : ""}</h3>${health.map(([k, label]) => `<div class="sos-health"><span class="muted small">${esc(label)}</span><p>${esc(sos[k])}</p>${local[k] ? `<p class="sos-local">${esc(local[k])}</p>` : ""}</div>`).join("")}</section>` : ""}
+    ${["insurer","policy","insPhone","contactName","contactPhone","note"].some(k => s_(sos[k])) ? `<section class="sos-group"><h3>ประกันและผู้ติดต่อ</h3>
+      ${s_(sos.insurer) || s_(sos.policy) ? `<p class="sos-line">${esc([sos.insurer, sos.policy && "กรมธรรม์ " + sos.policy].filter(Boolean).join(" · "))}</p>` : ""}
+      ${s_(sos.insPhone) ? tel("โทรประกัน", sos.insPhone) : ""}${s_(sos.contactPhone) ? tel(sos.contactName ? "ติดต่อ " + sos.contactName : "ผู้ติดต่อที่ไทย", sos.contactPhone) : ""}
+      ${s_(sos.note) ? `<p class="sos-line">${esc(sos.note)}</p>` : ""}</section>` : ""}
+    <button type="button" class="soft-btn sos-edit" data-act="sos-edit">${ic("edit",16)}${hasMine ? "แก้ข้อมูลของเรา" : "เพิ่มแพ้ยา ยาประจำ ประกัน และผู้ติดต่อ"}</button>
+  </div></div>`;
+}
 /* swipe the one-week row of a long trip to move a week */
 { let sx = null, sy = 0;
   document.addEventListener("touchstart", e => { const c = e.target.closest?.(".cal.long:not(.open) .tabs"); if(!c){ sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
@@ -1904,7 +2037,7 @@ function vTrip(){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
     const allFiles = [...new Set(S.items.flatMap(itemFiles))], kept = allFiles.filter(id => DOCS.have.has(id)).length;
-    page = `${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}${allFiles.length ? `<p class="docs-state muted small">${ic("ticket",16)}ตั๋ว / ใบจอง ${allFiles.length} ไฟล์ · ${kept === allFiles.length ? "เก็บไว้ในเครื่องแล้ว ดูได้ตอนไม่มีเน็ต" : `เก็บไว้ในเครื่องแล้ว ${kept} ไฟล์ (ต่อเน็ตไว้ แอปจะเก็บที่เหลือให้)`}</p>` : ""}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}${allFiles.length ? `<p class="docs-state muted small">${ic("ticket",16)}ตั๋ว / ใบจอง ${allFiles.length} ไฟล์ · ${kept === allFiles.length ? "เก็บไว้ในเครื่องแล้ว ดูได้ตอนไม่มีเน็ต" : `เก็บไว้ในเครื่องแล้ว ${kept} ไฟล์ (ต่อเน็ตไว้ แอปจะเก็บที่เหลือให้)`}</p>` : ""}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
@@ -2263,6 +2396,7 @@ async function saveTravelLeg(){
 function itemLinks(it){
   const d = it.data || {}, out = [];
   const lnk = (href, icon, label) => `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener">${ic(icon,20)}<span class="grow">${esc(label)}</span>${ic("ext",16)}</a>`;
+  if(["stay","place"].includes(it.type)) out.push(`<button class="lnk" data-act="taxi-open" data-id="${esc(it.id)}">${ic("taxi",20)}<span class="grow">การ์ดยื่นแท็กซี่${(S.trip && S.trip.local && S.trip.local.langName) ? " · " + esc(S.trip.local.langName) : ""}</span>${ic("chev",16)}</button>`);
   if(["stay","place","idea"].includes(it.type)){ const m = mapsLink(it); if(m) out.push(lnk(m, "pin", "ดูใน Google Maps")); }
   const route = routeLink(it); if(route) out.push(lnk(route, itemIcon(it), "นำทางใน Google Maps"));
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
@@ -2843,7 +2977,7 @@ function vClear(s){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ล้างแผน" data-stop="1">
     <div class="hd"><span class="thumb tc t-move">${ic("trash")}</span><h2>ล้างแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">ลบสถานที่ การเดินทาง และโน้ตในเที่ยวบินกับที่พัก ตัวเที่ยวบินกับที่พักยังอยู่</p>
-    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
+    <div class="chips ex-scope clear-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
     <div class="grid2"><button class="pill-btn ex-go" data-act="sheet-cancel">ไม่ลบ</button><button class="pill-btn ex-go danger-soft" data-act="clear-run" ${label&&!S.clearing ? "" : "disabled"}>${S.clearing?"กำลังล้างแผน…":label ? `ลบ ${label}` : "ไม่มีอะไรให้ลบ"}</button></div>
   </div></div>`;
 }
@@ -2858,7 +2992,8 @@ function vExport(s){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกแผนเป็นรูป" data-stop="1">
     <div class="hd"><span class="thumb tc t-place">${ic("image")}</span><h2>บันทึกแผนเป็นรูป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">วันละ 1 หน้า เป็นตารางเดินทางของวันนั้น</p>
-    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
+    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}${chip("book", "สรุปทริปเป็นเล่ม")}</div>
+    ${s.scope === "book" ? `<p class="muted small" style="margin-top:-6px">หน้าปกสรุปทั้งทริป แล้วตามด้วยทุกวัน แนะนำเป็น PDF</p>` : ""}
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     ${body}
   </div></div>`;
@@ -2918,12 +3053,22 @@ async function exportPlaces(days){
 async function exportRun(kind){
   const s = S.sheet; if(!s || s.kind !== "export" || s.busy) return;
   const t = S.trip, dates = tripDates(t);
-  const pick = s.scope === "all" ? dates : [dates[S.day]];
+  const pick = s.scope === "all" || s.scope === "book" ? dates : [dates[S.day]];
   exportReset(s); s.kind2 = kind; s.busy = "กำลังเตรียม…"; render();
   try{
     await exportLibs(kind === "pdf");
     const days = pick.map(d => ({tripName:t.name, tone:tone(t.id), dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
     const blobs = [];
+    if(s.scope === "book"){
+      s.busy = "กำลังทำหน้าปก…"; render();
+      const all = dates.map(dt => exportEntries(dt));
+      const c0 = await PlanExport.renderCover({tripName:t.name, range:rangeLabel(t), dayCount:dates.length,
+        stops:S.items.filter(i => i.type === "place").length, stays:new Set(S.items.filter(i => i.type === "stay").map(i => i.title)).size,
+        flights:S.items.filter(i => i.type === "flight").length,
+        days:dates.map((dt, i) => ({no:i + 1, date:dShort(dt), names:all[i].filter(e => e.type === "place").map(e => briefName(e.title)),
+          spot:(all[i].find(e => e.type === "place") || all[i].find(e => e.type === "flight") || {}).spot || ""}))}, {icons:IC});
+      blobs.push(await new Promise(ok => c0.toBlob(ok, "image/jpeg", 0.92)));
+    }
     for(const [i, d] of days.entries()){
       if(S.sheet !== s) return;
       s.busy = days.length > 1 ? `กำลังวาดหน้า ${i + 1} จาก ${days.length}…` : "กำลังวาดหน้า…"; render();
@@ -2996,6 +3141,8 @@ function addFromLink(url){
 function vSheet(){
   const s = S.sheet; if(!s) return "";
   if(s.kind === "doc") return vDoc(s);
+  if(s.kind === "taxi") return vTaxi(s);
+  if(s.kind === "sos") return vSos(s);
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "day-ideas") return "";
   if(s.kind === "overview") return vOverview(s);
@@ -3639,6 +3786,7 @@ document.addEventListener("click", e => { if(SW.suppress && e.target.closest(".t
 document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S.sheet = null; render(); } });
 document.addEventListener("submit", async e => {
   if(e.target.dataset.form==='travel-leg'){e.preventDefault();await saveTravelLeg();return;}
+  if(e.target.dataset.form==='sos'){e.preventDefault();await sosSave();return;}
   const f = e.target.dataset && e.target.dataset.form; if(!f) return;
   e.preventDefault();
   if(f === "join") return startJoin(S.joinCode);
@@ -3835,6 +3983,11 @@ document.addEventListener("click", async e => {
     case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
     case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
+    case "taxi-open": taxiOpen(el.dataset.id); break;
+    case "sos-open": sosOpen(false); if(navigator.onLine && S.trip && S.trip.sos && !S.trip.sos.local) sosLocalize(); break;
+    case "sos-edit": sosOpen(true); break;
+    case "sos-view": sosOpen(false); break;
+    case "book-open": S.sheet = {kind:"export", scope:"book", files:null, busy:""}; render(); break;
     case "doc-zoom": docZoom(DOCS.zoom * (Number(el.dataset.d) > 0 ? 1.5 : 1 / 1.5)); break;
     case "doc-file": if(S.sheet && S.sheet.kind === "doc"){ S.sheet.i = Number(el.dataset.n) || 0; S.sheet.state = "loading"; render(); docShow(); } break;
     case "sheet-cancel": S.sheet = null; render(); break;
@@ -3969,7 +4122,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-doc3";
+const BUILD = "2026-11-03-sos1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
