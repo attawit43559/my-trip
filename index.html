@@ -726,7 +726,7 @@ html.kb .tabbar{display:none}
 .doc-body{overscroll-behavior:contain;touch-action:pan-x pan-y}
 .doc-zoom{display:flex;align-items:center;gap:2px;background:var(--tile);border-radius:999px;padding:2px}
 .doc-zoom button{width:34px;height:34px;border:0;border-radius:999px;background:none;color:var(--ink);display:grid;place-items:center;padding:0}
-.doc-z{font-size:12px;min-width:38px;text-align:center;color:var(--muted)}
+
 .doc-page{display:block;width:100%;height:auto;background:#FFFFFF;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .doc-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:80px 24px;color:var(--muted)}
 .doc-msg p{margin:0}.doc-msg .soft-btn{text-decoration:none;padding:10px 16px}
@@ -1565,7 +1565,6 @@ function docZoom(z, cx, cy){
   const k = z / DOCS.zoom, sx = (body.scrollLeft + cx) * k - cx, sy = (body.scrollTop + cy) * k - cy;
   DOCS.zoom = z; box.style.width = (z * 100) + "%";
   body.scrollLeft = sx; body.scrollTop = sy;
-  const lab = document.querySelector(".doc-z"); if(lab) lab.textContent = Math.round(z * 100) + "%";
 }
 { let pz = null, lastTap = 0;
   document.addEventListener("touchstart", e => {
@@ -1601,7 +1600,7 @@ function vDoc(s){
     : `<div class="doc-msg"><div class="spinner" role="status" aria-label="กำลังเปิด"></div></div>`;
   return `<div class="doc-sheet" role="dialog" aria-modal="true" aria-label="ใบจอง ${esc(it.title)}">
     <div class="doc-hd"><div class="grow"><b>${esc(briefName(it.title))}</b>${s.files.length > 1 ? `<div class="doc-tabs">${s.files.map((_, n) => `<button type="button" data-act="doc-file" data-n="${n}" aria-pressed="${n === s.i}">ไฟล์ ${n + 1}</button>`).join("")}</div>` : ""}</div>
-      ${s.state === "ready" ? `<div class="doc-zoom"><button type="button" data-act="doc-zoom" data-d="-1" aria-label="ย่อ">${ic("minus",16)}</button><span class="doc-z">${Math.round(DOCS.zoom * 100)}%</span><button type="button" data-act="doc-zoom" data-d="1" aria-label="ขยาย">${ic("plus",16)}</button></div>` : ""}
+      ${s.state === "ready" ? `<div class="doc-zoom"><button type="button" data-act="doc-zoom" data-d="-1" aria-label="ย่อ">${ic("minus",16)}</button><button type="button" data-act="doc-zoom" data-d="1" aria-label="ขยาย">${ic("plus",16)}</button></div>` : ""}
       <a class="round" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener" aria-label="เปิดใน Google Drive">${ic("ext",18)}</a>
       <button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <div class="doc-body" id="doc-view">${body}</div></div>`;
@@ -3966,7 +3965,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-wx3";
+const BUILD = "2026-11-03-doc2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
