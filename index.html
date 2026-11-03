@@ -1641,7 +1641,7 @@ function tripArt(w){
 function tbWx(date){
   const w = date && date >= today() ? wxFor(date) : null;
   // no forecast (a past day, too far ahead, or offline): the same pill with a dash, so the bar keeps its size
-  if(!w) return `<span class="tb-wx none" aria-label="ยังไม่มีข้อมูลอากาศ">${ic("wxCloud",15)}— · ${date && date < today() ? "ไม่มีข้อมูลอากาศย้อนหลัง" : "ยังไม่มีข้อมูลอากาศ"}</span>`;
+  if(!w) return `<span class="tb-wx none" aria-label="ยังไม่มีข้อมูลอากาศ">${ic("wxCloud",15)}— · ${date && date < today() ? "ไม่มีข้อมูลย้อนหลัง" : "ยังไม่มีข้อมูล"}</span>`;
   const [icn, th] = wxKind(w.code);
   // on a windy day with a quiet sky, the wind is the news; with rain or snow the sky picture already shows the gusts
   const windy = w.wind >= 35, word = windy && ["wxSun","wxPart","wxCloud"].includes(icn) ? "ลมแรง" : th;
@@ -3753,7 +3753,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-wx";
+const BUILD = "2026-11-03-wx2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
