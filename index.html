@@ -738,8 +738,8 @@ html.kb .tabbar{display:none}
 .next-card b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .next-when{font-size:12.5px;font-weight:600;color:var(--accent-ink,#8A5300)}
 .next-btn{background:var(--surface);color:var(--ink);flex:none;text-decoration:none}
-.tb-wx{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;font-size:12px;color:var(--ink);background:rgba(255,255,255,.7);border-radius:999px;padding:2px 9px 2px 7px;position:relative;z-index:1}
-.tb-wx .ic{color:var(--deep,#8A5300)}
+.tb-wx{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;font-size:12px;color:var(--ink);background:rgba(255,255,255,.7);border-radius:999px;padding:2px 9px 2px 7px;position:relative;z-index:1}
+.tb-wx .ic{color:var(--deep,#8A5300);vertical-align:-3px;margin-right:4px}
 .wx-row{display:flex;align-items:center;gap:8px;margin:0 4px;font-size:14px;color:var(--ink)}
 .wx-row .ic{color:#E0A030}.wx-row.wet .ic{color:#5F8FC0}
 .wx-row span{color:var(--muted)}
@@ -855,6 +855,10 @@ const IC = {
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
   navi:'<path d="M12 3 5 20l7-4 7 4z"/>',
+  wxFog:'<path d="M4 9h12M6 13h14M4 17h11"/>',
+  wxDrizzle:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M10 18.5l-.6 1.5M14.5 18.5l-.6 1.5"/>',
+  wxStorm:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M13 13l-3 4.5h3.5L11 22"/>',
+  wxSleet:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M9 18l-1 2.5M15 18l-1 2.5M12 19.5h.01"/>',
   ticket:'<path d="M3 9V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a3 3 0 0 0 0 6v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a3 3 0 0 0 0-6z"/><path d="M15 7.5v1.5M15 11.2v1.6M15 15v1.5"/>',
   wxSun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
   wxPart:'<path d="M8 4.5v1.2M3.5 9H4.7M4.8 5.8l.9.9M11.2 5.8l-.9.9"/><path d="M5.6 11a2.6 2.6 0 0 1 5-1.6"/><path d="M8 19h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8 12.5 3.3 3.3 0 0 0 8 19z"/>',
@@ -1662,11 +1666,11 @@ async function wxLoad(){
   const spots = {}; want.forEach(d => { const p = wxSpot(d); if(p) (spots[p.lat + "," + p.lon] ||= {p, dates:[]}).dates.push(d); });
   let changed = false;
   for(const [k, {p, dates:ds}] of Object.entries(spots)){
-    const old = WX.spots[k]; if(old && Date.now() - old.at < 3 * 3600e3 && ds.every(d => old.days[d])) continue;
+    const old = WX.spots[k]; if(old && Date.now() - old.at < 3 * 3600e3 && ds.every(d => old.days[d] && "wind" in old.days[d])) continue;
     try {
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16`).then(r => r.json());
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&timezone=auto&forecast_days=16`).then(r => r.json());
       const dd = r.daily || {}, days = {};
-      (dd.time || []).forEach((d, i) => { days[d] = {code:dd.weather_code[i], max:Math.round(dd.temperature_2m_max[i]), min:Math.round(dd.temperature_2m_min[i]), rain:dd.precipitation_probability_max[i]}; });
+      (dd.time || []).forEach((d, i) => { days[d] = {code:dd.weather_code[i], max:Math.round(dd.temperature_2m_max[i]), min:Math.round(dd.temperature_2m_min[i]), rain:dd.precipitation_probability_max[i], wind:Math.round((dd.wind_speed_10m_max || [])[i] || 0)}; });
       WX.spots[k] = {at:Date.now(), days}; changed = true;
     } catch(_){}
   }
@@ -1676,12 +1680,17 @@ function wxFor(date){ const p = wxSpot(date); const s = p && WX.spots[p.lat + ",
 /* WMO weather codes in a few words and an icon */
 function wxKind(c){
   if(c === 0) return ["wxSun", "แดดจัด", "sunny"];
-  if(c <= 2) return ["wxPart", "มีเมฆบางส่วน", "partly cloudy"];
+  if(c === 1) return ["wxSun", "แดดออก", "mostly sunny"];
+  if(c === 2) return ["wxPart", "เมฆบางส่วน", "partly cloudy"];
   if(c === 3) return ["wxCloud", "เมฆมาก", "cloudy"];
-  if(c === 45 || c === 48) return ["wxCloud", "มีหมอก", "fog"];
-  if(c >= 71 && c <= 77 || c === 85 || c === 86) return ["wxSnow", "หิมะ", "snow"];
-  if(c >= 95) return ["wxRain", "พายุฝนฟ้าคะนอง", "thunderstorm"];
-  if(c >= 51) return ["wxRain", c <= 57 ? "ฝนปรอย" : "ฝนตก", c <= 57 ? "drizzle" : "rain"];
+  if(c === 45 || c === 48) return ["wxFog", "มีหมอก", "fog"];
+  if(c >= 51 && c <= 55) return ["wxDrizzle", "ฝนปรอย", "drizzle"];
+  if(c === 56 || c === 57 || c === 66 || c === 67) return ["wxSleet", "ฝนเย็นจัด", "freezing rain"];
+  if(c === 61 || c === 80) return ["wxDrizzle", "ฝนเล็กน้อย", "light rain"];
+  if(c === 63 || c === 81) return ["wxRain", "ฝนตก", "rain"];
+  if(c === 65 || c === 82) return ["wxRain", "ฝนตกหนัก", "heavy rain"];
+  if(c >= 71 && c <= 77 || c === 85 || c === 86) return ["wxSnow", c === 75 || c === 86 ? "หิมะตกหนัก" : "หิมะตก", "snow"];
+  if(c >= 95) return ["wxStorm", c >= 96 ? "พายุ มีลูกเห็บ" : "พายุฝน", "thunderstorm"];
   return ["wxPart", "", ""];
 }
 function vWx(date){
@@ -1701,17 +1710,25 @@ function tripArt(w){
   else if(kind === "wxPart") sky = sun(146, 26, 13) + cloud(112, 30, 1, "#FFFFFF");
   else if(kind === "wxCloud") sky = cloud(126, 14, 0.85, "#E9E4DC") + cloud(104, 30, 1.05, "#FFFFFF");
   else if(kind === "wxRain") sky = cloud(108, 16, 1.1, "#DCE3EA") + `<g style="stroke:#6E9BC8;stroke-width:2.5;stroke-linecap:round"><path d="M116 52l-3 7M128 52l-3 7M140 52l-3 7M122 64l-2 5M134 64l-2 5"/></g>`;
+  else if(kind === "wxDrizzle") sky = cloud(108, 16, 1.1, "#E6EBF0") + `<g style="stroke:#7FA8D0;stroke-width:2;stroke-linecap:round"><path d="M118 53l-1.5 4M132 55l-1.5 4M144 52l-1.5 4"/></g>`;
+  else if(kind === "wxStorm") sky = cloud(108, 16, 1.1, "#C9D0D8") + `<path d="M130 50 l-9 13 h7 l-5 11 l13 -16 h-7 l5 -8z" style="fill:#FFC93C;stroke:#E0A020;stroke-width:1;stroke-linejoin:round"/><g style="stroke:#6E9BC8;stroke-width:2.5;stroke-linecap:round"><path d="M114 54l-3 7M148 54l-3 7"/></g>`;
+  else if(kind === "wxFog") sky = sun(144, 26, 11).replace("var(--accent)", "#F3D79A") + `<g style="stroke:#FFFFFF;stroke-width:4;stroke-linecap:round;opacity:.95"><path d="M104 34h44M112 44h48M100 54h40M118 64h36"/></g>`;
+  else if(kind === "wxSleet") sky = cloud(108, 16, 1.1, "#DCE3EA") + `<g style="stroke:#6E9BC8;stroke-width:2.5;stroke-linecap:round"><path d="M116 52l-3 7M140 52l-3 7"/></g><g style="fill:#FFFFFF;stroke:#B9C7D6;stroke-width:1"><circle cx="128" cy="57" r="2.6"/><circle cx="122" cy="68" r="2.2"/><circle cx="146" cy="66" r="2.2"/></g>`;
   else if(kind === "wxSnow") sky = cloud(108, 16, 1.1, "#FFFFFF") + `<g style="fill:#FFFFFF;stroke:#B9C7D6;stroke-width:1"><circle cx="116" cy="56" r="2.6"/><circle cx="130" cy="61" r="2.6"/><circle cx="143" cy="55" r="2.6"/><circle cx="123" cy="68" r="2.2"/><circle cx="138" cy="69" r="2.2"/></g>`;
+  // a windy day: a few gusts across the sky
+  if(w && w.wind >= 35) sky += `<g style="fill:none;stroke:#FFFFFF;stroke-width:3;stroke-linecap:round;opacity:.95"><path d="M60 22 h34 a6 6 0 1 0 -6 -6"/><path d="M50 34 h46"/><path d="M66 46 h26 a5 5 0 1 1 -5 5"/></g>`;
   return `<svg class="art" viewBox="0 0 180 110" preserveAspectRatio="xMaxYMax meet" aria-hidden="true">${sky}<path d="M14 110 L80 46 L146 110 Z" style="fill:var(--mid,var(--flight-mid))"/><path d="M66 60 L80 46 L94 60 L87 57 L80 63 L73 57 Z" style="fill:#FFFFFF"/><path d="M98 110 L146 66 L194 110 Z" style="fill:var(--deep,var(--flight))"/></svg>`;
 }
 /* the forecast in a few words under the trip name */
 function tbWx(date){
   const w = date && date >= today() ? wxFor(date) : null; if(!w) return "";
   const [icn, th] = wxKind(w.code);
-  return `<span class="tb-wx" aria-label="อากาศ ${esc(th)} ${w.max} ถึง ${w.min} องศา โอกาสฝน ${w.rain} เปอร์เซ็นต์">${ic(icn,15)}${w.max}°/${w.min}° · ${esc(th)}${w.rain >= 30 ? ` · ${icn === "wxSnow" ? "หิมะ" : "ฝน"} ${w.rain}%` : ""}</span>`;
+  // on a windy day with a quiet sky, the wind is the news; with rain or snow the sky picture already shows the gusts
+  const windy = w.wind >= 35, word = windy && ["wxSun","wxPart","wxCloud"].includes(icn) ? "ลมแรง" : th;
+  return `<span class="tb-wx" aria-label="อากาศ ${esc(th)}${windy ? " ลมแรง" : ""} ${w.max} ถึง ${w.min} องศา โอกาสฝน ${w.rain} เปอร์เซ็นต์">${ic(icn,15)}${w.max}°/${w.min}° · ${esc(word)}${w.rain >= 30 ? ` · ${icn === "wxSnow" ? "หิมะ" : "ฝน"} ${w.rain}%` : ""}</span>`;
 }
 /* the same, in a line for the AI helper */
-function wxText(date){ const w = wxFor(date); if(!w) return ""; const [, , en] = wxKind(w.code); return `${en}, ${w.max}/${w.min}°C, rain chance ${w.rain}%`; }
+function wxText(date){ const w = wxFor(date); if(!w) return ""; const [, , en] = wxKind(w.code); return `${en}, ${w.max}/${w.min}°C, rain chance ${w.rain}%${w.wind >= 35 ? ", strong wind " + w.wind + " km/h" : ""}`; }
 /* swipe the one-week row of a long trip to move a week */
 { let sx = null, sy = 0;
   document.addEventListener("touchstart", e => { const c = e.target.closest?.(".cal.long:not(.open) .tabs"); if(!c){ sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
@@ -3949,7 +3966,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-wx2";
+const BUILD = "2026-11-03-wx3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
