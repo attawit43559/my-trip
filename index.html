@@ -693,9 +693,6 @@ html.kb .tabbar{display:none}
 .plan-time .tp{left:0;right:0;text-align:center}
 .help-page{display:flex;flex-direction:column;gap:14px}
 .help-q{display:flex;flex-direction:column;gap:8px}.help-q>b{font-size:14px;font-weight:600}
-.help-pace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.help-pace button{border:0;border-radius:14px;min-height:44px;background:var(--tile);color:var(--ink);font:inherit;font-size:14px}
-.help-pace button[aria-pressed="true"]{background:var(--flight-soft);color:var(--flight);font-weight:600}
 .help-start{min-height:50px;font-size:15px;background:var(--flight-soft);color:var(--flight)}
 .help-day{display:flex;flex-direction:column;gap:8px}
 .help-day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -707,8 +704,18 @@ html.kb .tabbar{display:none}
 .help-kind{font-size:11.5px;font-weight:600;color:var(--muted)}
 .help-fix{margin-top:8px;min-height:36px;font-size:13px}
 .help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
-.help-likes{gap:6px}
-.help-likes button{border:0}
+/* every choice on the helper page is the same soft tile: 3 across, 44 high, 14 radius, 14px text; a chosen one turns green */
+.help-pace,.help-likes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.help-pace button,.help-likes button{border:0;border-radius:14px;min-height:44px;padding:0 6px;background:var(--tile);color:var(--ink);font:inherit;font-size:14px;line-height:1.2}
+.help-pace button[aria-pressed="true"],.help-likes button[aria-pressed="true"]{background:var(--place-soft);color:var(--place);font-weight:600}
+.help-like-in{grid-column:span 2;box-sizing:border-box;height:44px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);padding:0 14px;font:inherit;font-size:14px!important;width:100%;min-width:0}
+.help-like-in::placeholder{color:var(--muted)}
+.help-like-in:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+@supports (-webkit-touch-callout:none){
+  /* iPhone zooms the page into any box under 16px: type at 16px, drawn at 14px */
+  .help-like-in{font-size:16px!important;width:calc(100% / .875);height:calc(44px / .875);border-radius:16px;padding:0 16px;transform:scale(.875);transform-origin:0 0;margin-bottom:calc(44px - 44px / .875)}
+}
+.help-start,.help-actions .soft-btn,.help-fix{border-radius:14px}
 .entry-doc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:var(--flight-soft);color:var(--flight);display:grid;place-items:center;padding:0;z-index:2}
 .trow-slide:has(.entry-doc) .entry{padding-right:54px}
 .trow-slide{position:relative}
@@ -764,10 +771,6 @@ html.kb .tabbar{display:none}
 .help-note:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .help-day-wait{padding:26px 0}
 .help-none{margin:4px 0}
-.help-like-in{height:44px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);padding:0 14px;font:inherit;font-size:15px;width:100%;min-width:0}
-.help-like-in::placeholder{color:var(--muted)}
-.help-like-in:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.help-likes button[aria-pressed="true"]{background:var(--place-soft);color:var(--place);font-weight:600}
 .help-adds{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .help-adds li{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:6px 6px 6px 10px;min-height:40px}
 .ha-time{font-size:12.5px;color:var(--muted);width:38px;text-align:center;font-variant-numeric:tabular-nums}
@@ -1837,8 +1840,8 @@ function vHelpPage(){
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
     <p class="muted small" style="margin:-4px 0 0">AI จะอ่านแผนทุกวัน แล้วบอกจุดที่ควรปรับ</p>
     <div class="help-q"><b>สไตล์เที่ยว</b><div class="help-pace">${HELP_PACE.map(([k,l]) => `<button type="button" data-act="help-pace" data-k="${k}" aria-pressed="${h.pace === k}">${l}</button>`).join("")}</div></div>
-    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="chips help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
-      <input class="help-like-in" type="text" maxlength="80" placeholder="อื่นๆ พิมพ์เพิ่มเองได้" value="${esc(h.likeNote || "")}" data-bind="help:likeNote" aria-label="แนวเที่ยวอื่นๆ"></div>
+    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}
+      <input class="help-like-in" type="text" maxlength="80" placeholder="อื่นๆ" value="${esc(h.likeNote || "")}" data-bind="help:likeNote" aria-label="แนวเที่ยวอื่นๆ"></div></div>
     <div class="help-q"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
     <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}เริ่ม</button>`);
 }
@@ -3965,7 +3968,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-doc2";
+const BUILD = "2026-11-03-help10";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
