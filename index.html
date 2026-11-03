@@ -728,6 +728,8 @@ html.kb .tabbar{display:none}
 .sos-card{display:flex;align-items:center;gap:12px;border:0;background:var(--surface);border-radius:20px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--lift)}
 .sos-card .grow{display:flex;flex-direction:column;line-height:1.35}
 .sos-sheet{gap:12px}
+.sos-tag{display:flex;align-items:center;gap:6px;margin:4px 2px 0;font-size:12px;color:#A0642A}
+.sos-wait{display:flex;align-items:center;gap:8px}.spinner.sm{width:14px;height:14px;border-width:2px}
 .sos-group{display:flex;flex-direction:column;gap:6px}.sos-group h3{margin:4px 0 0;font-size:14px}
 .sos-row{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 14px;color:var(--ink);text-decoration:none;font-size:14px}
 .sos-row b{font-variant-numeric:tabular-nums}.sos-row .ic{color:var(--place)}
@@ -1810,11 +1812,56 @@ function vTaxi(s){
 /* ---------- emergency: who to call there, our hotels, and our health notes in the local language ---------- */
 const SOS_FIELDS = [["allergies","แพ้ยา / แพ้อาหาร","เช่น ลูกแพ้ถั่ว, แพ้ยา penicillin",true],["meds","ยาที่ใช้ประจำ","",true],["conditions","โรคประจำตัว","",true],
   ["insurer","บริษัทประกันเดินทาง",""],["policy","เลขกรมธรรม์",""],["insPhone","เบอร์ประกัน 24 ชม.",""],["contactName","ผู้ติดต่อที่ไทย",""],["contactPhone","เบอร์ผู้ติดต่อที่ไทย",""],["note","โน้ตอื่นๆ",""]];
-const inJapan = () => { const t = S.trip || {}; return /japan|tokyo|osaka|kyoto|hokkaido|sapporo|fukuoka|okinawa|nagoya|ญี่ปุ่น|โตเกียว|โอซาก้า|เกียวโต/i.test((t.destination || "") + " " + (t.name || ""))
-  || S.items.some(i => { const d = i.data || {}; return +d.lat >= 24 && +d.lat <= 46 && +d.lon >= 122 && +d.lon <= 146; }) || S.items.some(i => i.type === "flight" && /^(HND|NRT|KIX|ITM|NGO|CTS|FUK|OKA)$/i.test(s_((i.data || {}).to))); };
 /* numbers checked Nov 2026: 110/119 and the Japan Visitor Hotline from JNTO; the embassy's numbers from a listing — worth a look at thaiembassy.jp */
 const SOS_JAPAN = [["ตำรวจ","110"],["รถพยาบาล / ดับเพลิง","119"],["Japan Visitor Hotline (24 ชม. อังกฤษ)","050-3816-2787"],["สถานทูตไทย โตเกียว","03-5789-2433"],["สถานทูตไทย โตเกียว · ฉุกเฉิน","090-4435-7812"],["สถานกงสุลใหญ่ โอซาก้า · ฉุกเฉิน","090-1895-0987"]];
 const SOS_HOME = [["ศูนย์กงสุล กระทรวงต่างประเทศ (24 ชม.)","+66 2 572 8442"]];
+/* emergency numbers checked Nov 2026 (worldpopulationreview.com/country-rankings/911-by-country; Korea 1330 from city tourism sites; Taiwan 0800-011-765 from Taoyuan tourism).
+   A trip goes to a country by its name or its airports; anywhere else, the app asks AI and marks the answer "ควรตรวจสอบ". */
+const P = "ตำรวจ", A = "รถพยาบาล", F = "ดับเพลิง", AF = "รถพยาบาล / ดับเพลิง", ALL = "ตำรวจ / รถพยาบาล / ดับเพลิง";
+const COUNTRIES = [
+  ["JP","ญี่ปุ่น",/japan|tokyo|osaka|kyoto|hokkaido|sapporo|fukuoka|okinawa|nagoya|ญี่ปุ่น|โตเกียว|โอซาก้า|เกียวโต|ฮอกไกโด|ฟุกุโอกะ|โอกินาวา/i,/^(HND|NRT|KIX|ITM|NGO|CTS|FUK|OKA|SDJ|KOJ|HIJ)$/,null],
+  ["KR","เกาหลีใต้",/korea|seoul|busan|jeju|เกาหลี|โซล|ปูซาน|เชจู/i,/^(ICN|GMP|PUS|CJU|TAE)$/,[[P,"112"],[AF,"119"],["สายด่วนนักท่องเที่ยว 1330 (24 ชม.)","1330"]]],
+  ["TW","ไต้หวัน",/taiwan|taipei|taichung|kaohsiung|tainan|ไต้หวัน|ไทเป|ไถจง|เกาสง/i,/^(TPE|TSA|KHH|RMQ|TNN)$/,[[P,"110"],[AF,"119"],["สายด่วนนักท่องเที่ยว (24 ชม.)","0800-011-765"]]],
+  ["CN","จีน",/china|beijing|shanghai|chengdu|chongqing|guangzhou|shenzhen|xi'?an|kunming|hangzhou|จีน|ปักกิ่ง|เซี่ยงไฮ้|เฉิงตู|ฉงชิ่ง|กวางโจว|เซินเจิ้น|ซีอาน|คุนหมิง|หังโจว/i,/^(PEK|PKX|PVG|SHA|CAN|SZX|CTU|TFU|CKG|XIY|KMG|HGH)$/,[[P,"110"],[A,"120"],[F,"119"]]],
+  ["HK","ฮ่องกง",/hong ?kong|ฮ่องกง/i,/^HKG$/,[[ALL,"999"]]],
+  ["MO","มาเก๊า",/macau|macao|มาเก๊า/i,/^MFM$/,[[ALL,"999"]]],
+  ["SG","สิงคโปร์",/singapore|สิงคโปร์/i,/^SIN$/,[[P,"999"],[AF,"995"]]],
+  ["VN","เวียดนาม",/vietnam|viet nam|hanoi|ho chi minh|saigon|da ?nang|hoi an|sapa|phu quoc|เวียดนาม|ฮานอย|โฮจิมินห์|ดานัง|ฮอยอัน|ซาปา|ฟูก๊วก/i,/^(SGN|HAN|DAD|CXR|PQC|HUI|DLI)$/,[[P,"113"],[A,"115"],[F,"114"]]],
+  ["MY","มาเลเซีย",/malaysia|kuala lumpur|penang|langkawi|มาเลเซีย|กัวลาลัมเปอร์|ปีนัง|ลังกาวี/i,/^(KUL|PEN|BKI|LGK|KCH)$/,[[ALL,"999"]]],
+  ["ID","อินโดนีเซีย",/indonesia|bali|jakarta|อินโดนีเซีย|บาหลี|จาการ์ตา/i,/^(CGK|DPS|SUB|JOG|YIA)$/,[[ALL,"112"],[P,"110"],[A,"118"]]],
+  ["PH","ฟิลิปปินส์",/philippines|manila|cebu|boracay|ฟิลิปปินส์|มะนิลา|เซบู/i,/^(MNL|CEB|MPH|PPS)$/,[[ALL,"911"]]],
+  ["LA","ลาว",/laos|vientiane|luang prabang|ลาว|เวียงจันทน์|หลวงพระบาง/i,/^(VTE|LPQ|PKZ)$/,[[P,"191"],[A,"195"],[F,"190"]]],
+  ["KH","กัมพูชา",/cambodia|siem reap|phnom penh|กัมพูชา|เสียมเรียบ|พนมเปญ/i,/^(PNH|REP|SAI)$/,[[P,"117"],[A,"119"],[F,"118"]]],
+  ["MM","เมียนมา",/myanmar|yangon|mandalay|เมียนมา|พม่า|ย่างกุ้ง/i,/^(RGN|MDL)$/,[[ALL,"999"]]],
+  ["IN","อินเดีย",/india|delhi|mumbai|อินเดีย|เดลี|มุมไบ/i,/^(DEL|BOM|BLR|MAA|CCU)$/,[[ALL,"112"]]],
+  ["GB","สหราชอาณาจักร",/united kingdom|england|london|scotland|edinburgh|อังกฤษ|ลอนดอน|สก็อตแลนด์/i,/^(LHR|LGW|MAN|EDI|STN)$/,[[ALL,"999"],[ALL + " (โทรจากมือถือ)","112"]]],
+  ["US","สหรัฐอเมริกา",/united states|usa|america|new york|los angeles|san francisco|hawaii|อเมริกา|นิวยอร์ก|ฮาวาย/i,/^(JFK|LAX|SFO|SEA|ORD|HNL|LAS|EWR|BOS)$/,[[ALL,"911"]]],
+  ["AU","ออสเตรเลีย",/australia|sydney|melbourne|brisbane|perth|ออสเตรเลีย|ซิดนีย์|เมลเบิร์น/i,/^(SYD|MEL|BNE|PER|OOL|ADL)$/,[[ALL,"000"],[ALL + " (โทรจากมือถือ)","112"]]],
+  ["NZ","นิวซีแลนด์",/new zealand|auckland|queenstown|christchurch|นิวซีแลนด์|โอ๊คแลนด์|ควีนส์ทาวน์/i,/^(AKL|CHC|ZQN|WLG)$/,[[ALL,"111"]]],
+  ["CH","สวิตเซอร์แลนด์",/switzerland|zurich|geneva|interlaken|lucerne|สวิตเซอร์แลนด์|ซูริก|เจนีวา/i,/^(ZRH|GVA|BSL)$/,[[P,"117"],[A,"144"],[F,"118"],["ฉุกเฉินทั่วยุโรป","112"]]],
+  ["FR","ฝรั่งเศส",/france|paris|nice|ฝรั่งเศส|ปารีส/i,/^(CDG|ORY|NCE|LYS)$/,[["ฉุกเฉินทั่วยุโรป","112"],[P,"17"],[A,"15"],[F,"18"]]],
+  ["DE","เยอรมนี",/germany|berlin|munich|frankfurt|เยอรมนี|เบอร์ลิน|มิวนิก|แฟรงก์เฟิร์ต/i,/^(FRA|MUC|BER|DUS|HAM)$/,[[P,"110"],[AF,"112"]]],
+  ["IT","อิตาลี",/italy|rome|milan|venice|florence|อิตาลี|โรม|มิลาน|เวนิส|ฟลอเรนซ์/i,/^(FCO|MXP|VCE|FLR|NAP)$/,[[ALL,"112"]]],
+  ["ES","สเปน",/spain|madrid|barcelona|สเปน|มาดริด|บาร์เซโลนา/i,/^(MAD|BCN|AGP|PMI)$/,[[ALL,"112"]]]
+];
+/* the trip's country: its name or destination first, then where its flights land */
+function tripCountry(){
+  const t = S.trip || {}, text = (t.destination || "") + " " + (t.name || "");
+  let c = COUNTRIES.find(x => x[2].test(text));
+  if(!c){ const to = S.items.filter(i => i.type === "flight").map(i => s_((i.data || {}).to).toUpperCase()); c = COUNTRIES.find(x => to.some(a => x[3].test(a))); }
+  if(!c && t.sosAuto && t.sosAuto.cc) c = COUNTRIES.find(x => x[0] === t.sosAuto.cc);
+  return c || null;
+}
+const sosAutoKey = () => { const t = S.trip || {}; return [t.destination || "", t.name || "", ...S.items.filter(i => i.type === "flight").map(i => s_((i.data || {}).to))].join("|"); };
+async function sosAutoLoad(){
+  const t = S.trip, c = tripCountry(); if(!t || !navigator.onLine || !CONNECTED || (c && c[0] === "JP")) return;
+  if(t.sosAuto && t.sosAuto.key === sosAutoKey()) return;
+  try {
+    const r = await api("sosInfo", {tripId:t.id});
+    await store.updateTrip(t.id, {sosAuto:{...r, key:sosAutoKey(), at:Date.now()}});
+    if(S.sheet && S.sheet.kind === "sos") render();
+  } catch(_){}
+}
 function sosOpen(edit){ const t = S.trip; S.sheet = {kind:"sos", edit:!!edit, form:{...((t && t.sos) || {})}}; render(); }
 async function sosSave(){
   const s = S.sheet, t = S.trip; if(!s || !t) return;
@@ -1837,6 +1884,21 @@ async function sosLocalize(){
   } catch(_){}
 }
 const tel = (label, n) => `<a class="sos-row" href="tel:${esc(String(n).replace(/[^\d+]/g, ""))}"><span class="grow">${esc(label)}</span><b>${esc(n)}</b>${ic("phone",18)}</a>`;
+function sosCalls(){
+  const t = S.trip || {}, c = tripCountry(), auto = t.sosAuto && t.sosAuto.key === sosAutoKey() ? t.sosAuto : null;
+  if(c && c[0] === "JP") return `<section class="sos-group"><h3>โทรด่วน · ญี่ปุ่น</h3>${SOS_JAPAN.concat(SOS_HOME).map(([l, n]) => tel(l, n)).join("")}
+    <p class="muted small">เบอร์สถานทูตควรเช็กอีกครั้งที่ thaiembassy.jp ก่อนเดินทาง</p></section>`;
+  const checked = c ? c[4] : null, name = c ? c[1] : auto && auto.country;
+  const fromAi = (!checked && auto ? auto.numbers.map(n => [n.label, n.number]) : []);
+  const emb = auto && auto.embassy && (auto.embassy.phone || auto.embassy.emergency) ? auto.embassy : null;
+  const wait = !checked && !auto && navigator.onLine ? `<p class="muted small sos-wait"><span class="spinner sm" aria-hidden="true"></span>กำลังหาเบอร์ฉุกเฉินของประเทศนี้…</p>` : "";
+  return `<section class="sos-group"><h3>โทรด่วน${name ? " · " + esc(name) : ""}</h3>
+    ${(checked || []).map(([l, n]) => tel(l, n)).join("")}
+    ${fromAi.length ? `<p class="sos-tag">${ic("info",14)}เบอร์จาก AI ควรตรวจสอบก่อนเดินทาง</p>${fromAi.map(([l, n]) => tel(l, n)).join("")}` : wait}
+    ${emb ? `<p class="sos-tag">${ic("info",14)}${esc(emb.name || "สถานทูตไทย")} · จาก AI ควรตรวจสอบ</p>${emb.phone ? tel("สถานทูตไทย", emb.phone) : ""}${emb.emergency ? tel("สถานทูตไทย · ฉุกเฉิน", emb.emergency) : ""}` : ""}
+    ${SOS_HOME.map(([l, n]) => tel(l, n)).join("")}
+    ${!checked && !auto && !navigator.onLine ? `<p class="muted small">ต่อเน็ตแล้วเปิดหน้านี้อีกครั้ง แอปจะหาเบอร์ฉุกเฉินของประเทศนี้ให้</p>` : ""}</section>`;
+}
 function vSos(s){
   const t = S.trip, sos = (t && t.sos) || {}, local = sos.local || {}, tl = (t && t.local) || {};
   const head = `<div class="hd"><span class="thumb tc k-shop">${ic("sos")}</span><h2>ข้อมูลฉุกเฉิน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>`;
@@ -1853,8 +1915,7 @@ function vSos(s){
   const health = SOS_FIELDS.filter(f => f[3] && s_(sos[f[0]]));
   const hasMine = SOS_FIELDS.some(([k]) => s_(sos[k]));
   return `<div class="scrim" data-act="close-sheet"><div class="sheet sos-sheet" role="dialog" aria-modal="true" aria-label="ข้อมูลฉุกเฉิน" data-stop="1">${head}
-    <section class="sos-group"><h3>โทรด่วน</h3>${(inJapan() ? SOS_JAPAN : []).concat(SOS_HOME).map(([l, n]) => tel(l, n)).join("")}
-      ${inJapan() ? `<p class="muted small">เบอร์สถานทูตควรเช็กอีกครั้งที่ thaiembassy.jp ก่อนเดินทาง</p>` : ""}</section>
+    ${sosCalls()}
     ${stays.length ? `<section class="sos-group"><h3>ที่พักของเรา</h3>${stays.map(i => { const d = i.data || {}, L = d.local && d.local.src === localKey(i) ? d.local : null;
       return `<div class="sos-stay"><button type="button" class="grow sos-stay-t" data-act="taxi-open" data-id="${esc(i.id)}"><b>${esc(briefName(i.title))}</b><span class="muted small">${esc(dShort(i.date))} – ${esc(dShort(i.endDate || i.date))}${L ? " · " + esc(L.name) : ""}</span></button>${d.phone ? `<a class="round" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ""))}" aria-label="โทรหา ${esc(briefName(i.title))}">${ic("phone",18)}</a>` : ""}</div>`; }).join("")}</section>` : ""}
     ${health.length ? `<section class="sos-group"><h3>ข้อมูลสุขภาพ${tl.langName ? ` · แสดงหมอเป็น${esc(tl.langName)}` : ""}</h3>${health.map(([k, label]) => `<div class="sos-health"><span class="muted small">${esc(label)}</span><p>${esc(sos[k])}</p>${local[k] ? `<p class="sos-local">${esc(local[k])}</p>` : ""}</div>`).join("")}</section>` : ""}
@@ -3984,7 +4045,7 @@ document.addEventListener("click", async e => {
     case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
     case "taxi-open": taxiOpen(el.dataset.id); break;
-    case "sos-open": sosOpen(false); if(navigator.onLine && S.trip && S.trip.sos && !S.trip.sos.local) sosLocalize(); break;
+    case "sos-open": sosOpen(false); if(navigator.onLine && S.trip && S.trip.sos && !S.trip.sos.local) sosLocalize(); sosAutoLoad(); break;
     case "sos-edit": sosOpen(true); break;
     case "sos-view": sosOpen(false); break;
     case "book-open": S.sheet = {kind:"export", scope:"book", files:null, busy:""}; render(); break;
@@ -4122,7 +4183,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-sos1";
+const BUILD = "2026-11-03-sos2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
