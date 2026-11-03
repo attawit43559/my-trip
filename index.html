@@ -3073,8 +3073,7 @@ function vExport(s){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บันทึกแผนเป็นรูป" data-stop="1">
     <div class="hd"><span class="thumb tc t-place">${ic("image")}</span><h2>บันทึกแผนเป็นรูป</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">วันละ 1 หน้า เป็นตารางเดินทางของวันนั้น</p>
-    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}${chip("book", "สรุปทริปเป็นเล่ม")}</div>
-    ${s.scope === "book" ? `<p class="muted small" style="margin-top:-6px">หน้าปกสรุปทั้งทริป แล้วตามด้วยทุกวัน แนะนำเป็น PDF</p>` : ""}
+    <div class="chips ex-scope">${chip("day", `วันที่ ${S.day + 1}`)}${chip("all", `ทั้งทริป · ${dates.length} วัน`)}</div>
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     ${body}
   </div></div>`;
@@ -3134,22 +3133,12 @@ async function exportPlaces(days){
 async function exportRun(kind){
   const s = S.sheet; if(!s || s.kind !== "export" || s.busy) return;
   const t = S.trip, dates = tripDates(t);
-  const pick = s.scope === "all" || s.scope === "book" ? dates : [dates[S.day]];
+  const pick = s.scope === "all" ? dates : [dates[S.day]];
   exportReset(s); s.kind2 = kind; s.busy = "กำลังเตรียม…"; render();
   try{
     await exportLibs(kind === "pdf");
     const days = pick.map(d => ({tripName:t.name, tone:tone(t.id), dayNo:dates.indexOf(d) + 1, dayCount:dates.length, dateLabel:dLong(d), entries:exportEntries(d)}));
     const blobs = [];
-    if(s.scope === "book"){
-      s.busy = "กำลังทำหน้าปก…"; render();
-      const all = dates.map(dt => exportEntries(dt));
-      const c0 = await PlanExport.renderCover({tripName:t.name, range:rangeLabel(t), dayCount:dates.length,
-        stops:S.items.filter(i => i.type === "place").length, stays:new Set(S.items.filter(i => i.type === "stay").map(i => i.title)).size,
-        flights:S.items.filter(i => i.type === "flight").length,
-        days:dates.map((dt, i) => ({no:i + 1, date:dShort(dt), names:all[i].filter(e => e.type === "place").map(e => briefName(e.title)),
-          spot:(all[i].find(e => e.type === "place") || all[i].find(e => e.type === "flight") || {}).spot || ""}))}, {icons:IC});
-      blobs.push(await new Promise(ok => c0.toBlob(ok, "image/jpeg", 0.92)));
-    }
     for(const [i, d] of days.entries()){
       if(S.sheet !== s) return;
       s.busy = days.length > 1 ? `กำลังวาดหน้า ${i + 1} จาก ${days.length}…` : "กำลังวาดหน้า…"; render();
@@ -4070,7 +4059,6 @@ document.addEventListener("click", async e => {
     case "sos-doctor": S.sheet = {kind:"sos-doctor"}; render(); break;
     case "sos-edit": sosOpen(true); break;
     case "sos-view": sosOpen(false); break;
-    case "book-open": S.sheet = {kind:"export", scope:"book", files:null, busy:""}; render(); break;
     case "doc-zoom": docZoom(DOCS.zoom * (Number(el.dataset.d) > 0 ? 1.5 : 1 / 1.5)); break;
     case "doc-file": if(S.sheet && S.sheet.kind === "doc"){ S.sheet.i = Number(el.dataset.n) || 0; S.sheet.state = "loading"; render(); docShow(); } break;
     case "sheet-cancel": S.sheet = null; render(); break;
@@ -4205,7 +4193,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-menu2";
+const BUILD = "2026-11-03-nobook";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
