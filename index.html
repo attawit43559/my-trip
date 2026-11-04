@@ -371,7 +371,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .members .rm-ask{gap:8px;flex-wrap:wrap;padding:8px 0}
 .members .rm-ask .pill-btn{height:38px;padding:0 14px;font-size:13px}
 .pill-btn.danger{background:var(--danger);color:#fff}
-.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);transition:height .25s cubic-bezier(.2,.8,.2,1);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:520px;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding-top:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 .sheet .hd{display:flex;align-items:center;gap:12px}
 .sheet .hd h2{flex:1;font-size:20px}
@@ -540,7 +540,6 @@ html.lock,html.lock body{overflow:hidden}
 
 .idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}.idea-note{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:var(--tile);width:100%;min-height:88px;max-height:40vh;padding:10px 12px;resize:none;overflow-y:auto;line-height:1.45}.compose-sheet textarea.idea-note:focus{outline:none;border-color:var(--line);box-shadow:none}
 .compose-sheet .chips:not(.t-idea) button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);font-weight:600}
-.idea-compose-sheet.steady{height:calc(var(--vvh,100dvh) - 8px);max-height:calc(var(--vvh,100dvh) - 8px)}.idea-compose-sheet.steady .idea-compose-body{flex:1}
 .idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}.idea-add-choice button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:104px;border:1px solid var(--line);border-radius:18px;background:var(--tile);color:var(--ink);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--accent-line)}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
 .idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding-left:4px;padding-right:4px}
@@ -3305,6 +3304,7 @@ function revealField(){
   if(!el || document.activeElement !== el) return;
   const box = el.closest(".dock-body, .idea-compose-sheet.steady .idea-compose-body"); if(!box) return;
   const b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+  if(r.top >= b.top + 4 && r.bottom <= b.bottom - 4) return;   // already in view: don't move anything
   const target = box.scrollTop + (r.top - b.top) - (b.height - r.height) / 2;
   box.scrollTo({top: Math.max(0, target), behavior:"smooth"});
 }
@@ -3327,7 +3327,7 @@ document.addEventListener("focusin", e => {
   let raf = 0, settle = 0;
   const onChange = () => {
     if(!raf) raf = requestAnimationFrame(() => { raf = 0; fit(); });
-    clearTimeout(settle); settle = setTimeout(revealField, 160);
+    clearTimeout(settle); settle = setTimeout(revealField, 320);   // after the sheet has glided into place
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
 })();
@@ -3816,7 +3816,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas5";
+const BUILD = "2026-11-04-ideas6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
