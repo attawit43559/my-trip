@@ -295,8 +295,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .k-sight{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .k-food{--deep:#B26C2B;--soft:#FFEFE0;--mid:#FF9A3D;--on:#FFFFFF}
 .k-shop{--deep:#B24271;--soft:#FFE5F0;--mid:#FF5FA2;--on:#FFFFFF}
-.k-cafe{--deep:#5A3D2B;--soft:#E8DCD2;--mid:#6B4A35;--on:#FFFFFF}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-food{--deep:#FFC794;--soft:#553A22}:root:not([data-theme="light"]) .k-shop{--deep:#FFA7CC;--soft:#552D39}:root:not([data-theme="light"]) .k-cafe{--deep:#D9C2B0;--soft:#3A302A;--mid:#B08F78}}
+.k-cafe{--deep:#7E2E78;--soft:#F6E3F4;--mid:#A9479F;--on:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-food{--deep:#FFC794;--soft:#553A22}:root:not([data-theme="light"]) .k-shop{--deep:#FFA7CC;--soft:#552D39}:root:not([data-theme="light"]) .k-cafe{--deep:#E8B5E1;--soft:#43293F;--mid:#C46BBA}}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-cafe .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop,.chips.t-idea button[aria-pressed="true"].k-cafe{background:var(--soft);color:var(--deep)}
 
@@ -3817,7 +3817,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas9";
+const BUILD = "2026-11-04-ideas10";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
