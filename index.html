@@ -1450,7 +1450,8 @@ function docsPrefetchSoon(){ clearTimeout(docsPrefetchSoon.t); docsPrefetchSoon.
 function docOpen(itemId, n){
   const it = S.items.find(i => i.id === itemId); if(!it) return;
   const files = itemFiles(it); if(!files.length) return;
-  S.sheet = {kind:"doc", itemId, files, i:Math.max(0, Math.min(files.length - 1, n || 0)), state:"loading"};
+  const back = S.sheet && S.sheet.kind !== "doc" ? S.sheet : null;   // opened from the edit sheet: closing the file goes back to it, edits kept
+  S.sheet = {kind:"doc", itemId, files, i:Math.max(0, Math.min(files.length - 1, n || 0)), state:"loading", back};
   DOCS.elFor = ""; render(); docShow();
 }
 async function docShow(){
@@ -1525,11 +1526,10 @@ function vDoc(s){
   const it = S.items.find(i => i.id === s.itemId) || {title:""};
   const body = s.state === "ready" ? "" : s.state === "missing"
     ? `<div class="doc-msg">${ic("file",28)}<p>ไฟล์นี้ยังไม่ได้เก็บไว้ในเครื่อง</p><p class="muted small">ต่อเน็ตแล้วเปิดอีกครั้ง แอปจะเก็บไว้ให้ดูตอนออฟไลน์</p></div>`
-    : s.state === "error" ? `<div class="doc-msg">${ic("file",28)}<p>เปิดไฟล์ในแอปไม่ได้</p><a class="soft-btn" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener">เปิดใน Google Drive</a></div>`
+    : s.state === "error" ? `<div class="doc-msg">${ic("file",28)}<p>เปิดไฟล์ในแอปไม่ได้</p><button type="button" class="soft-btn" data-act="doc-file" data-n="${s.i}">ลองอีกครั้ง</button></div>`
     : `<div class="doc-msg"><div class="spinner" role="status" aria-label="กำลังเปิด"></div></div>`;
   return `<div class="doc-sheet" role="dialog" aria-modal="true" aria-label="ใบจอง ${esc(it.title)}">
     <div class="doc-hd"><div class="grow"><b>${esc(briefName(it.title))}</b>${s.files.length > 1 ? `<div class="doc-tabs">${s.files.map((_, n) => `<button type="button" data-act="doc-file" data-n="${n}" aria-pressed="${n === s.i}">ไฟล์ ${n + 1}</button>`).join("")}</div>` : ""}</div>
-      <a class="round" href="${esc(fileUrl(s.files[s.i]))}" target="_blank" rel="noopener" aria-label="เปิดใน Google Drive">${ic("ext",18)}</a>
       <button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <div class="doc-body" id="doc-view">${body}</div></div>`;
 }
@@ -2171,7 +2171,7 @@ function patchFromEdit(it, e){
 /* booking files are added and removed while editing; the detail view only opens them */
 function editFiles(it){
   const files = [...new Set([...(it.fileIds||[]), ...(it.fileId ? [it.fileId] : [])])];
-  const rows = files.map((id, i) => `<div class="lnk-row"><a class="lnk" href="${esc(fileUrl(id))}" target="_blank" rel="noopener">${ic("file",20)}<span class="grow">ใบจอง${files.length > 1 ? " " + (i+1) : ""}</span>${ic("ext",16)}</a><button type="button" class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออก">${ic("close",16)}</button></div>`).join("");
+  const rows = files.map((id, i) => `<div class="lnk-row"><button type="button" class="lnk" data-act="doc-open" data-id="${esc(it.id)}" data-n="${i}">${ic("file",20)}<span class="grow">ใบจอง${files.length > 1 ? " " + (i+1) : ""}</span></button><button type="button" class="lnk-x" data-act="detach" data-file="${esc(id)}" aria-label="เอาใบจอง${files.length > 1 ? " " + (i+1) : ""}ออก">${ic("close",16)}</button></div>`).join("");
   const add = CONNECTED ? `<span class="lnk attach">${ic("upload",20)}<span class="grow">แนบใบจอง</span><input type="file" id="attach-in" class="drop-input" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png,image/*" aria-label="แนบใบจอง"></span>` : "";
   return rows || add ? `<div class="stack" style="gap:6px"><span class="muted small">ใบจอง</span><div class="links">${rows}${add}</div></div>` : "";
 }
@@ -3672,7 +3672,7 @@ document.addEventListener("click", async e => {
       S.sheet = null; if(i >= 0) S.day = i; render();
       setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
     case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
-    case "close-sheet": S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
+    case "close-sheet": if(S.sheet?.kind==="doc"&&S.sheet.back){S.sheet=S.sheet.back;render();break;} S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
     case "taxi-open": taxiOpen(el.dataset.id); break;
     case "sos-open": sosOpen(false); if(sosNeedsLocal()) sosLocalize(); sosAutoLoad(); break;
@@ -3813,7 +3813,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas3";
+const BUILD = "2026-11-04-ideas4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
