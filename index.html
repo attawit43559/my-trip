@@ -2440,11 +2440,11 @@ function vIdeaRecommend(s){
   if(s.step==='loading')return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="กำลังหาไอเดีย" data-stop="1">${head}<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังจัดชุดสถานที่ตามเมืองและสไตล์ที่เลือก…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div></div></div>`;
   if(s.step==='results'){
     const labels={sight:'ที่เที่ยว',restaurant:'ร้านอาหาร',cafe:'คาเฟ่ / ขนม'};
-    const kinds=['sight','restaurant','cafe'];
+    const kinds=[...new Set(['sight','restaurant','cafe',...s.places.map(p=>p.category)])];
     return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เลือกไอเดียสถานที่" data-stop="1">${head}
       <div class="stack idea-compose-body idea-suggest-results"><p class="muted small">${esc(s.city)} · ${esc(String(s.places.length))} รายการที่แนะนำ</p><div class="err" role="note">${esc(s.notice||'คำแนะนำจาก AI โปรดตรวจสอบชื่อสถานที่ เวลาเปิด และเส้นทางก่อนเดินทาง')}</div>
-      ${kinds.map(kind=>`<section class="stack"><h3>${labels[kind]}</h3>${s.places.filter(p=>p.category===kind).map(p=>{const id=p._id,chosen=s.selected.has(id),exists=S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase());return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc([p.area,p.reason,exists?'อยู่ในที่สนใจแล้ว':''].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists?'✓':chosen?'✓':'+'}</span></button>`;}).join('')}</section>`).join('')}
-      <button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':`เพิ่ม ${s.selected.size} รายการในที่สนใจ`}</button></div></div></div>`;
+      ${kinds.filter(kind=>s.places.some(p=>p.category===kind)).map(kind=>`<section class="stack"><h3>${labels[kind]||'อื่นๆ'}</h3>${s.places.filter(p=>p.category===kind).map(p=>{const id=p._id,chosen=s.selected.has(id),exists=S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase());return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc([p.area,p.reason,exists?'อยู่ในที่สนใจแล้ว':''].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists?'✓':chosen?'✓':'+'}</span></button>`;}).join('')}</section>`).join('')}
+      <button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังหาตำแหน่งและบันทึก…':`เพิ่ม ${s.selected.size} รายการในที่สนใจ`}</button></div></div></div>`;
   }
   const styles=[['relaxed','ชิลๆ'],['balanced','กำลังดี'],['packed','อัดแน่น']];
   return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="หาไอเดียสถานที่" data-stop="1">${head}
@@ -2474,8 +2474,12 @@ async function saveIdeaRecommendations(){
   const chosen=s.places.filter(p=>s.selected.has(p._id)&&!S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase()));
   if(!chosen.length)return;s.busy=true;render();
   try{
-    for(const p of chosen){if(S.trip?.id!==t.id||S.sheet!==s)throw {code:'cancelled'};await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:[p.area,p.reason].filter(Boolean).join(' · ').slice(0,120),data:{kind:p.kind,address:p.area||'',recommendedFor:s.city},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
-    if(S.sheet===s){S.sheet=null;S.catTab='idea';toast(`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
+    let missing=0;
+    for(const p of chosen){if(S.trip?.id!==t.id||S.sheet!==s)throw {code:'cancelled'};
+      const g=await gmapsPlace([p.title,p.area,s.city].filter(Boolean).join(', '));if(!g)missing++;   // the real Google place, so the map pin and "open in Google Maps" are right
+      await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:[p.area,p.reason].filter(Boolean).join(' · ').slice(0,120),
+        data:{kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
+    if(S.sheet===s){S.sheet=null;S.catTab='idea';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
   }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(S.sheet===s){s.busy=false;render();}}
 }
 window.addEventListener('resize',fitPlannerPanel);
@@ -2826,6 +2830,18 @@ async function gmapsFindId(name, lat, lon){
     if(!r.ok) return "";
     const j = await r.json(); return ((j.places || [])[0] || {}).id || "";
   } catch(_){ return ""; }
+}
+/* a place name the AI suggested -> the real Google place (id, position, address), or null when Google has no clear match */
+async function gmapsPlace(query){
+  if(!GMAPS_KEY||!query||Date.now()<=gmapsDownUntil||!gmapsAllowance())return null;
+  try{
+    const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",
+      headers:{"Content-Type":"application/json","X-Goog-Api-Key":GMAPS_KEY,"X-Goog-FieldMask":"places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri"},
+      body:JSON.stringify({textQuery:query,pageSize:1})});
+    if(!r.ok){if(r.status===403||r.status===429)gmapsDownUntil=Date.now()+10*60*1000;return null;}
+    const p=((await r.json()).places||[])[0];if(!p||!p.location)return null;
+    return {placeId:p.id||'',name:(p.displayName&&p.displayName.text)||'',address:p.formattedAddress||'',lat:p.location.latitude,lon:p.location.longitude,mapsUrl:p.googleMapsUri||''};
+  }catch(_){return null;}
 }
 /* fill the open "add to สนใจ" sheet from a Google Maps link */
 async function fillFromLink(url){
@@ -3795,7 +3811,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-03-safety1";
+const BUILD = "2026-11-04-ideas2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
