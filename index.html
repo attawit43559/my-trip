@@ -543,7 +543,7 @@ html.lock,html.lock body{overflow:hidden}
 .compose-sheet .chips:not(.t-idea) button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);font-weight:600}
 .idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}.idea-add-choice button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:104px;border:1px solid var(--line);border-radius:18px;background:var(--tile);color:var(--ink);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--accent-line)}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
-.idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding-left:4px;padding-right:4px}
+.idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding:7px 2px;flex-direction:column;gap:3px;border-radius:14px;font-size:12.5px;line-height:1.2}html.kb .idea-compose-sheet .chips.t-idea button{padding:5px 2px}
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
@@ -2922,7 +2922,7 @@ function vSheet(){
       ${s.fromLink && S.trips.length > 1 ? `<label class="fld">ทริป<select id="sh-trip">${S.trips.map(x => `<option value="${esc(x.id)}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
       ${s.linking ? `<div class="link-wait"><div class="spinner sm" role="status" aria-label="กำลังอ่านลิงก์"></div><span class="muted small">กำลังอ่านลิงก์จาก Google Maps…</span></div>` : ""}
       ${s.linkErr ? `<div class="err" role="alert">${esc(s.linkErr)}</div>` : ""}
-      <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${esc(k)}</button>`).join("")}</div>
+      <div class="chips t-idea">${IDEA_KINDS.map(k => `<button type="button" class="${IDEA_TONE[k]}" aria-pressed="${s.ideaKind===k}" data-act="idea-kind" data-m="${esc(k)}">${ic(IDEA_ICON[k],18)}${esc(k)}</button>`).join("")}</div>
       <label class="fld">ชื่อ<input id="sh-title" required maxlength="80" data-suggest="1" autocomplete="off" placeholder="${s.ideaKind==="ร้านอาหาร"?"เช่น Ichiran Shibuya":"เช่น teamLab Planets"}" value="${esc(s.title)}" data-bind="sheet:title"></label>
       <label class="fld">โน้ต<input id="sh-note" maxlength="120" placeholder="เช่น เพื่อนแนะนำ, ต้องจองก่อน" value="${esc(s.note)}" data-bind="sheet:note"></label>
       <button class="btn primary" type="submit">บันทึก</button>
@@ -3817,7 +3817,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas7";
+const BUILD = "2026-11-04-ideas8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
