@@ -580,7 +580,7 @@ html.kb .tabbar{display:none}
 .page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
 .page .picker-list{max-height:none;overflow:visible;flex:none}
 .page-cal .cal{margin:0}
-.page-add{align-self:flex-start;background:var(--soft)!important;color:var(--deep)!important;box-shadow:none!important;border:0!important}.page-add.t-idea{--soft:var(--place-soft);--deep:var(--place)}.page-add .ic{color:currentColor!important}
+.page-add{align-self:flex-start;background:var(--soft)!important;color:var(--deep)!important;box-shadow:none!important;border:0!important}.page-add.t-idea{--soft:var(--place-soft);--deep:var(--place)}.page-add.ai-pick{--soft:var(--flight-soft);--deep:var(--flight)}.page-add-row{display:flex;gap:8px;align-self:flex-start;flex:none}.page-add .ic{color:currentColor!important}
 .page .booking-group{padding:14px 16px}
 .workflow-search,.workflow-search:focus,.workflow-search:focus-visible,.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none!important;box-shadow:0 1px 3px rgba(43,33,28,.08)!important;border-color:transparent!important;background:var(--surface)!important}
 /* add a saved place to the plan: day chips, an optional time, one soft button */
@@ -1996,7 +1996,7 @@ function vTrip(){
   else if(tab === "idea"){
     const list = filteredIdeas();
     page = `${ideaToolbar()}<div class="dock-body page-list" data-k="idea">${list.length?`<ul class="cat-list">${list.map(catRow).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`}</div>
-      <button class="cat-add page-add t-idea" data-act="idea-add-open">${ic("plus",18)}เพิ่ม</button>`;
+      <div class="page-add-row"><button class="cat-add page-add t-idea" data-act="idea-add-manual">${ic("plus",18)}เพิ่ม</button><button class="cat-add page-add ai-pick" data-act="idea-suggest-open">${ic("spark",18)}แนะนำ</button></div>`;
   }
   else if(tab === "help") page = vHelpPage();
   else if(tab === "info"){
@@ -3817,7 +3817,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas13";
+const BUILD = "2026-11-04-ideas14";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
