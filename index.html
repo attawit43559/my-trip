@@ -1107,7 +1107,7 @@ function openTrip(id, view="trip"){
     S.catTab = "";
     S.tripMissing = false;
     unsubTrip = store.watchTrip(id, t => { S.trip = t; S.tripMissing = t === null; if(t){ ensureProfiles(t.memberIds||[]); const n = tripDates(t).indexOf(today()); if(S.day===0 && n>0) S.day = n; } softRender(); });
-    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); docsPrefetchSoon(); localizeSoon(); clearTimeout(wxLoad.t); wxLoad.t = setTimeout(wxLoad, 800); });
+    unsubItems = store.watchItems(id, items => { S.items = items; softRender(); docsPrefetchSoon(); localizeSoon(); checkShared().catch(() => {}); clearTimeout(wxLoad.t); wxLoad.t = setTimeout(wxLoad, 800); });
   } else refreshTrip(id);   // reopening the same trip still fetches who joined since
   try {
     if(localStorage.getItem("mytrip-share-on") && localStorage.getItem("mytrip-last-trip") !== id) api("shareTrip", {tripId:id}).catch(() => {});
@@ -1679,6 +1679,23 @@ async function localizeTrip(only){
     await store.updateItem(t.id, it.id, {data:{...(it.data || {}), local:{name:p.name, address:p.address, lang:p.lang, sure:p.sure, src:localKey(it)}}});
   }
   return true;
+}
+async function checkShared(){
+  const t = S.trip; if(!t || checkShared.busy || !navigator.onLine) return;
+  const want = S.items.filter(i => i.type === "idea" && i.source === "share" && !(i.data || {}).gchecked).slice(0, 10);
+  if(!want.length) return;
+  checkShared.busy = true;
+  try{
+    for(const it of want){
+      if(S.trip !== t) return;
+      const d = it.data || {};
+      const g = await gmapsPlace([it.title, d.address].filter(Boolean).join(", "));
+      if(g === undefined) return;   // Google not reachable now: try again next time
+      const patch = {gchecked:1};
+      if(g){ if(g.kind) patch.kind = g.kind; if(g.placeId) patch.placeId = g.placeId; if(g.lat != null){ patch.lat = g.lat; patch.lon = g.lon; } if(!d.address && g.address) patch.address = g.address; }
+      await store.updateItem(t.id, it.id, {data:patch});
+    }
+  } finally { checkShared.busy = false; }
 }
 function localizeSoon(){ clearTimeout(localizeSoon.t); localizeSoon.t = setTimeout(() => { if(localizeSoon.done === S.tripId) return; localizeSoon.done = S.tripId; localizeTrip().catch(() => { localizeSoon.done = null; }); }, 4000); }
 async function taxiOpen(id){
@@ -2836,16 +2853,26 @@ async function gmapsFindId(name, lat, lon){
   } catch(_){ return ""; }
 }
 /* a place name the AI suggested -> the real Google place (id, position, address), or null when Google has no clear match */
+/* Google's own category -> our kind */
+function kindFromTypes(types){
+  for(const t of types||[]){
+    if(/^(cafe|coffee_shop|tea_house|bakery|dessert_shop|dessert_restaurant|ice_cream_shop|juice_shop|donut_shop|cafeteria|cat_cafe|dog_cafe)$/.test(t))return "คาเฟ่";
+    if(/restaurant$|^(food|meal_takeaway|meal_delivery|food_court|bar|pub|izakaya|bar_and_grill|diner|deli|sandwich_shop|bagel_shop|confectionery|chocolate_shop|candy_store)$/.test(t))return "ร้านอาหาร";
+    if(/(_store|_mall|^store|^market|^supermarket|^department_store|^shopping|^outlet|^grocery)/.test(t))return "ช้อปปิ้ง";
+    if(/^(tourist_attraction|museum|park|temple|shrine|church|amusement_park|zoo|aquarium|art_gallery|historical_landmark|observation_deck|beach|hiking_area|national_park|garden|landmark|point_of_interest)$/.test(t))return "ที่เที่ยว";
+  }
+  return "";
+}
 async function gmapsPlace(query){
-  if(!GMAPS_KEY||!query||Date.now()<=gmapsDownUntil||!gmapsAllowance())return null;
+  if(!GMAPS_KEY||!query||Date.now()<=gmapsDownUntil||!gmapsAllowance())return undefined;   // undefined: couldn't ask; null: Google has no match
   try{
     const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",
-      headers:{"Content-Type":"application/json","X-Goog-Api-Key":GMAPS_KEY,"X-Goog-FieldMask":"places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri"},
+      headers:{"Content-Type":"application/json","X-Goog-Api-Key":GMAPS_KEY,"X-Goog-FieldMask":"places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri,places.primaryType,places.types"},
       body:JSON.stringify({textQuery:query,pageSize:1})});
-    if(!r.ok){if(r.status===403||r.status===429)gmapsDownUntil=Date.now()+10*60*1000;return null;}
+    if(!r.ok){if(r.status===403||r.status===429)gmapsDownUntil=Date.now()+10*60*1000;return undefined;}
     const p=((await r.json()).places||[])[0];if(!p||!p.location)return null;
-    return {placeId:p.id||'',name:(p.displayName&&p.displayName.text)||'',address:p.formattedAddress||'',lat:p.location.latitude,lon:p.location.longitude,mapsUrl:p.googleMapsUri||''};
-  }catch(_){return null;}
+    return {placeId:p.id||'',name:(p.displayName&&p.displayName.text)||'',address:p.formattedAddress||'',lat:p.location.latitude,lon:p.location.longitude,mapsUrl:p.googleMapsUri||'',kind:kindFromTypes([p.primaryType,...(p.types||[])])};
+  }catch(_){return undefined;}
 }
 /* fill the open "add to สนใจ" sheet from a Google Maps link */
 async function fillFromLink(url){
@@ -2856,7 +2883,10 @@ async function fillFromLink(url){
     if(S.sheet !== s) return;
     const label=mapNameParts(r.name);
     s.title = label.name || s.title; s.ideaKind = r.kind || s.ideaKind; s.lat = r.lat; s.lon = r.lon; s.address = r.address || label.address; s.originalMapsName = r.originalName || r.name || ""; s.mapsUrl = url;
-    s.placeId = await gmapsFindId(r.name, r.lat, r.lon);
+    const g = await gmapsPlace([s.title, s.address].filter(Boolean).join(", "));
+    if(S.sheet !== s) return;
+    if(g){ s.ideaKind = g.kind || s.ideaKind; s.placeId = g.placeId; if(s.lat == null){ s.lat = g.lat; s.lon = g.lon; } if(!s.address) s.address = g.address; }
+    else s.placeId = await gmapsFindId(r.name, r.lat, r.lon);
   } catch(e){
     if(S.sheet !== s) return;
     s.linkErr = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "อ่านลิงก์นี้ไม่ได้ ลองพิมพ์ชื่อเองแทนได้เลย";
@@ -3817,7 +3847,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas14";
+const BUILD = "2026-11-04-share1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
