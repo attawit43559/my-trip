@@ -371,7 +371,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .members .rm-ask{gap:8px;flex-wrap:wrap;padding:8px 0}
 .members .rm-ask .pill-btn{height:38px;padding:0 14px;font-size:13px}
 .pill-btn.danger{background:var(--danger);color:#fff}
-.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);transition:height .25s cubic-bezier(.2,.8,.2,1);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(20,19,26,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:520px;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding-top:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 .sheet .hd{display:flex;align-items:center;gap:12px}
 .sheet .hd h2{flex:1;font-size:20px}
@@ -538,7 +538,8 @@ html.lock,html.lock body{overflow:hidden}
 .planner-search-field{display:grid;grid-template-columns:minmax(0,1fr);width:100%;max-width:100%;min-width:0;flex:none;padding:2px}.dock:has(.workflow-search:focus)>.seg{display:none}.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent-line)}
 .compose-sheet{font-family:var(--body);font-size:14px;gap:14px}.compose-sheet .hd h2{font-family:var(--body);font-size:18px;font-weight:600}.compose-sheet .fld{font-size:13px;font-weight:500;gap:6px}.compose-sheet .fld input,.compose-sheet .fld select,.compose-sheet #paste-text{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);box-shadow:none;border-radius:14px;background:var(--tile);width:100%;min-width:0;max-width:100%;padding:10px 12px}.compose-sheet .fld input{height:46px}.compose-sheet :is(input,textarea,select):focus{outline:none;box-shadow:inset 0 0 0 1px var(--accent-line);border-color:var(--accent-line)}.compose-sheet .btn{font-family:var(--body);font-size:15px;font-weight:600;min-height:46px}.compose-sheet .chips{gap:6px}.compose-sheet .chips button{font-family:var(--body);font-size:13px;border:1px solid transparent;color:var(--ink);background:var(--tile);min-height:38px;padding:7px 10px}.compose-sheet .chips.t-idea button[aria-pressed="true"]{background:var(--soft);border-color:transparent;color:var(--deep);box-shadow:none}.compose-sheet .link-btn{font-family:var(--body);font-size:13px;color:var(--muted)}.booking-compose .drop{background:var(--tile);border:1px dashed var(--line);border-radius:14px;font-size:14px}.booking-compose #paste-text{min-height:112px;resize:vertical}.booking-compose .reading{border:0;box-shadow:none;background:var(--tile)}
 
-.idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}.idea-note{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:var(--tile);width:100%;min-height:88px;max-height:40vh;padding:10px 12px;resize:none;overflow-y:auto;line-height:1.45}.compose-sheet textarea.idea-note:focus{outline:none;border-color:var(--line);box-shadow:none}
+.idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}.idea-note{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:var(--tile);width:100%;min-height:88px;max-height:40vh;padding:10px 12px;resize:none;overflow-y:auto;line-height:1.45}.compose-sheet.steady :is(input,textarea):focus{outline:none;border-color:var(--line);box-shadow:none}
+.scrim.still{top:0;height:100%}.scrim.still .idea-compose-sheet{max-height:92%}
 .compose-sheet .chips:not(.t-idea) button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink);font-weight:600}
 .idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}.idea-add-choice button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:104px;border:1px solid var(--line);border-radius:18px;background:var(--tile);color:var(--ink);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--accent-line)}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
@@ -2451,7 +2452,7 @@ function vIdeaRecommend(s){
       <button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังหาตำแหน่งและบันทึก…':`เพิ่ม ${s.selected.size} รายการในที่สนใจ`}</button></div></div></div>`;
   }
   const counter=(k,label)=>`<div class="ai-n"><span>${label}</span><div><button type="button" data-act="idea-suggest-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${s[k]}</output><button type="button" data-act="idea-suggest-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet steady" role="dialog" aria-modal="true" aria-label="หาไอเดียสถานที่" data-stop="1">${head}
+  return `<div class="scrim still" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet steady" role="dialog" aria-modal="true" aria-label="หาไอเดียสถานที่" data-stop="1">${head}
     <form class="stack idea-compose-body" data-form="idea-recommend">
       <label class="fld">เมืองที่อยากเที่ยว<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ, โยโกฮาม่า" value="${esc(s.city)}" data-bind="sheet:city"></label>
       <div class="stack"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
@@ -3302,14 +3303,14 @@ let fieldToReveal = null, revealTimer = 0;
 function revealField(){
   const el = fieldToReveal; fieldToReveal = null; clearTimeout(revealTimer);
   if(!el || document.activeElement !== el) return;
-  const box = el.closest(".dock-body, .idea-compose-sheet.steady .idea-compose-body"); if(!box) return;
+  const box = el.closest(".dock-body"); if(!box) return;
   const b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
   if(r.top >= b.top + 4 && r.bottom <= b.bottom - 4) return;   // already in view: don't move anything
   const target = box.scrollTop + (r.top - b.top) - (b.height - r.height) / 2;
   box.scrollTo({top: Math.max(0, target), behavior:"smooth"});
 }
 document.addEventListener("focusin", e => {
-  if(!e.target.closest || !e.target.closest(".dock-body, .idea-compose-sheet.steady .idea-compose-body") || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(!e.target.closest || !e.target.closest(".dock-body") || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   fieldToReveal = e.target; clearTimeout(revealTimer); revealTimer = setTimeout(revealField, 700);   // fallback when no keyboard appears
 });
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
@@ -3327,7 +3328,7 @@ document.addEventListener("focusin", e => {
   let raf = 0, settle = 0;
   const onChange = () => {
     if(!raf) raf = requestAnimationFrame(() => { raf = 0; fit(); });
-    clearTimeout(settle); settle = setTimeout(revealField, 320);   // after the sheet has glided into place
+    clearTimeout(settle); settle = setTimeout(revealField, 160);
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
 })();
@@ -3816,7 +3817,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas6";
+const BUILD = "2026-11-04-ideas7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
