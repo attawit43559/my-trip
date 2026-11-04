@@ -541,6 +541,7 @@ html.lock,html.lock body{overflow:hidden}
 .idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}.idea-note{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:var(--tile);width:100%;min-height:88px;max-height:40vh;padding:10px 12px;resize:none;overflow-y:auto;line-height:1.45}.compose-sheet.steady :is(input,textarea):focus{outline:none;border-color:var(--line);box-shadow:none}
 .scrim.still{top:0;height:100%}.scrim.still .idea-compose-sheet{max-height:92%}
 .compose-sheet .chips:not(.t-idea) button[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--ink);font-weight:600}
+.idea-compose-sheet .chips.suggest-cats{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:2px}.small-wait{padding:10px 0}.small-wait .spinner{width:22px;height:22px}
 .idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}.idea-add-choice button{display:flex;align-items:center;justify-content:center;gap:6px;height:48px;border:0;border-radius:14px;background:var(--soft);color:var(--deep);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--mid)}.idea-add-choice .ai-pick,.idea-add-choice .ai-pick .ic{background:var(--flight-soft);color:var(--flight)}.idea-add-choice .ai-pick .ic{background:none}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
 .idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding:7px 2px;flex-direction:column;gap:3px;border-radius:14px;font-size:12.5px;line-height:1.2}html.kb .idea-compose-sheet .chips.t-idea button{padding:5px 2px}
@@ -2450,56 +2451,71 @@ function fitPlannerPanel(){
 function ideaToolbar(){
   return `<div class="interest-tools"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดที่สนใจ">${['',...IDEA_KINDS].map(k=>`<button data-act="ideas-filter" data-k="${esc(k)}" aria-pressed="${(S.ideaFilter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="ideas-search" aria-label="${S.ideaSearchOpen?'ซ่อนค้นหาที่สนใจ':'ค้นหาที่สนใจ'}" aria-expanded="${!!S.ideaSearchOpen}">${ic('search',19)}</button></div>${S.ideaSearchOpen?`<input id="ideas-search" class="workflow-search" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="ค้นหาที่สนใจ" placeholder="ค้นหา" value="${esc(S.ideaQuery||'')}" data-idea-search="1">`:''}</div>`;
 }
+/* ---------- ideas from the AI: one kind at a time, the 10 most popular, never a place already in the trip ---------- */
+const SUGGEST_CATS = {
+  sight:{label:"ที่เที่ยว", kind:"ที่เที่ยว", likes:["ธรรมชาติ","วิวสวย","ประวัติศาสตร์","วัด/ศาลเจ้า","พิพิธภัณฑ์","สวนสนุก","ช้อปปิ้ง","เหมาะกับเด็ก"]},
+  food:{label:"ร้านอาหาร", kind:"ร้านอาหาร", likes:["อาหารท้องถิ่น","ร้านดัง","สตรีทฟู้ด","เส้น/ราเมน","ซูชิ/อาหารทะเล","ปิ้งย่าง","ราคาประหยัด","เหมาะกับเด็ก"]},
+  cafe:{label:"คาเฟ่ & ขนม", kind:"คาเฟ่", likes:["กาแฟ","ชา/มัทฉะ","เบเกอรี่","ของหวาน","ขนมท้องถิ่น","บรรยากาศดี","ร้านดัง"]}
+};
+const sameTitle = (a, b) => s_(a).toLocaleLowerCase() === s_(b).toLocaleLowerCase();
+const inTrip = title => S.items.some(it => (it.type === "idea" || it.type === "place") && sameTitle(it.title, title));
 function openIdeaRecommend(){
   const t=S.trip;if(!t)return;
-  const h=helpState();
-  S.sheet={kind:'idea-recommend',step:'form',city:t.destination||'',days:Math.max(1,tripDates(t).length||1),adults:h.adults,children:h.children,elders:h.elders,style:h.pace||'balanced',interests:[...h.interests],note:h.likeNote||'',places:[],selected:new Set(),busy:false};
+  S.sheet={kind:'idea-recommend',step:'form',cat:'sight',city:t.destination||'',likes:{sight:[],food:[],cafe:[]},note:'',places:[],selected:new Set(),busy:false};
   render();
 }
 function vIdeaAddChoice(){return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1"><div class="hd"><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="idea-add-choice"><button type="button" class="t-place" data-act="idea-add-manual">${ic('plus',18)}เพิ่มเอง</button><button type="button" class="ai-pick" data-act="idea-suggest-open">${ic('spark',18)}แนะนำ</button></div></div></div>`;}
 function vIdeaRecommend(s){
-  const head=`<div class="hd"><h2>${s.step==='results'?'เลือกไอเดียที่ชอบ':'หาไอเดียสถานที่'}</h2><button type="button" class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>`;
-  if(s.step==='loading')return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="กำลังหาไอเดีย" data-stop="1">${head}<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังจัดชุดสถานที่ตามเมืองและสไตล์ที่เลือก…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div></div></div>`;
+  const C=SUGGEST_CATS[s.cat]||SUGGEST_CATS.sight;
+  const head=`<div class="hd"><h2>${s.step==='results'?`${esc(C.label)} ที่น่าไป`:'หาไอเดีย'}</h2><button type="button" class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>`;
   if(s.step==='results'){
-    const labels={sight:'ที่เที่ยว',restaurant:'ร้านอาหาร',cafe:'คาเฟ่ / ขนม'};
-    const kinds=[...new Set(['sight','restaurant','cafe',...s.places.map(p=>p.category)])];
-    return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เลือกไอเดียสถานที่" data-stop="1">${head}
-      <div class="stack idea-compose-body idea-suggest-results"><p class="muted small">${esc(s.city)} · ${esc(String(s.places.length))} รายการที่แนะนำ</p><div class="err" role="note">${esc(s.notice||'คำแนะนำจาก AI โปรดตรวจสอบชื่อสถานที่ เวลาเปิด และเส้นทางก่อนเดินทาง')}</div>
-      ${kinds.filter(kind=>s.places.some(p=>p.category===kind)).map(kind=>`<section class="stack"><h3>${labels[kind]||'อื่นๆ'}</h3>${s.places.filter(p=>p.category===kind).map(p=>{const id=p._id,chosen=s.selected.has(id),exists=S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase());return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc([p.area,p.reason,exists?'อยู่ในที่สนใจแล้ว':''].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists?'✓':chosen?'✓':'+'}</span></button>`;}).join('')}</section>`).join('')}
-      <button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังหาตำแหน่งและบันทึก…':`เพิ่ม ${s.selected.size} รายการในที่สนใจ`}</button></div></div></div>`;
-  }
-  const counter=(k,label)=>`<div class="ai-n"><span>${label}</span><div><button type="button" data-act="idea-suggest-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${s[k]}</output><button type="button" data-act="idea-suggest-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
-  return `<div class="scrim still" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet steady" role="dialog" aria-modal="true" aria-label="หาไอเดียสถานที่" data-stop="1">${head}
-    <form class="stack idea-compose-body" data-form="idea-recommend">
-      <label class="fld">เมืองที่อยากเที่ยว<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ, โยโกฮาม่า" value="${esc(s.city)}" data-bind="sheet:city"></label>
-      <div class="stack"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
-      <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${HELP_LIKES.map(v=>`<button type="button" aria-pressed="${s.interests.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
-      <label class="fld">อื่นๆ และรายละเอียดเพิ่มเติม<textarea class="grow-area idea-note" rows="3" maxlength="1000" placeholder="เช่น เดินทางไม่ไกล งบประหยัด ชอบอาหารท้องถิ่น มีเด็กเล็กต้องใช้รถเข็น" data-bind="sheet:note">${esc(s.note)}</textarea></label>
+    const rows=s.places.map(p=>{const id=p._id,chosen=s.selected.has(id),exists=inTrip(p.title);return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc(exists?'อยู่ในทริปแล้ว':[p.area,p.reason].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists||chosen?'✓':'+'}</span></button>`;}).join('');
+    return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เลือกไอเดีย" data-stop="1">${head}
+      <div class="stack idea-compose-body idea-suggest-results"><p class="muted small">${esc(s.city)} · แตะเลือกที่อยากเก็บไว้ · ข้อมูลจาก AI ตรวจสอบเวลาเปิดก่อนไปนะครับ</p>
+      ${rows}
+      ${s.more?`<div class="ai-wait small-wait"><div class="spinner" role="status" aria-label="กำลังหาเพิ่ม"></div></div>`:`<button type="button" class="btn ghost" data-act="idea-suggest-more">${ic('spark',16)}หาเพิ่มอีก 10 ที่</button>`}
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <button class="btn primary" type="submit" ${s.busy?'disabled':''}>${s.busy?'กำลังหา…':'แนะนำสถานที่'}</button>
+      <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`เพิ่ม ${s.selected.size} ที่`:'เลือกก่อน'}</button></div></div></div></div>`;
+  }
+  if(s.step==='loading')return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="กำลังหาไอเดีย" data-stop="1">${head}<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ยอดนิยม 10 ที่…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div></div></div>`;
+  const likes=s.likes[s.cat]||[];
+  return `<div class="scrim still" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet steady" role="dialog" aria-modal="true" aria-label="หาไอเดีย" data-stop="1">${head}
+    <form class="stack idea-compose-body" data-form="idea-recommend">
+      <div class="chips t-idea suggest-cats">${Object.entries(SUGGEST_CATS).map(([k,c])=>`<button type="button" class="${IDEA_TONE[c.kind]}" aria-pressed="${s.cat===k}" data-act="idea-suggest-cat" data-k="${k}">${ic(IDEA_ICON[c.kind],18)}${esc(c.label)}</button>`).join('')}</div>
+      <label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="sheet:city"></label>
+      <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
+      <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="sheet:note">${esc(s.note)}</textarea></label>
+      ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
+      <button class="btn primary" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}หา${esc(C.label)} 10 ที่</button>
     </form></div></div>`;
 }
-async function runIdeaRecommend(){
-  const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||!t)return;
-  s.city=s_(s.city);if(!s.city){s.err='ใส่เมืองหรือย่านก่อนครับ';render();return;}
-  s.busy=true;s.step='loading';s.err='';s.tripId=t.id;s.ctl=new AbortController();render();
+async function runIdeaRecommend(more){
+  const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||s.more||!t)return;
+  s.city=s_(s.city);if(!s.city){s.err='ใส่เมืองก่อนครับ';render();return;}
+  if(!more){s.places=[];s.selected=new Set();}
+  // never suggest what is already in the trip, or what was just shown
+  const exclude=[...new Set([...S.items.filter(it=>it.type==='idea'||it.type==='place').map(it=>s_(it.title)),...s.places.map(p=>p.title)])].filter(Boolean).slice(-150);
+  if(more)s.more=true;else{s.busy=true;s.step='loading';}
+  s.err='';s.ctl=new AbortController();render();
   try{
-    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,days:+s.days,prefs:{adults:+s.adults,children:+s.children,elders:+s.elders,interests:s.interests,note:s_(s.note).slice(0,1000)}},()=>S.sheet===s&&S.trip?.id===t.id);
+    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude}},()=>S.sheet===s&&S.trip?.id===t.id);
     if(S.sheet!==s||S.trip?.id!==t.id)return;
-    s.places=(res.places||[]).map((p,i)=>({...p,_id:`${p.category}:${i}`}));s.selected=new Set(s.places.filter(p=>!S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase())).map(p=>p._id));s.notice=res.note||'';s.step='results';
-  }catch(e){if(S.sheet!==s)return;s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองหรือย่านก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
-  finally{if(S.sheet===s){s.busy=false;render();}}
+    const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title)));
+    const base=s.places.length;s.places=s.places.concat(fresh.map((p,i)=>({...p,_id:'p'+(base+i)})));s.step='results';
+    if(more&&!fresh.length)s.err='ไม่มีที่ใหม่เพิ่มแล้ว ลองปรับคำขอดูครับ';
+  }catch(e){if(S.sheet!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
+  finally{if(S.sheet===s){s.busy=false;s.more=false;render();}}
 }
 async function saveIdeaRecommendations(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.step!=='results'||s.busy||!t)return;
-  const chosen=s.places.filter(p=>s.selected.has(p._id)&&!S.items.some(it=>it.type==='idea'&&it.title.trim().toLocaleLowerCase()===p.title.trim().toLocaleLowerCase()));
+  const chosen=s.places.filter(p=>s.selected.has(p._id)&&!inTrip(p.title));
   if(!chosen.length)return;s.busy=true;render();
   try{
     let missing=0;
     for(const p of chosen){if(S.trip?.id!==t.id||S.sheet!==s)throw {code:'cancelled'};
       const g=await gmapsPlace([p.title,p.area,s.city].filter(Boolean).join(', '));if(!g)missing++;   // the real Google place, so the map pin and "open in Google Maps" are right
       await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:[p.area,p.reason].filter(Boolean).join(' · ').slice(0,120),
-        data:{kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
+        data:{kind:(g&&g.kind&&(s.cat!=='sight'||g.kind==='ที่เที่ยว'||g.kind==='ช้อปปิ้ง'))?g.kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',gchecked:g?1:0,address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
     if(S.sheet===s){S.sheet=null;S.catTab='idea';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
   }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(S.sheet===s){s.busy=false;render();}}
 }
@@ -3675,11 +3691,12 @@ document.addEventListener("click", async e => {
     case "idea-add-open": S.sheet={kind:'idea-add-choice'};render();break;
     case "idea-add-manual": {const dates=tripDates(t);S.sheet={kind:'idea',title:'',date:dates[S.day]||dates[0],time:'',note:'',mode:'',from:'',to:'',ideaKind:'ที่เที่ยว'};render();break;}
     case "idea-suggest-open": openIdeaRecommend();break;
-    case "idea-suggest-num": {const s=S.sheet,k=el.dataset.k;if(s?.kind==='idea-recommend'&&['adults','children','elders'].includes(k)){s[k]=Math.max(0,Math.min(20,(+s[k]||0)+Number(el.dataset.d)));if(s.adults+s.elders<1)s[k]=1;render();}break;}
-    case "idea-suggest-like": {const s=S.sheet;if(s?.kind==='idea-recommend'){s.interests=s.interests.includes(el.dataset.v)?s.interests.filter(x=>x!==el.dataset.v):s.interests.concat(el.dataset.v);render();}break;}
+    case "idea-suggest-cat": {const s=S.sheet;if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
+    case "idea-suggest-like": {const s=S.sheet;if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
+    case "idea-suggest-more": await runIdeaRecommend(true);break;
     case "idea-suggest-toggle": {const s=S.sheet;if(s?.kind==='idea-recommend'&&s.step==='results'){const id=el.dataset.id;s.selected.has(id)?s.selected.delete(id):s.selected.add(id);render();}break;}
     case "idea-suggest-edit": if(S.sheet?.kind==='idea-recommend'){S.sheet.step='form';render();}break;
-    case "idea-suggest-cancel": S.sheet?.ctl?.abort();S.sheet=null;render();break;
+    case "idea-suggest-cancel": S.sheet?.ctl?.abort();if(S.sheet?.kind==='idea-recommend'){S.sheet.busy=false;S.sheet.step='form';}render();break;
     case "idea-suggest-save": await saveIdeaRecommendations();break;
     case "planner-filter": S.planner.filter=el.dataset.k;render();break;
     case "planner-search": {const s=S.planner;s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});break;}
@@ -3847,7 +3864,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-share1";
+const BUILD = "2026-11-04-ideas15";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
