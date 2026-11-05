@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=1"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=3"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -755,7 +755,7 @@ const I18N = (() => {
   for(const [k, v] of Object.entries(window.MYTRIP_EN)){
     if(!/\{\d+\}/.test(k)){ exact.set(k, v); continue; }
     const names = []; let re = "^";
-    for(const part of k.split(/(\{\d+\})/)){ if(/^\{\d+\}$/.test(part)){ names.push(part); re += "([\\s\\S]*?)"; } else re += part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+    for(const part of k.split(/(\{\d+\})/)){ if(/^\{\d+\}$/.test(part)){ names.push(part); re += "([\\s\\S]*?)"; } else re += part.trim() ? part.split(/(\s+)/).map(w => /^\s+$/.test(w) ? "\\s*" : w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("") : "\\s*"; }
     pats.push({re:new RegExp(re + "$"), names, v, len:k.replace(/\{\d+\}/g, "").length});
   }
   pats.sort((a, b) => b.len - a.len);
@@ -772,6 +772,9 @@ function trText(s){
     return lead + out + tail;
   }
   if(core.includes(" · ")) return lead + core.split(" · ").map(trText).join(" · ") + tail;
+  // a label in front of a name ("นอนที่ Hotel X"): swap the label, keep the rest
+  const sp = core.indexOf(" ");
+  if(sp > 0){ const head = I18N.exact.get(core.slice(0, sp)); if(head != null && sp >= 3) return lead + head + " " + trText(core.slice(sp + 1)) + tail; }
   return s;
 }
 window.myTripT = trText;
@@ -1143,7 +1146,7 @@ function nameOf(id){
 function ensureProfiles(){}
 function avatars(ids, max=4){
   const shown = ids.slice(0, max);
-  return `<span class="avatars" aria-hidden="true">${shown.map(id => `<span class="av ${id===S.me?"me":""}">${esc(nameOf(id).slice(0,1))}</span>`).join("")}</span>`;
+  return `<span class="avatars" aria-hidden="true">${shown.map(id => `<span class="av ${id===S.me?"me":""}">${esc(trText(nameOf(id)).slice(0,1))}</span>`).join("")}</span>`;
 }
 const inviteLink = id => location.origin + location.pathname + "?openExternalBrowser=1#join-" + id;
 
@@ -1293,7 +1296,7 @@ function vInvite(){
 
 function memberRow(t, id){
   const owner = t.ownerId === S.me, canRemove = owner && id !== t.ownerId;
-  const av = `<span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(nameOf(id).slice(0,1))}</span>`;
+  const av = `<span class="av ${id===S.me?"me":""}" aria-hidden="true">${esc(trText(nameOf(id)).slice(0,1))}</span>`;
   if(canRemove && S.rmAsk === id) return `<li class="rm-ask">${av}<span class="grow">ลบ <b>${esc(nameOf(id))}</b> ออกจากทริป?</span>
     <button class="pill-btn" style="background:var(--tile)" data-act="rm-cancel">ยกเลิก</button><button class="pill-btn danger" data-act="rm-member" data-id="${esc(id)}">ลบออก</button></li>`;
   return `<li>${av}<span class="grow" style="font-weight:500">${esc(nameOf(id))}</span><span class="muted small">${id===t.ownerId?"ผู้สร้างทริป":"เข้าร่วมแล้ว"}</span>
@@ -3919,7 +3922,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-en1";
+const BUILD = "2026-11-05-en2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

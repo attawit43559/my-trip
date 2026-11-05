@@ -1,5 +1,7 @@
 /* My Trip in English: the app's Thai text -> English. {0}, {1}… stand for the parts filled in at run time. */
 window.MYTRIP_EN = {
+"ลงแผนแล้ว": "Planned",
+"นอนที่ {0}": "Staying at {0}",
 "อา.": "Sun",
 "จ.": "Mon",
 "อ.": "Tue",
@@ -96,7 +98,7 @@ window.MYTRIP_EN = {
 "คัดลอกรหัส": "Copy code",
 "ผู้ร่วมทริป": "People",
 "{4} คน": "{4} people",
-"ไปที่ทริป {6}": "Go to {6}",
+"ไปที่ทริป {6}": "Go to trip {6}",
 "ออกจากทริป?": "Leave trip?",
 "ลบออก": "Remove",
 "ผู้สร้างทริป": "Trip owner",
