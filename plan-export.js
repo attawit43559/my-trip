@@ -14,7 +14,7 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     "t-flight":["#B4501A","#FFE8D6","#F2802F"], "t-stay":["#6A3A86","#F1E5F6","#9B5BC0"], "t-place":["#358834","#E2F5E2","#4CC24A"],
     "t-move":["#18767F","#DCF1F3","#22A9B5"], "k-sight":["#358834","#E2F5E2","#4CC24A"],
     /* trip covers */
-    "cv-flight":["#A3204F","#FFD6E4","#F0457E"], "cv-stay":["#8A5300","#FFE7A8","#FFB000"], "cv-place":["#237A17","#D4F5C4","#36C22A"], "cv-move":["#B33A10","#FFD9C7","#FF6A2B"], "cv-plum":["#642D99","#EBD9FA","#A35BE0"], "cv-caramel":["#8E4A10","#FBE0C4","#E68A2E"], "cv-olive":["#5A7310","#EAF5B8","#9CC21A"], "cv-spruce":["#136F60","#C9F2EA","#1FB89E"], "cv-coral":["#A62219","#FFDAD6","#F2483C"], "cv-sun":["#7A6200","#FFF3A6","#F2CC00"], "k-food":["#8A6A00","#FFF4C7","#E0B000"], "k-shop":["#B83A68","#FCE4EC","#E0608E"], "k-cafe":["#6F4A2F","#F1E7DE","#9A6A44"]
+    "cv-flight":["#A3204F","#FFD6E4","#F0457E"], "cv-stay":["#8A5300","#FFE7A8","#FFB000"], "cv-place":["#237A17","#D4F5C4","#36C22A"], "cv-move":["#B33A10","#FFD9C7","#FF6A2B"], "cv-plum":["#642D99","#EBD9FA","#A35BE0"], "cv-caramel":["#8E4A10","#FBE0C4","#E68A2E"], "cv-olive":["#5A7310","#EAF5B8","#9CC21A"], "cv-spruce":["#136F60","#C9F2EA","#1FB89E"], "cv-coral":["#A62219","#FFDAD6","#F2483C"], "cv-sun":["#7A6200","#FFF3A6","#F2CC00"], "cv-sky":["#1A5FA8","#D3E8FF","#3B8EEA"], "cv-indigo":["#3A3FA8","#DFE0FF","#5B63E6"], "k-food":["#8A6A00","#FFF4C7","#E0B000"], "k-shop":["#B83A68","#FCE4EC","#E0608E"], "k-cafe":["#6F4A2F","#F1E7DE","#9A6A44"]
   };
   const tone = k => TONES[k] || TONES["t-place"];
   const font = (w, px, fam = BODY) => `${w} ${Math.round(px)}px ${fam}`;
