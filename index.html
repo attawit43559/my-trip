@@ -1362,9 +1362,10 @@ function dayEntries(dateStr){
     const ranks=new Map(saved.map((key,n)=>[key,n])),base=new Map(out.map((e,n)=>[dayEntryKey(e),n]));
     out.sort((a,b)=>(ranks.has(dayEntryKey(a))?ranks.get(dayEntryKey(a)):saved.length+base.get(dayEntryKey(a)))-(ranks.has(dayEntryKey(b))?ranks.get(dayEntryKey(b)):saved.length+base.get(dayEntryKey(b))));
   }
-  /* where everyone sleeps tonight: any stay whose nights cover this date */
+  /* where everyone sleeps tonight: any stay whose nights cover this date (one row per hotel, even with two rooms or two bookings) */
+  const sleptAt = new Set();
   for(const it of S.items){
-    if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate)
+    if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate && !sleptAt.has(s_(it.title).toLowerCase()) && sleptAt.add(s_(it.title).toLowerCase()))
       out.push({it, phase:"night", night:true, time:"", title:"นอนที่ " + (it.title||"ที่พัก"), sub:""});
     if(it.type === "flight" && validD(it.date)){
       const ad = arrDateOf(it);
@@ -2335,7 +2336,7 @@ function manualTravelLegs(date){
   return points.slice(1).map((to,i)=>{const from=points[i],key=JSON.stringify([from.id,from.name,to.id,to.name]);
     const saved=S.items.find(m=>m.type==='move'&&m.date===date&&((m.data||{}).legKey===key||((m.data||{}).from===from.name&&(m.data||{}).to===to.name)));
     return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
-  }).filter(l=>l.fromId!==l.toId);
+  }).filter(l=>l.fromId!==l.toId&&s_(l.from).toLowerCase()!==s_(l.to).toLowerCase());   // no travel between two bookings of the same hotel
 }
 function dailyEntryRows(entries,date,nowAt){
   const missing=manualTravelLegs(date).filter(l=>!l.saved);
@@ -3930,7 +3931,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-booking1";
+const BUILD = "2026-11-05-night1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
