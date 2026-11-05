@@ -11,10 +11,10 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
   const C = {bg:"#FFFDF9", surface:"#FFFFFF", tile:"#F6F1EA", ink:"#2B211C", muted:"#6E6259", line:"#EFE9E0", accent:"#FFB020"};
   /* the app's category colours: deep / soft / mid */
   const TONES = {
-    "t-flight":["#B5402F","#FDE6E1","#F0644F"], "t-stay":["#634BB2","#EDE7FF","#8E6BFF"], "t-place":["#358834","#E2F5E2","#4CC24A"],
+    "t-flight":["#B4501A","#FFE8D6","#F2802F"], "t-stay":["#6A3A86","#F1E5F6","#9B5BC0"], "t-place":["#358834","#E2F5E2","#4CC24A"],
     "t-move":["#18767F","#DCF1F3","#22A9B5"], "k-sight":["#358834","#E2F5E2","#4CC24A"],
     /* trip covers */
-    "cv-flight":["#5B3FB0","#EDE7FF","#8E6BFF"], "cv-stay":["#8A5300","#FFF1CC","#FFB020"], "cv-place":["#2B7A1C","#E2F6D6","#3FB02A"], "cv-move":["#C23B1C","#FFE5DB","#FF6A3D"], "k-food":["#8A6A00","#FFF4C7","#E0B000"], "k-shop":["#B24271","#FFE5F0","#FF5FA2"], "k-cafe":["#6F4A2F","#F1E7DE","#9A6A44"]
+    "cv-flight":["#9A3550","#FBE3EA","#D45578"], "cv-stay":["#8A5300","#FFF1CC","#FFB020"], "cv-place":["#2B7A1C","#E2F6D6","#3FB02A"], "cv-move":["#C23B1C","#FFE5DB","#FF6A3D"], "k-food":["#8A6A00","#FFF4C7","#E0B000"], "k-shop":["#B83A68","#FCE4EC","#E0608E"], "k-cafe":["#6F4A2F","#F1E7DE","#9A6A44"]
   };
   const tone = k => TONES[k] || TONES["t-place"];
   const font = (w, px, fam = BODY) => `${w} ${Math.round(px)}px ${fam}`;

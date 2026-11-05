@@ -20,8 +20,8 @@
 :root{
   --bg:#FFFDF9; --surface:#FFFFFF; --tile:#F6F1EA; --ink:#2B211C; --muted:#6E6259; --line:#EFE9E0; --lift:0 1px 3px rgba(43,33,28,.08);
   --accent:#FFB020; --accent-soft:#FFF1CC; --accent-line:#E39400; --warn-bg:#FFF1CC; --on-accent:#2B211C; --danger:#E0352B;
-  --flight:#B5402F; --flight-soft:#FDE6E1; --flight-mid:#F0644F;
-  --stay:#634BB2; --stay-soft:#EDE7FF; --stay-mid:#8E6BFF;
+  --flight:#B4501A; --flight-soft:#FFE8D6; --flight-mid:#F2802F;
+  --stay:#6A3A86; --stay-soft:#F1E5F6; --stay-mid:#9B5BC0;
   --place:#358834; --place-soft:#E2F5E2; --place-mid:#4CC24A;
   --move:#18767F; --move-soft:#DCF1F3; --move-mid:#22A9B5;
   --idea:#8A5300; --idea-soft:#FFF1CC; --idea-mid:#FFB020;
@@ -32,15 +32,15 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
-  --flight:#FFAD9E; --flight-soft:#4A2620; --flight-mid:#F0644F;
-  --stay:#C1AEFF; --stay-soft:#3C304D; --stay-mid:#8E6BFF;
+  --flight:#FFB98A; --flight-soft:#44291A; --flight-mid:#F2802F;
+  --stay:#D9B5EC; --stay-soft:#36263F; --stay-mid:#9B5BC0;
   --place:#9DDD9B; --place-soft:#2E4325; --place-mid:#4CC24A;
   --move:#85D0D6; --move-soft:#243D3D; --move-mid:#22A9B5; --idea:#FFD27A; --idea-soft:#3A2C12; --idea-mid:#F2A516; --ai:#94BFFF; --ai-soft:#2A374D; --ai-mid:#3D8BFF; color-scheme:dark}}
 :root[data-theme="dark"]{
   --lift:none; --bg:#1A1512; --surface:#251F1B; --tile:#312924; --ink:#F6EFE7; --muted:#B9AA9C; --line:#3A312B;
   --accent:#F2A516; --accent-soft:#3A2C12; --accent-line:#A9740C; --warn-bg:#3A2C12; --on-accent:#2B211C; --danger:#FF7A6B;
-  --flight:#FFAD9E; --flight-soft:#4A2620; --flight-mid:#F0644F;
-  --stay:#C1AEFF; --stay-soft:#3C304D; --stay-mid:#8E6BFF;
+  --flight:#FFB98A; --flight-soft:#44291A; --flight-mid:#F2802F;
+  --stay:#D9B5EC; --stay-soft:#36263F; --stay-mid:#9B5BC0;
   --place:#9DDD9B; --place-soft:#2E4325; --place-mid:#4CC24A;
   --move:#85D0D6; --move-soft:#243D3D; --move-mid:#22A9B5; --idea:#FFD27A; --idea-soft:#3A2C12; --idea-mid:#F2A516; --ai:#94BFFF; --ai-soft:#2A374D; --ai-mid:#3D8BFF; color-scheme:dark}
 html,body{min-height:100%}
@@ -275,12 +275,12 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .t-flight{--deep:var(--flight);--soft:var(--flight-soft);--mid:var(--flight-mid);--on:#FFFFFF}
 .t-stay{--deep:var(--stay);--soft:var(--stay-soft);--mid:var(--stay-mid);--on:#FFFFFF}
 /* trip covers keep their own colours, separate from the item categories */
-.cv-flight{--deep:#5B3FB0;--soft:#EDE7FF;--mid:#8E6BFF;--on:#FFFFFF}
+.cv-flight{--deep:#9A3550;--soft:#FBE3EA;--mid:#D45578;--on:#FFFFFF}
 .cv-stay{--deep:#8A5300;--soft:#FFF1CC;--mid:#FFB020;--on:#2B211C}
 .cv-place{--deep:#2B7A1C;--soft:#E2F6D6;--mid:#3FB02A;--on:#FFFFFF}
 .cv-move{--deep:#C23B1C;--soft:#FFE5DB;--mid:#FF6A3D;--on:#FFFFFF}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-flight{--deep:#C9B8FF;--soft:#2A2340;--mid:#8E6BFF}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root:not([data-theme="light"]) .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root:not([data-theme="light"]) .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}}
-:root[data-theme="dark"] .cv-flight{--deep:#C9B8FF;--soft:#2A2340;--mid:#8E6BFF}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root[data-theme="dark"] .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root[data-theme="dark"] .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root:not([data-theme="light"]) .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root:not([data-theme="light"]) .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}}
+:root[data-theme="dark"] .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root[data-theme="dark"] .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root[data-theme="dark"] .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#FFFFFF}
 .thumb-sm{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}
@@ -295,9 +295,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 /* wish-list kinds: sights teal, food orange, shopping pink */
 .k-sight{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .k-food{--deep:#8A6A00;--soft:#FFF4C7;--mid:#E0B000;--on:#FFFFFF}
-.k-shop{--deep:#B24271;--soft:#FFE5F0;--mid:#FF5FA2;--on:#FFFFFF}
+.k-shop{--deep:#B83A68;--soft:#FCE4EC;--mid:#E0608E;--on:#FFFFFF}
 .k-cafe{--deep:#6F4A2F;--soft:#F1E7DE;--mid:#9A6A44;--on:#FFFFFF}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-food{--deep:#F2D27A;--soft:#3F3412;--mid:#D9A800}:root:not([data-theme="light"]) .k-shop{--deep:#FFA7CC;--soft:#552D39}:root:not([data-theme="light"]) .k-cafe{--deep:#E2C4A8;--soft:#3B2E24;--mid:#B58660}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-food{--deep:#F2D27A;--soft:#3F3412;--mid:#D9A800}:root:not([data-theme="light"]) .k-shop{--deep:#F5A9C2;--soft:#4A2433;--mid:#E0608E}:root:not([data-theme="light"]) .k-cafe{--deep:#E2C4A8;--soft:#3B2E24;--mid:#B58660}}
 .chips.t-idea button.k-sight .ic,.chips.t-idea button.k-food .ic,.chips.t-idea button.k-cafe .ic,.chips.t-idea button.k-shop .ic{color:var(--mid)}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop,.chips.t-idea button[aria-pressed="true"].k-cafe{background:var(--soft);color:var(--deep)}
 
@@ -3923,7 +3923,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-colors1";
+const BUILD = "2026-11-05-colors2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
