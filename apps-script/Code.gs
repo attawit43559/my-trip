@@ -178,6 +178,7 @@ const ACTIONS = {
     });
     batch.forEach(it => {
       const old = find_(ITEMS, it.id);
+      if (!old && !it.type) return;   // a change to an item that was deleted meanwhile: don't bring back an empty shell
       it.tripId = tripId;
       upsert_(ITEMS, it.id, tripId, old ? deepMerge_(old.obj, it) : it);
     });

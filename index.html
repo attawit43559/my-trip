@@ -1746,6 +1746,7 @@ async function checkShared(){
       if(g === undefined) return;   // Google not reachable now: try again next time
       const patch = {gchecked:1};
       if(g){ if(g.kind) patch.kind = g.kind; if(g.placeId) patch.placeId = g.placeId; if(g.lat != null){ patch.lat = g.lat; patch.lon = g.lon; } if(!d.address && g.address) patch.address = g.address; }
+      if(S.trip !== t || !S.items.some(i => i.id === it.id)) continue;   // deleted while we were asking Google
       await store.updateItem(t.id, it.id, {data:patch});
     }
   } finally { checkShared.busy = false; }
@@ -3922,7 +3923,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-en2";
+const BUILD = "2026-11-05-en3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
