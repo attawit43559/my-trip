@@ -560,7 +560,8 @@ function readBooking_(req) {
   let text;
   if (provider === 'claude') text = callClaude_(props, prompt, files);
   else if (provider === 'openai') text = callOpenAI_(props, prompt, files);
-  else text = callGemini_(props, prompt, files);
+  // when the main model is overloaded (503), a second model reads the booking instead of failing
+  else text = callGemini_(props, prompt, files, { fallback: ['gemini-3.5-flash'] });
   return parseJson_(text);
 }
 

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=3"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=4"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -3160,6 +3160,7 @@ function buildReview(kind, res){
 }
 function errCopy(code){
   if(/^missing_/.test(code||"")) return "ยังไม่ได้ใส่ API key ใน Apps Script ลองกรอกเองไปก่อน";
+  if(/^ai_error_(503|500|429)/.test(code||"")) return "ตอนนี้ AI ไม่ว่าง ลองใหม่อีกสักครู่ หรือกรอกเอง";
   if(/^ai_error/.test(code||"")) return "ตัวอ่านใบจองตอบกลับผิดพลาด ลองใหม่อีกครั้ง หรือกรอกเอง";
   return ({
     not_connected:"ยังไม่ได้เชื่อม Google Sheet เลยอ่านใบจองไม่ได้ ลองกรอกเองได้เลย",
@@ -3929,7 +3930,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-colors5";
+const BUILD = "2026-11-05-booking1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
