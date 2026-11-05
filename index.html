@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=1"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -746,9 +747,53 @@ html.kb .tabbar{display:none}
 /* ---------- constants ---------- */
 /* Paste the Web app URL from Apps Script (Deploy → Manage deployments) between the quotes */
 const API_URL = "https://script.google.com/macros/s/AKfycbxz_Fsoh5MNxKnVakLEBxrh2YuLTh9cvZO-JGtnQBQAdji0PA5REFOD-YhtbJqd52g/exec";
-const DOW = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
-const DOW_FULL = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
-const MON = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+/* ---------- language: Thai is written in the code; English swaps the text on screen as it is drawn ---------- */
+const LANG = (() => { try { return localStorage.getItem("mytrip-lang") === "en" && window.MYTRIP_EN ? "en" : "th"; } catch(_) { return "th"; } })();
+const I18N = (() => {
+  if(LANG !== "en") return null;
+  const exact = new Map(), pats = [];
+  for(const [k, v] of Object.entries(window.MYTRIP_EN)){
+    if(!/\{\d+\}/.test(k)){ exact.set(k, v); continue; }
+    const names = []; let re = "^";
+    for(const part of k.split(/(\{\d+\})/)){ if(/^\{\d+\}$/.test(part)){ names.push(part); re += "([\\s\\S]*?)"; } else re += part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+    pats.push({re:new RegExp(re + "$"), names, v, len:k.replace(/\{\d+\}/g, "").length});
+  }
+  pats.sort((a, b) => b.len - a.len);
+  return {exact, pats};
+})();
+const HAS_TH = /[฀-๿]/;
+function trText(s){
+  if(!I18N || !s || !HAS_TH.test(s)) return s;
+  const lead = s.match(/^\s*/)[0], tail = s.match(/\s*$/)[0], core = s.trim();
+  const e = I18N.exact.get(core); if(e != null) return lead + e + tail;
+  for(const p of I18N.pats){
+    const m = core.match(p.re); if(!m) continue;
+    let out = p.v; p.names.forEach((n, i) => { out = out.split(n).join(trText(m[i + 1])); });
+    return lead + out + tail;
+  }
+  if(core.includes(" · ")) return lead + core.split(" · ").map(trText).join(" · ") + tail;
+  return s;
+}
+window.myTripT = trText;
+const TR_ATTRS = ["placeholder", "aria-label", "title", "alt"];
+function trNode(root){
+  if(!I18N || !root) return;
+  if(root.nodeType === 3){ if(HAS_TH.test(root.nodeValue)){ const p = root.parentNode; if(!p || !/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName)){ const v = trText(root.nodeValue); if(v !== root.nodeValue) root.nodeValue = v; } } return; }
+  if(root.nodeType !== 1) return;
+  const els = [root, ...root.querySelectorAll("*")];
+  for(const el of els) for(const a of TR_ATTRS){ const v = el.getAttribute(a); if(v && HAS_TH.test(v)){ const t = trText(v); if(t !== v) el.setAttribute(a, t); } }
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+  while((n = w.nextNode())) trNode(n);
+}
+if(I18N){
+  new MutationObserver(list => { for(const m of list){ if(m.type === "characterData") trNode(m.target); else if(m.type === "attributes") trNode(m.target); else m.addedNodes.forEach(trNode); } })
+    .observe(document.documentElement, {subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:TR_ATTRS});
+  document.addEventListener("DOMContentLoaded", () => trNode(document.body));
+}
+function setLang(l){ try { localStorage.setItem("mytrip-lang", l); } catch(_){} location.reload(); }
+const DOW = LANG === "en" ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] : ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+const DOW_FULL = LANG === "en" ? ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] : ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+const MON = LANG === "en" ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] : ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MOVE_MODES = ["ขับรถ","ขนส่งสาธารณะ","เดิน"];
 const MODE_ICON = {"ขับรถ":"move","ขนส่งสาธารณะ":"bus","เดิน":"walk"};
 const moveTitle = (from, to) => from && to ? `${from} → ${to}` : (from || to ? `${from ? "จาก " + from : "ไป " + to}` : "การเดินทาง");
@@ -789,6 +834,7 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  globe:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
   history:'<path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7M12 7v5l3 2"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h2M13 15h2"/>',
@@ -1184,6 +1230,7 @@ function vTripMore(){
     <button data-act="sos-open">${ic("sos",20)}ข้อมูลฉุกเฉิน</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
     <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
+    <button data-act="lang-switch" lang="${LANG === "en" ? "th" : "en"}">${ic("globe",20)}${LANG === "en" ? "ภาษาไทย" : "English"}</button>
     ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
   </div></div></div>`;
 }
@@ -3654,6 +3701,7 @@ document.addEventListener("click", async e => {
     case "day": S.calOpen = false; S.calWeek = null; if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
+    case "lang-switch": setLang(LANG === "en" ? "th" : "en"); break;
     case "tab": selectTab(el.dataset.k); break;
     case "help-pace": S.help.pace = el.dataset.k; render(); break;
     case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
@@ -3871,7 +3919,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-ideas16";
+const BUILD = "2026-11-05-en1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

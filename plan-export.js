@@ -3,6 +3,8 @@
  *   day: {tripName, tone, dayNo, dayCount, dateLabel, entries:[{type, time, title, note, spot, ride, mode, minutes, night}]}
  *   opts: {icons: {name: svgInner}, tiles: true}
  */
+/* English: the app's translator swaps Thai labels drawn on the page (layout is measured on the swapped text too) */
+const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillText.bind(x), m = x.measureText.bind(x); x.fillText = (s, ...a) => f(T(String(s)), ...a); x.measureText = s => m(T(String(s))); return x; };
 (function(){
   const W = 1080, H = 1920, M = 60;
   const DISPLAY = '"Mitr", "Prompt", sans-serif', BODY = '"Prompt", sans-serif';
@@ -25,7 +27,7 @@
   function paper(){
     if(paperCache) return paperCache;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = c.getContext("2d"); x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
+    const x = tr2d(c.getContext("2d")); x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
     const img = x.getImageData(0, 0, W, H), d = img.data, r = rng("paper");
     for(let i = 0; i < d.length; i += 4){ const n = (r() - 0.5) * 7; d[i] += n; d[i+1] += n; d[i+2] += n; }
     x.putImageData(img, 0, 0);
@@ -146,7 +148,7 @@
   function cozyBg(){
     if(cozyPaper) return cozyPaper;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = c.getContext("2d"); x.fillStyle = Z.bg; x.fillRect(0, 0, W, H);
+    const x = tr2d(c.getContext("2d")); x.fillStyle = Z.bg; x.fillRect(0, 0, W, H);
     const img = x.getImageData(0, 0, W, H), d = img.data, r = rng("cozy");
     for(let i = 0; i < d.length; i += 4){ const n = (r() - 0.5) * 6; d[i] += n; d[i+1] += n; d[i+2] += n; }
     x.putImageData(img, 0, 0);
@@ -196,7 +198,7 @@
       try{ await Promise.all([document.fonts.load(font(500, 40, DISPLAY), "วันที่ 1"), document.fonts.load(font(500, 40), "ก A"), document.fonts.load(font(400, 40), "ก A")]); } catch(_){}
     }
     const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = c.getContext("2d");
+    const x = tr2d(c.getContext("2d"));
     x.drawImage(cozyBg(), 0, 0);
 
     // hills along the bottom, and a line-drawn mountain with its sun in the top corner
