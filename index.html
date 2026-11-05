@@ -541,7 +541,9 @@ html.lock,html.lock body{overflow:hidden}
 .idea-compose-sheet{max-height:calc(var(--vvh,100dvh) - 8px);overflow:hidden;overscroll-behavior:none}.idea-compose-sheet>.hd{flex:none}.idea-compose-body{gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y}.idea-compose-sheet .chips{flex-shrink:0}.idea-compose-sheet .fld{flex-shrink:0}.idea-note{font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:var(--tile);width:100%;min-height:88px;max-height:40vh;padding:10px 12px;resize:none;overflow-y:auto;line-height:1.45}.compose-sheet.steady :is(input,textarea):focus{outline:none;border-color:var(--line);box-shadow:none}
 .scrim.still{top:0;height:100%}.scrim.still .idea-compose-sheet{max-height:92%}
 .compose-sheet .chips:not(.t-idea) button[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--ink);font-weight:600}
-.idea-compose-sheet .chips.suggest-cats{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:2px}.small-wait{padding:10px 0}.small-wait .spinner{width:22px;height:22px}
+.idea-compose-sheet .chips.t-idea.suggest-cats{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:2px}.idea-compose-sheet .chips.t-idea.suggest-cats button{flex-direction:row;gap:5px;font-size:14px;padding:10px 4px}
+.idea-suggest-row .grow{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
+.suggest-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:0}.soft-btn.suggest-ok{min-height:50px;border:0;border-radius:14px;font-size:15px;font-weight:600;background:var(--place-soft);color:var(--place)}.soft-btn.suggest-ok:disabled{opacity:.5}.small-wait{padding:10px 0}.small-wait .spinner{width:22px;height:22px}
 .idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}.idea-add-choice button{display:flex;align-items:center;justify-content:center;gap:6px;height:48px;border:0;border-radius:14px;background:var(--soft);color:var(--deep);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--mid)}.idea-add-choice .ai-pick,.idea-add-choice .ai-pick .ic{background:var(--flight-soft);color:var(--flight)}.idea-add-choice .ai-pick .ic{background:none}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
 .idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding:7px 2px;flex-direction:column;gap:3px;border-radius:14px;font-size:12.5px;line-height:1.2}html.kb .idea-compose-sheet .chips.t-idea button{padding:5px 2px}
@@ -2020,7 +2022,7 @@ function vTrip(){
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
-    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-flight" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-flight" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
@@ -2454,14 +2456,16 @@ function ideaToolbar(){
 /* ---------- ideas from the AI: one kind at a time, the 10 most popular, never a place already in the trip ---------- */
 const SUGGEST_CATS = {
   sight:{label:"ที่เที่ยว", kind:"ที่เที่ยว", likes:["ธรรมชาติ","วิวสวย","ประวัติศาสตร์","วัด/ศาลเจ้า","พิพิธภัณฑ์","สวนสนุก","ช้อปปิ้ง","เหมาะกับเด็ก"]},
-  food:{label:"ร้านอาหาร", kind:"ร้านอาหาร", likes:["อาหารท้องถิ่น","ร้านดัง","สตรีทฟู้ด","เส้น/ราเมน","ซูชิ/อาหารทะเล","ปิ้งย่าง","ราคาประหยัด","เหมาะกับเด็ก"]},
-  cafe:{label:"คาเฟ่ & ขนม", kind:"คาเฟ่", likes:["กาแฟ","ชา/มัทฉะ","เบเกอรี่","ของหวาน","ขนมท้องถิ่น","บรรยากาศดี","ร้านดัง"]}
+  food:{label:"ร้านอาหาร", kind:"ร้านอาหาร", likes:["อาหารท้องถิ่น","ร้านดัง","สตรีทฟู้ด","เส้น/ราเมน","ซูชิ/อาหารทะเล","ปิ้งย่าง","เหมาะกับเด็ก"]},
+  cafe:{label:"คาเฟ่", kind:"คาเฟ่", likes:["กาแฟ","ชา/มัทฉะ","เบเกอรี่","ของหวาน","ขนมท้องถิ่น","บรรยากาศดี","ร้านดัง"]}
 };
 const sameTitle = (a, b) => s_(a).toLocaleLowerCase() === s_(b).toLocaleLowerCase();
 const inTrip = title => S.items.some(it => (it.type === "idea" || it.type === "place") && sameTitle(it.title, title));
+const suggestCityKey = () => "mytrip-suggest-city:" + (S.tripId || "");
 function openIdeaRecommend(){
   const t=S.trip;if(!t)return;
-  S.sheet={kind:'idea-recommend',step:'form',cat:'sight',city:t.destination||'',likes:{sight:[],food:[],cafe:[]},note:'',places:[],selected:new Set(),busy:false};
+  let city="";try{city=localStorage.getItem(suggestCityKey())||"";}catch(_){}
+  S.sheet={kind:'idea-recommend',step:'form',cat:'sight',city:city||t.destination||'',likes:{sight:[],food:[],cafe:[]},note:'',places:[],selected:new Set(),busy:false};
   render();
 }
 function vIdeaAddChoice(){return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1"><div class="hd"><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="idea-add-choice"><button type="button" class="t-place" data-act="idea-add-manual">${ic('plus',18)}เพิ่มเอง</button><button type="button" class="ai-pick" data-act="idea-suggest-open">${ic('spark',18)}แนะนำ</button></div></div></div>`;}
@@ -2471,11 +2475,11 @@ function vIdeaRecommend(s){
   if(s.step==='results'){
     const rows=s.places.map(p=>{const id=p._id,chosen=s.selected.has(id),exists=inTrip(p.title);return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc(exists?'อยู่ในทริปแล้ว':[p.area,p.reason].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists||chosen?'✓':'+'}</span></button>`;}).join('');
     return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เลือกไอเดีย" data-stop="1">${head}
-      <div class="stack idea-compose-body idea-suggest-results"><p class="muted small">${esc(s.city)} · แตะเลือกที่อยากเก็บไว้ · ข้อมูลจาก AI ตรวจสอบเวลาเปิดก่อนไปนะครับ</p>
+      <div class="stack idea-compose-body idea-suggest-results">
       ${rows}
-      ${s.more?`<div class="ai-wait small-wait"><div class="spinner" role="status" aria-label="กำลังหาเพิ่ม"></div></div>`:`<button type="button" class="btn ghost" data-act="idea-suggest-more">${ic('spark',16)}หาเพิ่มอีก 10 ที่</button>`}
+      ${s.more?`<div class="ai-wait small-wait"><div class="spinner" role="status" aria-label="กำลังหาเพิ่ม"></div></div>`:`<button type="button" class="soft-btn help-start suggest-btn" data-act="idea-suggest-more">${ic('spark',16)}หาเพิ่ม</button>`}
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ปรับคำขอ</button><button type="button" class="btn primary" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`เพิ่ม ${s.selected.size} ที่`:'เลือกก่อน'}</button></div></div></div></div>`;
+      <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ย้อนกลับ</button><button type="button" class="soft-btn suggest-ok" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`ตกลง (${s.selected.size})`:'ตกลง'}</button></div></div></div></div>`;
   }
   if(s.step==='loading')return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="กำลังหาไอเดีย" data-stop="1">${head}<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ยอดนิยม 10 ที่…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div></div></div>`;
   const likes=s.likes[s.cat]||[];
@@ -2486,9 +2490,11 @@ function vIdeaRecommend(s){
       <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
       <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="sheet:note">${esc(s.note)}</textarea></label>
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <button class="btn primary" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}หา${esc(C.label)} 10 ที่</button>
+      <button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}เริ่ม</button>
     </form></div></div>`;
 }
+/* redraw without the list jumping back to the top */
+function keepScroll(sel, fn){ const y = document.querySelector(sel)?.scrollTop || 0; fn(); const el = document.querySelector(sel); if(el) el.scrollTop = y; }
 async function runIdeaRecommend(more){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||s.more||!t)return;
   s.city=s_(s.city);if(!s.city){s.err='ใส่เมืองก่อนครับ';render();return;}
@@ -2496,7 +2502,7 @@ async function runIdeaRecommend(more){
   // never suggest what is already in the trip, or what was just shown
   const exclude=[...new Set([...S.items.filter(it=>it.type==='idea'||it.type==='place').map(it=>s_(it.title)),...s.places.map(p=>p.title)])].filter(Boolean).slice(-150);
   if(more)s.more=true;else{s.busy=true;s.step='loading';}
-  s.err='';s.ctl=new AbortController();render();
+  s.err='';s.ctl=new AbortController();if(more)keepScroll(".idea-suggest-results",render);else render();
   try{
     const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude}},()=>S.sheet===s&&S.trip?.id===t.id);
     if(S.sheet!==s||S.trip?.id!==t.id)return;
@@ -2504,7 +2510,7 @@ async function runIdeaRecommend(more){
     const base=s.places.length;s.places=s.places.concat(fresh.map((p,i)=>({...p,_id:'p'+(base+i)})));s.step='results';
     if(more&&!fresh.length)s.err='ไม่มีที่ใหม่เพิ่มแล้ว ลองปรับคำขอดูครับ';
   }catch(e){if(S.sheet!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
-  finally{if(S.sheet===s){s.busy=false;s.more=false;render();}}
+  finally{if(S.sheet===s){s.busy=false;s.more=false;more?keepScroll(".idea-suggest-results",render):render();}}
 }
 async function saveIdeaRecommendations(){
   const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.step!=='results'||s.busy||!t)return;
@@ -2514,7 +2520,7 @@ async function saveIdeaRecommendations(){
     let missing=0;
     for(const p of chosen){if(S.trip?.id!==t.id||S.sheet!==s)throw {code:'cancelled'};
       const g=await gmapsPlace([p.title,p.area,s.city].filter(Boolean).join(', '));if(!g)missing++;   // the real Google place, so the map pin and "open in Google Maps" are right
-      await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:[p.area,p.reason].filter(Boolean).join(' · ').slice(0,120),
+      await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:s_(p.area).slice(0,120),
         data:{kind:(g&&g.kind&&(s.cat!=='sight'||g.kind==='ที่เที่ยว'||g.kind==='ช้อปปิ้ง'))?g.kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',gchecked:g?1:0,address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
     if(S.sheet===s){S.sheet=null;S.catTab='idea';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
   }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(S.sheet===s){s.busy=false;render();}}
@@ -3237,6 +3243,7 @@ document.addEventListener("input", e => {
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); if(!e.target.closest(".steady")) e.target.scrollIntoView({block:"nearest"}); }
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&path==='departTime'){S.sheet.time=S.sheet.departTime||'09:00';S.sheet.lookup=null;}
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&['time','timezone','mode'].includes(path)){S.sheet.lookup=null;S.sheet.lookupError='';S.sheet.travelSource='';S.sheet.travelCheckedAt='';}
+  if(root==='sheet'&&S.sheet?.kind==='idea-recommend'&&path==='city'){try{localStorage.setItem(suggestCityKey(),e.target.value);}catch(_){}}
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
@@ -3693,8 +3700,8 @@ document.addEventListener("click", async e => {
     case "idea-suggest-open": openIdeaRecommend();break;
     case "idea-suggest-cat": {const s=S.sheet;if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
     case "idea-suggest-like": {const s=S.sheet;if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
-    case "idea-suggest-more": await runIdeaRecommend(true);break;
-    case "idea-suggest-toggle": {const s=S.sheet;if(s?.kind==='idea-recommend'&&s.step==='results'){const id=el.dataset.id;s.selected.has(id)?s.selected.delete(id):s.selected.add(id);render();}break;}
+    case "idea-suggest-more": await runIdeaRecommend(true,true);break;
+    case "idea-suggest-toggle": {const s=S.sheet;if(s?.kind==='idea-recommend'&&s.step==='results'){const id=el.dataset.id;s.selected.has(id)?s.selected.delete(id):s.selected.add(id);keepScroll(".idea-suggest-results",render);}break;}
     case "idea-suggest-edit": if(S.sheet?.kind==='idea-recommend'){S.sheet.step='form';render();}break;
     case "idea-suggest-cancel": S.sheet?.ctl?.abort();if(S.sheet?.kind==='idea-recommend'){S.sheet.busy=false;S.sheet.step='form';}render();break;
     case "idea-suggest-save": await saveIdeaRecommendations();break;
@@ -3864,7 +3871,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-04-ideas15";
+const BUILD = "2026-11-05-ideas16";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
