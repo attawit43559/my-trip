@@ -279,8 +279,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .cv-stay{--deep:#8A5300;--soft:#FFF1CC;--mid:#FFB020;--on:#2B211C}
 .cv-place{--deep:#2B7A1C;--soft:#E2F6D6;--mid:#3FB02A;--on:#FFFFFF}
 .cv-move{--deep:#C23B1C;--soft:#FFE5DB;--mid:#FF6A3D;--on:#FFFFFF}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root:not([data-theme="light"]) .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root:not([data-theme="light"]) .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}}
-:root[data-theme="dark"] .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root[data-theme="dark"] .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root[data-theme="dark"] .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}
+.cv-plum{--deep:#6A3A86;--soft:#F1E5F6;--mid:#9B5BC0;--on:#FFFFFF}.cv-caramel{--deep:#8A4F1C;--soft:#FBEBD9;--mid:#D98A3D;--on:#FFFFFF}.cv-olive{--deep:#5A6B1E;--soft:#EEF2D8;--mid:#8FA33A;--on:#FFFFFF}.cv-spruce{--deep:#1F6B60;--soft:#DCEFEA;--mid:#2E9C8A;--on:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-plum{--deep:#D9B5EC;--soft:#36263F;--mid:#9B5BC0}:root:not([data-theme="light"]) .cv-caramel{--deep:#F2C08F;--soft:#3E2A18;--mid:#D98A3D}:root:not([data-theme="light"]) .cv-olive{--deep:#CBDB8F;--soft:#2C3318;--mid:#8FA33A}:root:not([data-theme="light"]) .cv-spruce{--deep:#9FD9CD;--soft:#1C3430;--mid:#2E9C8A}:root:not([data-theme="light"]) .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root:not([data-theme="light"]) .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root:not([data-theme="light"]) .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}}
+:root[data-theme="dark"] .cv-plum{--deep:#D9B5EC;--soft:#36263F;--mid:#9B5BC0}:root[data-theme="dark"] .cv-caramel{--deep:#F2C08F;--soft:#3E2A18;--mid:#D98A3D}:root[data-theme="dark"] .cv-olive{--deep:#CBDB8F;--soft:#2C3318;--mid:#8FA33A}:root[data-theme="dark"] .cv-spruce{--deep:#9FD9CD;--soft:#1C3430;--mid:#2E9C8A}:root[data-theme="dark"] .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root[data-theme="dark"] .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root[data-theme="dark"] .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#FFFFFF}
 .thumb-sm{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}
@@ -1170,7 +1171,8 @@ function openTrip(id, view="trip"){
 
 /* ---------- views ---------- */
 /* each trip gets one of the four colours, picked from its id so it stays the same */
-function tone(id){ let n = 0; for(const c of String(id||"")) n += c.charCodeAt(0); return ["flight","stay","place","move"][n % 4]; }
+/* each trip gets its own header colour, the same every time it opens */
+function tone(id){ let n = 7; for(const c of String(id||"")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return ["flight","stay","place","move","plum","caramel","olive","spruce"][n % 8]; }
 function swipeWrap(t, inner, cls){
   const owner = t.ownerId === S.me;
   const key = "t:" + t.id, ask = S.delAsk === key;
@@ -3923,7 +3925,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-colors2";
+const BUILD = "2026-11-05-colors3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
