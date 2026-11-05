@@ -275,13 +275,13 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .t-flight{--deep:var(--flight);--soft:var(--flight-soft);--mid:var(--flight-mid);--on:#FFFFFF}
 .t-stay{--deep:var(--stay);--soft:var(--stay-soft);--mid:var(--stay-mid);--on:#FFFFFF}
 /* trip covers keep their own colours, separate from the item categories */
-.cv-flight{--deep:#9A3550;--soft:#FBE3EA;--mid:#D45578;--on:#FFFFFF}
-.cv-stay{--deep:#8A5300;--soft:#FFF1CC;--mid:#FFB020;--on:#2B211C}
-.cv-place{--deep:#2B7A1C;--soft:#E2F6D6;--mid:#3FB02A;--on:#FFFFFF}
-.cv-move{--deep:#C23B1C;--soft:#FFE5DB;--mid:#FF6A3D;--on:#FFFFFF}
-.cv-plum{--deep:#6A3A86;--soft:#F1E5F6;--mid:#9B5BC0;--on:#FFFFFF}.cv-caramel{--deep:#8A4F1C;--soft:#FBEBD9;--mid:#D98A3D;--on:#FFFFFF}.cv-olive{--deep:#5A6B1E;--soft:#EEF2D8;--mid:#8FA33A;--on:#FFFFFF}.cv-spruce{--deep:#1F6B60;--soft:#DCEFEA;--mid:#2E9C8A;--on:#FFFFFF}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-plum{--deep:#D9B5EC;--soft:#36263F;--mid:#9B5BC0}:root:not([data-theme="light"]) .cv-caramel{--deep:#F2C08F;--soft:#3E2A18;--mid:#D98A3D}:root:not([data-theme="light"]) .cv-olive{--deep:#CBDB8F;--soft:#2C3318;--mid:#8FA33A}:root:not([data-theme="light"]) .cv-spruce{--deep:#9FD9CD;--soft:#1C3430;--mid:#2E9C8A}:root:not([data-theme="light"]) .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root:not([data-theme="light"]) .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root:not([data-theme="light"]) .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}}
-:root[data-theme="dark"] .cv-plum{--deep:#D9B5EC;--soft:#36263F;--mid:#9B5BC0}:root[data-theme="dark"] .cv-caramel{--deep:#F2C08F;--soft:#3E2A18;--mid:#D98A3D}:root[data-theme="dark"] .cv-olive{--deep:#CBDB8F;--soft:#2C3318;--mid:#8FA33A}:root[data-theme="dark"] .cv-spruce{--deep:#9FD9CD;--soft:#1C3430;--mid:#2E9C8A}:root[data-theme="dark"] .cv-flight{--deep:#F2A9BE;--soft:#40202A;--mid:#D45578}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3A2C12;--mid:#F2A516}:root[data-theme="dark"] .cv-place{--deep:#B5D98C;--soft:#22301A;--mid:#6FAE38}:root[data-theme="dark"] .cv-move{--deep:#FFAE96;--soft:#3D1F18;--mid:#E8664A}
+
+
+
+
+
+
+
 .t-place{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .t-move{--deep:var(--move);--soft:var(--move-soft);--mid:var(--move-mid);--on:#FFFFFF}
 .thumb-sm{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}
@@ -294,6 +294,10 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .plan-box .pill-btn{background:var(--surface);color:var(--deep)}
 .chips.t-idea button[aria-pressed="true"]{background:var(--soft);color:var(--deep);border-color:var(--mid)}
 /* wish-list kinds: sights teal, food orange, shopping pink */
+/* trip header colours */
+.cv-flight{--deep:#A3204F;--soft:#FFD6E4;--mid:#F0457E;--on:#FFFFFF}.cv-stay{--deep:#8A5300;--soft:#FFE7A8;--mid:#FFB000;--on:#FFFFFF}.cv-place{--deep:#237A17;--soft:#D4F5C4;--mid:#36C22A;--on:#FFFFFF}.cv-move{--deep:#B33A10;--soft:#FFD9C7;--mid:#FF6A2B;--on:#FFFFFF}.cv-plum{--deep:#642D99;--soft:#EBD9FA;--mid:#A35BE0;--on:#FFFFFF}.cv-caramel{--deep:#8E4A10;--soft:#FBE0C4;--mid:#E68A2E;--on:#FFFFFF}.cv-olive{--deep:#5A7310;--soft:#EAF5B8;--mid:#9CC21A;--on:#FFFFFF}.cv-spruce{--deep:#136F60;--soft:#C9F2EA;--mid:#1FB89E;--on:#FFFFFF}.cv-coral{--deep:#A62219;--soft:#FFDAD6;--mid:#F2483C;--on:#FFFFFF}.cv-sun{--deep:#7A6200;--soft:#FFF3A6;--mid:#F2CC00;--on:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cv-flight{--deep:#FFA9C6;--soft:#4A1D2E;--mid:#F0457E}:root:not([data-theme="light"]) .cv-stay{--deep:#FFD27A;--soft:#3F2E0E;--mid:#FFB000}:root:not([data-theme="light"]) .cv-place{--deep:#A8E79A;--soft:#1E3A17;--mid:#36C22A}:root:not([data-theme="light"]) .cv-move{--deep:#FFB08F;--soft:#46200F;--mid:#FF6A2B}:root:not([data-theme="light"]) .cv-plum{--deep:#D7B5F5;--soft:#33204A;--mid:#A35BE0}:root:not([data-theme="light"]) .cv-caramel{--deep:#F5C08A;--soft:#40280F;--mid:#E68A2E}:root:not([data-theme="light"]) .cv-olive{--deep:#D4EB85;--soft:#2D3810;--mid:#9CC21A}:root:not([data-theme="light"]) .cv-spruce{--deep:#8FE3D3;--soft:#133A33;--mid:#1FB89E}:root:not([data-theme="light"]) .cv-coral{--deep:#FFADA6;--soft:#481A16;--mid:#F2483C}:root:not([data-theme="light"]) .cv-sun{--deep:#FFE680;--soft:#3D3408;--mid:#F2CC00}}
+:root[data-theme="dark"] .cv-flight{--deep:#FFA9C6;--soft:#4A1D2E;--mid:#F0457E}:root[data-theme="dark"] .cv-stay{--deep:#FFD27A;--soft:#3F2E0E;--mid:#FFB000}:root[data-theme="dark"] .cv-place{--deep:#A8E79A;--soft:#1E3A17;--mid:#36C22A}:root[data-theme="dark"] .cv-move{--deep:#FFB08F;--soft:#46200F;--mid:#FF6A2B}:root[data-theme="dark"] .cv-plum{--deep:#D7B5F5;--soft:#33204A;--mid:#A35BE0}:root[data-theme="dark"] .cv-caramel{--deep:#F5C08A;--soft:#40280F;--mid:#E68A2E}:root[data-theme="dark"] .cv-olive{--deep:#D4EB85;--soft:#2D3810;--mid:#9CC21A}:root[data-theme="dark"] .cv-spruce{--deep:#8FE3D3;--soft:#133A33;--mid:#1FB89E}:root[data-theme="dark"] .cv-coral{--deep:#FFADA6;--soft:#481A16;--mid:#F2483C}:root[data-theme="dark"] .cv-sun{--deep:#FFE680;--soft:#3D3408;--mid:#F2CC00}
 .k-sight{--deep:var(--place);--soft:var(--place-soft);--mid:var(--place-mid);--on:#FFFFFF}
 .k-food{--deep:#8A6A00;--soft:#FFF4C7;--mid:#E0B000;--on:#FFFFFF}
 .k-shop{--deep:#B83A68;--soft:#FCE4EC;--mid:#E0608E;--on:#FFFFFF}
@@ -1172,7 +1176,7 @@ function openTrip(id, view="trip"){
 /* ---------- views ---------- */
 /* each trip gets one of the four colours, picked from its id so it stays the same */
 /* each trip gets its own header colour, the same every time it opens */
-function tone(id){ let n = 7; for(const c of String(id||"")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return ["flight","stay","place","move","plum","caramel","olive","spruce"][n % 8]; }
+function tone(id){ let n = 7; for(const c of String(id||"")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return ["flight","stay","place","move","plum","caramel","olive","spruce","coral","sun"][n % 10]; }
 function swipeWrap(t, inner, cls){
   const owner = t.ownerId === S.me;
   const key = "t:" + t.id, ask = S.delAsk === key;
@@ -3925,7 +3929,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-05-colors3";
+const BUILD = "2026-11-05-colors4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
