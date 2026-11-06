@@ -1379,6 +1379,11 @@ function dayEntries(dateStr){
     const ranks=new Map(saved.map((key,n)=>[key,n])),base=new Map(out.map((e,n)=>[dayEntryKey(e),n]));
     out.sort((a,b)=>(ranks.has(dayEntryKey(a))?ranks.get(dayEntryKey(a)):saved.length+base.get(dayEntryKey(a)))-(ranks.has(dayEntryKey(b))?ranks.get(dayEntryKey(b)):saved.length+base.get(dayEntryKey(b))));
   }
+  /* the day starts where we slept last night, unless that hotel's check-out or a landing already opens the day */
+  const prevNight = addDays(dateStr, -1), slept = S.items.find(i => i.type === "stay" && validD(i.date) && validD(i.endDate) && i.date <= prevNight && prevNight < i.endDate);
+  const landing = out.some(e => e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === dateStr && e.it.date !== dateStr)));
+  if(slept && !landing && !out.some(e => e.it.type === "stay" && s_(e.it.title).toLowerCase() === s_(slept.title).toLowerCase()))
+    out.unshift({it:slept, phase:"start", start:true, time:"", title:"ออกจาก " + (slept.title || "ที่พัก"), sub:""});
   /* where everyone sleeps tonight: any stay whose nights cover this date (one row per hotel, even with two rooms or two bookings) */
   const sleptAt = new Set();
   for(const it of S.items){
@@ -1427,7 +1432,7 @@ function mapNameParts(value){
 function briefName(value){return mapNameParts(value).name;}
 
 function entryHtml(e){
-  const sortable=!e.night&&e.dayDate===tripDates(S.trip)[S.day];
+  const sortable=!e.night&&!e.start&&e.dayDate===tripDates(S.trip)[S.day];
   const d=e.it.data||{},title=e.it.type==='move'&&d.from&&d.to?briefName(d.from)+' → '+briefName(d.to):briefName(e.title);
   /* a travel leg shows how long it takes in the time column when it has no set time; how it goes is in the icon and the details */
   if(e.it.type==='move'&&!e.night){const n=+d.durationMinutes>0?+d.durationMinutes:(/\d\s*(นาที|ชม|ชั่วโมง|min|hour|hr)/i.test(e.it.sub||'')?travelMinutes({note:e.it.sub}):0);
@@ -1436,7 +1441,7 @@ function entryHtml(e){
     const how=[s_(d.mode)||'ขนส่งสาธารณะ',e.dur?e.dur.join(' '):'',e.time?'ออก '+e.time:''].filter(Boolean).join(' · ');
     return swipeItem(e.it, e.it.id + "::" + (e.time||""), `<button class="entry entry-move${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}"`:""} data-act="item" data-id="${esc(e.it.id)}" aria-label="${esc(how+' · '+title)}"><span class="time"></span><span class="move-rail" aria-hidden="true"></span><span class="move-ic" aria-hidden="true">${ic(itemIcon(e.it),15)}</span><span class="grow entry-copy"><span class="ttl">${esc(how)}</span></span></button>`);
   }
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}${e.it.type==='move'&&!e.night?' entry-move':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}${e.it.type==='move'&&!e.night?' entry-move':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night || e.start ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out')))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}${!e.night&&itemFiles(e.it).length?`<button type="button" class="entry-doc" data-act="doc-open" data-id="${esc(e.it.id)}" aria-label="เปิดตั๋ว / ใบจอง ${esc(title)}">${ic("ticket",19)}</button>`:''}`);
 }
 function catRow(it){
@@ -3961,7 +3966,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-legs3";
+const BUILD = "2026-11-06-start1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
