@@ -2213,7 +2213,7 @@ function vLogin(){
   </main>`;
 }
 /* one-tap install: iCloud links to the shared shortcuts; each asks for the person's own key when added */
-const SC_LINKS={add:"https://www.icloud.com/shortcuts/cf05994528624709befa0847de1325c8",send:""};
+const SC_LINKS={add:"https://www.icloud.com/shortcuts/cf05994528624709befa0847de1325c8",send:"https://www.icloud.com/shortcuts/c16121300f0f4d1998261b7e1f768fc4"};
 function scInstall(k){
   const b=(id,icon,label)=>SC_LINKS[id]?`<a class="pill-btn sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k)}">${ic(icon,16)} ${label}</a>`:'';
   const btns=b('add','pin','คำสั่งลัด: แชร์จาก Google Maps')+b('send','ticket','คำสั่งลัด: ส่งรูป / PDF เข้าทริป');
@@ -3990,7 +3990,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-icloud1";
+const BUILD = "2026-11-07-icloud2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
