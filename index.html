@@ -537,23 +537,27 @@ html.lock,html.lock body{overflow:hidden}
 .entry .time{text-align:center}.entry .time.dur{display:flex;flex-direction:column;align-items:center;line-height:1.1;color:var(--ink)}.entry .time.fixed{color:var(--muted)}
 .time-pick{position:absolute;left:0;top:0;bottom:0;width:66px;opacity:0;border:0;padding:0;margin:0;z-index:2;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}.entry .time.dur b{font-weight:400;font-size:12.5px}.entry .time.dur small{font-size:10.5px;font-family:var(--body);font-weight:400}
 .travel-gap{position:relative;list-style:none;padding:0 12px}
-/* travel: a dashed line runs from place to place; how you go sits beside it in a small round icon */
-.day-list li:has(.entry-move)::before,.day-list li:has(.entry-move)+li::before,.day-list li.travel-gap::before,.day-list li.travel-gap+li::before{display:none}
+/* the day as one timeline: a soft line runs through round place icons; travel is a small line of text between them */
+.day-list li+li::before{display:none}
+.day-list .entry{position:relative}
+.day-list .entry::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px);z-index:0}
+.day-list>li:first-child .entry::before{top:50%}
+.day-list>li:last-child .entry::before{bottom:50%}
+.day-list>li:only-child .entry::before{display:none}
+.day-list .entry .thumb{position:relative;z-index:1;border-radius:999px;box-shadow:0 0 0 4px var(--surface)}
+.day-list .entry .thumb.night{box-shadow:0 0 0 4px var(--surface)}
 .entry.entry-move{min-height:0;padding-top:0;padding-bottom:0;align-items:stretch}
 .entry-move .time{align-self:stretch}
-.entry-move .move-rail{width:30px;flex:none;position:relative;min-height:38px}
-.entry-move .move-rail::before,.travel-gap button::before,.day-list li:has(+li .entry-move) .entry .thumb::after,.day-list li:has(+li.travel-gap) .entry .thumb::after,.day-list li:has(.entry-move)+li .entry .thumb::before,.day-list li.travel-gap+li .entry .thumb::before{content:"";position:absolute;left:50%;border-left:2px dashed var(--move-mid);transform:translateX(-1px)}
-.entry-move .move-rail::before{top:0;bottom:0}
-.day-list .entry .thumb{position:relative}
-.day-list li:has(+li .entry-move) .entry .thumb::after,.day-list li:has(+li.travel-gap) .entry .thumb::after{top:100%;height:40px}
-.day-list li:has(.entry-move)+li .entry .thumb::before,.day-list li.travel-gap+li .entry .thumb::before{bottom:100%;height:40px}
-.entry-move .move-ic{width:28px;height:28px;margin:5px 0 5px -14px;border-radius:999px;background:var(--move-soft);color:var(--move);display:flex;align-items:center;justify-content:center;flex:none;align-self:center}
+.entry-move .move-rail{width:30px;flex:none;min-height:36px}
+.entry-move .move-ic{color:var(--move);display:flex;align-items:center;flex:none;align-self:center}
 .entry-move .ttl{font-size:13px;font-weight:500;color:var(--move)}
 .entry-move .entry-copy{min-width:0;display:flex;align-items:center}
 .day-list>li.erow:has(.entry-move):not(.open) .trow-actions{visibility:hidden}
-.travel-gap button{display:flex;align-items:center;gap:10px;width:100%;padding:5px 10px 5px 82px;border:0;background:none;color:var(--move);text-align:left;font:inherit;position:relative}
-.travel-gap button::before{left:71px;top:0;bottom:0}.travel-gap b{font-size:13px;font-weight:500}
-.travel-gap .gap-dot{position:relative;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:var(--surface);border:1.5px dashed var(--move-mid);flex:none}
+.travel-gap button{display:flex;align-items:center;gap:6px;width:100%;padding:5px 10px 5px 96px;border:0;background:none;color:var(--move);text-align:left;font:inherit;position:relative}
+.travel-gap button::before{content:"";position:absolute;left:71px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}.day-list .travel-gap b{font-size:13px;font-weight:500;line-height:1.3}
+.travel-gap .gap-dot{display:flex;align-items:center;flex:none}
+.day-list .now-line{position:relative}.day-list .now-line::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}
 .travel-when{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--accent-soft)}.travel-when>b{font-size:14px}.travel-when .fld{font-size:12px}.travel-when input{min-height:40px}.travel-source-choices{display:grid;gap:8px}.travel-source{display:flex;align-items:center;gap:10px;min-height:64px;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;text-align:left;background:var(--surface);color:var(--ink);font:inherit}.travel-source>span{flex:1;min-width:0}.travel-source b{font-size:14px;display:block}.travel-source small{display:block;font-size:11px;color:var(--muted);margin-top:3px}.maps-source>.ic:first-child{color:var(--place)}.travel-source[aria-pressed="true"]{border-color:var(--accent-line);background:var(--accent-soft)}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.external-maps{border-top:1px solid var(--line)}.travel-result>summary{cursor:pointer;list-style:revert}.travel-result-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-source{min-height:44px;padding:10px 12px}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}.booking-add-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.booking-add-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit}.booking-add-tabs button[aria-selected="true"]{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
@@ -3966,7 +3970,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-start1";
+const BUILD = "2026-11-06-rail1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
