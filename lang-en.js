@@ -1,5 +1,6 @@
 /* My Trip in English: the app's Thai text -> English. {0}, {1}… stand for the parts filled in at run time. */
 window.MYTRIP_EN = {
+"เพิ่มการเดินทาง": "Add travel",
 "ตอนนี้ AI ไม่ว่าง ลองใหม่อีกสักครู่ หรือกรอกเอง": "The AI is busy right now. Try again shortly, or fill it in by hand.",
 "ลงแผนแล้ว": "Planned",
 "นอนที่ {0}": "Staying at {0}",
