@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=7"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=8"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -311,6 +311,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .share-box .pill-btn{align-self:flex-start;background:var(--surface)}
 .share-box .link-box{background:var(--surface);min-height:44px}
 .link-box.sm input{font-size:13px}
+.sc-install{display:flex;flex-direction:column;gap:8px;margin:10px 0}.sc-install p{margin:0;line-height:1.5}.sc-install .sc-get{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
 .share-how summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--idea)}
 .share-how ol{margin:8px 0;padding-left:20px;font-size:13.5px;line-height:1.6}
 .share-act{display:flex;gap:4px;justify-content:flex-end}
@@ -2221,7 +2222,10 @@ function shareSection(){
       <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "สร้างรหัสคำสั่งลัด"}</button>`
     : `<p class="muted small">ระบบจะใส่ลงทริปที่อยู่ใกล้สถานที่นั้นให้เอง ถ้าหาไม่ได้จะใส่ทริปที่เปิดล่าสุดในแอป</p>
       <span class="small">รหัสส่วนตัว (ห้ามส่งให้คนอื่น)</span>${copy("รหัสส่วนตัว", k)}
-      <details class="share-how"><summary>วิธีตั้งคำสั่งลัด</summary><ol>
+      <div class="sc-install"><p class="small"><b>ติดตั้งแบบกดง่าย (บน iPhone)</b> กดปุ่ม แอปจะคัดลอกรหัสให้ แล้วกด <b>เพิ่มคำสั่งลัด</b> · ถ้าถามรหัสให้กดวาง</p>
+        <a class="pill-btn sc-get" href="shortcuts/add-to-my-trip.shortcut" target="_blank" rel="noopener" data-key="${esc(k)}">${ic("pin",16)} คำสั่งลัด: แชร์จาก Google Maps</a>
+        <a class="pill-btn sc-get" href="shortcuts/send-to-my-trip.shortcut" target="_blank" rel="noopener" data-key="${esc(k)}">${ic("ticket",16)} คำสั่งลัด: ส่งรูป / PDF เข้าทริป</a></div>
+      <details class="share-how"><summary>หรือตั้งเองทีละขั้น</summary><ol>
         <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
         <li>กดชื่อด้านบน (หรือ ⓘ) → <b>Details</b> → เปิด <b>Show in Share Sheet</b> → ในบล็อกแรก "Receive" เลือกแค่ <b>URLs</b> และ <b>Text</b></li>
         <li>เพิ่ม <b>Get URLs from Input</b></li>
@@ -3493,6 +3497,8 @@ document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
 });
+/* one-tap shortcut install: copy the private key first, then let the link open the signed shortcut */
+document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(!a)return;const k=a.dataset.key||'';try{navigator.clipboard.writeText(k).then(()=>toast('คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง')).catch(()=>{});}catch(_){}});
 /* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
 document.addEventListener('focusout',e=>{
   const el=e.target;if(!el.classList?.contains('time-pick'))return;
@@ -3979,7 +3985,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-plainmove";
+const BUILD = "2026-11-07-scinstall";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
