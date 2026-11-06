@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=6"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=7"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -3201,6 +3201,7 @@ function buildReview(kind, res){
 function errCopy(code){
   if(/^missing_/.test(code||"")) return "ยังไม่ได้ใส่ API key ใน Apps Script ลองกรอกเองไปก่อน";
   if(/^ai_error_(503|500|429)/.test(code||"")) return "ตอนนี้ AI ไม่ว่าง ลองใหม่อีกสักครู่ หรือกรอกเอง";
+  if(code === "ai_slow") return "AI ใช้เวลานานเกินไป ตอนนี้ระบบ AI น่าจะช้า ลองใหม่อีกสักครู่ หรือกรอกเอง";
   if(/^ai_error/.test(code||"")) return "ตัวอ่านใบจองตอบกลับผิดพลาด ลองใหม่อีกครั้ง หรือกรอกเอง";
   return ({
     not_connected:"ยังไม่ได้เชื่อม Google Sheet เลยอ่านใบจองไม่ได้ ลองกรอกเองได้เลย",
@@ -3245,7 +3246,12 @@ async function readAll(){
     const prepared=[];for(const f of files){prepared.push(await prepFile(f));check();}
     u.uploadedFiles||=new Map();
     const uploads=prepared.map((p,i)=>u.uploadedFiles.get(files[i])?Promise.resolve({id:u.uploadedFiles.get(files[i])}):api('uploadFile',{name:files[i].name||'booking',mime:p.mime,data:p.data},signal).then(r=>{if(!r?.id)throw {code:'upload_failed'};u.uploadedFiles.set(files[i],r.id);return r;}).catch(e=>({error:e})));
-    setStep('กำลังอ่านใบจอง…');const res=await api('readBooking',{kind:u.kind,trip:{name:t.name,destination:t.destination,startDate:t.startDate,days:t.days},files:prepared,text:pasted},signal);check();
+    setStep('กำลังอ่านใบจอง…');
+    // give the AI 100 seconds; after that stop waiting and say so, instead of spinning for minutes
+    const tctl=new AbortController(),onStop=()=>tctl.abort();signal.addEventListener('abort',onStop);const timer=setTimeout(()=>{tctl.timedOut=true;tctl.abort();},100000);
+    let res;try{res=await api('readBooking',{kind:u.kind,trip:{name:t.name,destination:t.destination,startDate:t.startDate,days:t.days},files:prepared,text:pasted},tctl.signal);}
+    catch(e){if(tctl.timedOut&&!signal.aborted)throw {code:'ai_slow'};throw e;}finally{clearTimeout(timer);signal.removeEventListener('abort',onStop);}
+    check();
     const r=buildReview(u.kind,res);r.tripId=t.id;r.ownerMe=me;if(!r.flights.length&&!r.stays.length)throw {code:'nothing'};
     r.fileName=files.length?files.map(f=>f.name).join(', '):'ข้อความที่วาง';setStep('กำลังเก็บใบจอง…');
     const uploaded=await Promise.all(uploads);check();if(uploaded.some(x=>!x.id))throw {code:'upload_failed'};
@@ -3970,7 +3976,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-rail2";
+const BUILD = "2026-11-06-booking2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
