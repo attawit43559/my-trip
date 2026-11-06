@@ -2212,6 +2212,13 @@ function vLogin(){
     ${S.loggingIn ? `<p class="muted small">กำลังเข้าสู่ระบบ…</p>` : ""}
   </main>`;
 }
+/* one-tap install: iCloud links to the shared shortcuts; each asks for the person's own key when added */
+const SC_LINKS={add:"https://www.icloud.com/shortcuts/cf05994528624709befa0847de1325c8",send:""};
+function scInstall(k){
+  const b=(id,icon,label)=>SC_LINKS[id]?`<a class="pill-btn sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k)}">${ic(icon,16)} ${label}</a>`:'';
+  const btns=b('add','pin','คำสั่งลัด: แชร์จาก Google Maps')+b('send','ticket','คำสั่งลัด: ส่งรูป / PDF เข้าทริป');
+  return btns?`<div class="sc-install"><p class="small"><b>ติดตั้งแบบกดง่าย (บน iPhone)</b> กดปุ่ม แอปจะคัดลอกรหัสให้ แล้วกด <b>เพิ่มคำสั่งลัด</b> · ถ้าถามรหัสให้กดวาง</p>${btns}</div>`:'';
+}
 /* the iPhone shortcut: Google Maps → แชร์ → "เพิ่มใน My Trip" adds to สนใจ without opening anything */
 function shareSection(){
   const k = S.shareKey;
@@ -2222,7 +2229,8 @@ function shareSection(){
       <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "สร้างรหัสคำสั่งลัด"}</button>`
     : `<p class="muted small">ระบบจะใส่ลงทริปที่อยู่ใกล้สถานที่นั้นให้เอง ถ้าหาไม่ได้จะใส่ทริปที่เปิดล่าสุดในแอป</p>
       <span class="small">รหัสส่วนตัว (ห้ามส่งให้คนอื่น)</span>${copy("รหัสส่วนตัว", k)}
-      <details class="share-how"><summary>วิธีตั้งคำสั่งลัด</summary><ol>
+      ${scInstall(k)}
+      <details class="share-how"><summary>หรือตั้งเองทีละขั้น</summary><ol>
         <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
         <li>กดชื่อด้านบน (หรือ ⓘ) → <b>Details</b> → เปิด <b>Show in Share Sheet</b> → ในบล็อกแรก "Receive" เลือกแค่ <b>URLs</b> และ <b>Text</b></li>
         <li>เพิ่ม <b>Get URLs from Input</b></li>
@@ -3982,7 +3990,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-scoff";
+const BUILD = "2026-11-07-icloud1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
