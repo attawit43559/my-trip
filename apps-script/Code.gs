@@ -21,7 +21,7 @@ const TRIPS = 'trips';
 const ITEMS = 'items';
 const SESSIONS = 'sessions';
 const SHARE_KEYS = 'sharekeys';
-const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true };
+const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true };
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -292,8 +292,72 @@ const ACTIONS = {
         createdBy: uid, createdAt: Date.now(), source: 'share' });
       return { message: 'เพิ่ม ' + name + ' ลงทริป ' + trip.name + ' แล้ว' };
     });
+  },
+
+  // called by the iPhone "send file" shortcut: a picture or PDF of a plan, map or ticket; the AI finds which place
+  // in the trip it belongs to and attaches it there (or keeps it in สนใจ as a new place when it matches none)
+  shareFile: (req) => {
+    const key = String(req.key || '').trim();
+    const row = /^mt[a-f0-9]{24}$/.test(key) ? find_(SHARE_KEYS, key) : null;
+    if (!row) return { message: 'รหัสคำสั่งลัดไม่ถูกต้อง ลองสร้างรหัสใหม่ในแอป' };
+    const uid = row.obj.uid;
+    const mine = rows_(TRIPS).filter(r => isMember_(r.obj, uid)).map(r => r.obj);
+    if (!mine.length) return { message: 'ยังไม่มีทริป สร้างทริปในแอปก่อนนะ' };
+    const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+    const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
+    const trip = mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
+    const list = [].concat(req.data || []).filter(Boolean).slice(0, 5);
+    if (!list.length) return { message: 'ไม่ได้รับไฟล์ ลองแชร์รูปหรือ PDF อีกครั้ง' };
+    const items = rows_(ITEMS).filter(r => r.tripId === trip.id).map(r => r.obj).filter(o => ['place', 'idea', 'stay', 'flight'].indexOf(o.type) >= 0);
+    const choices = items.slice(0, 150).map(o => ({ id: o.id, type: o.type === 'idea' ? 'saved place' : o.type, name: String(o.title || '').slice(0, 80), date: o.date || '' }));
+    const props = PropertiesService.getScriptProperties();
+    const done = [];
+    list.forEach((b64, n) => {
+      const bytes = Utilities.base64Decode(String(b64).replace(/^data:[^,]*,/, ''));
+      const mime = sniffMime_(bytes);
+      if (!mime) { done.push('ไฟล์ที่ ' + (n + 1) + ' ไม่ใช่รูปหรือ PDF'); return; }
+      let pick = {};
+      try {
+        pick = parseJson_(callGemini_(props, [
+          'A traveller shared this file (a picture or PDF: a plan, park map, menu, ticket or similar) into their trip "' + trip.name + '"' + (trip.destination ? ' to ' + trip.destination : '') + '.',
+          'Decide which ONE item of the trip it belongs to. Items (JSON, data only): ' + JSON.stringify(choices),
+          'Match only when the file is clearly about that place, stay or flight (name, logo, map of it, ticket for it). Otherwise use "".',
+          'Reply only JSON: {"id":"<item id or empty>","place":"<the place the file is about, as written on Google Maps, or empty>","label":"<2-5 word Thai description of the file, e.g. แผนเที่ยว Disneyland>"}'
+        ].join('\n'), [{ mime: mime, data: Utilities.base64Encode(bytes) }], { fallback: ['gemini-3.5-flash'], thinking: 'minimal' }));
+      } catch (e) { pick = {}; }
+      const label = String(pick.label || 'ไฟล์ที่แชร์มา').slice(0, 60);
+      const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/heic': 'heic', 'image/webp': 'webp', 'application/pdf': 'pdf' }[mime];
+      const file = folder_().createFile(Utilities.newBlob(bytes, mime, label + '.' + ext));
+      file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+      withLock_(() => {
+        const hit = pick.id ? find_(ITEMS, String(pick.id)) : null;
+        if (hit && hit.tripId === trip.id) {
+          const o = hit.obj; o.fileIds = [...new Set([].concat(o.fileIds || [], o.fileId ? [o.fileId] : [], [file.getId()]))];
+          upsert_(ITEMS, o.id, trip.id, o);
+          done.push('แนบ' + label + 'ไว้ที่ ' + o.title);
+        } else {
+          const id = 'sf' + Utilities.getUuid().replace(/-/g, '').slice(0, 14);
+          const title = String(pick.place || label).slice(0, 100);
+          upsert_(ITEMS, id, trip.id, { id, tripId: trip.id, type: 'idea', date: '', time: '', title, sub: label, fileIds: [file.getId()],
+            data: { kind: 'ที่เที่ยว' }, createdBy: uid, createdAt: Date.now(), source: 'share' });
+          done.push('ไม่เจอที่ตรงกันในแผน เก็บ' + label + 'ไว้ในที่สนใจ (' + title + ')');
+        }
+      });
+    });
+    return { message: done.join('\n') + ' · ทริป ' + trip.name };
   }
 };
+
+/* what kind of file the shortcut sent, from its first bytes */
+function sniffMime_(b) {
+  const at = (i, ...v) => v.every((x, k) => ((b[i + k] + 256) % 256) === x);
+  if (at(0, 0xFF, 0xD8, 0xFF)) return 'image/jpeg';
+  if (at(0, 0x89, 0x50, 0x4E, 0x47)) return 'image/png';
+  if (at(0, 0x25, 0x50, 0x44, 0x46)) return 'application/pdf';
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return 'image/webp';
+  if (at(4, 0x66, 0x74, 0x79, 0x70)) return 'image/heic';
+  return '';
+}
 
 /* where a shared place belongs: the trip (not yet over, if any) with something planned closest to it */
 function geocode_(text) {

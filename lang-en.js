@@ -1,5 +1,11 @@
 /* My Trip in English: the app's Thai text -> English. {0}, {1}… stand for the parts filled in at run time. */
 window.MYTRIP_EN = {
+"คำสั่งลัดที่ 2: ส่งรูปหรือไฟล์เข้าทริป": "Shortcut 2: send a picture or file to the trip",
+"แชร์รูปหรือ PDF (เช่น แผนเที่ยว Disneyland ที่ครอปไว้ แผนที่ เมนู ตั๋ว) แล้ว AI จะแนบไว้ที่สถานที่ที่ตรงกันในทริปที่เปิดล่าสุดให้เอง ถ้าไม่เจอจะเก็บไว้ใน ที่สนใจ": "Share a picture or PDF (a cropped Disneyland plan, a map, a menu, a ticket) and the AI attaches it to the matching place in the trip you opened last. If nothing matches, it goes to Saved.",
+"คำสั่งลัด: Google Maps และส่งรูปเข้าทริป": "Shortcuts: Google Maps and sending pictures",
+"(ใช้ Shortcut Input) → กด ˅ → Line Breaks เป็น": "(on Shortcut Input) → tap ˅ → Line Breaks:",
+"→ URL: วางลิงก์หลังบ้าน (ลิงก์เดียวกับด้านบน) → Method": "→ URL: paste the server link (same as above) → Method",
+
 "เพิ่มการเดินทาง": "Add travel",
 "ตอนนี้ AI ไม่ว่าง ลองใหม่อีกสักครู่ หรือกรอกเอง": "The AI is busy right now. Try again shortly, or fill it in by hand.",
 "ลงแผนแล้ว": "Planned",

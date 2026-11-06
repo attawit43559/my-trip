@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=5"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=6"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -2210,6 +2210,15 @@ function shareSection(){
         <li>เพิ่ม <b>Get Dictionary Value</b> → Get <b>Value</b> for <b>data.message</b></li>
         <li>เพิ่ม <b>Show Notification</b> → ข้อความเป็นตัวแปร <b>Dictionary Value</b></li>
       </ol>${copy("ลิงก์หลังบ้าน", API_URL)}</details>
+      <details class="share-how"><summary>คำสั่งลัดที่ 2: ส่งรูปหรือไฟล์เข้าทริป</summary>
+      <p class="muted small">แชร์รูปหรือ PDF (เช่น แผนเที่ยว Disneyland ที่ครอปไว้ แผนที่ เมนู ตั๋ว) แล้ว AI จะแนบไว้ที่สถานที่ที่ตรงกันในทริปที่เปิดล่าสุดให้เอง ถ้าไม่เจอจะเก็บไว้ใน ที่สนใจ</p><ol>
+        <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Send to My Trip</b></li>
+        <li>กดชื่อด้านบน (หรือ ⓘ) → <b>Details</b> → เปิด <b>Show in Share Sheet</b> → ในบล็อกแรก "Receive" เลือกแค่ <b>Images</b> และ <b>PDFs</b></li>
+        <li>เพิ่ม <b>Base64 Encode</b> (ใช้ Shortcut Input) → กด ˅ → Line Breaks เป็น <b>None</b></li>
+        <li>เพิ่ม <b>Get Contents of URL</b> → URL: วางลิงก์หลังบ้าน (ลิงก์เดียวกับด้านบน) → Method <b>POST</b> · Request Body <b>JSON</b> → Add new field แบบ Text 3 ช่อง: <b>action</b> = shareFile · <b>key</b> = รหัสด้านบน · <b>data</b> = ตัวแปร <b>Base64 Encoded</b></li>
+        <li>เพิ่ม <b>Get Dictionary Value</b> → Get <b>Value</b> for <b>data.message</b></li>
+        <li>เพิ่ม <b>Show Notification</b> → ข้อความเป็นตัวแปร <b>Dictionary Value</b></li>
+      </ol></details>
       <div class="share-act"><button class="link-btn" data-act="share-reset">สร้างรหัสใหม่</button><button class="link-btn" data-act="share-off">ปิดการแชร์</button></div>`}
   </section>`;
 }
@@ -2217,7 +2226,7 @@ function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
-    <details class="advanced-options"><summary>เชื่อมคำสั่งลัด Google Maps</summary>${shareSection()}</details>
+    <details class="advanced-options"><summary>คำสั่งลัด: Google Maps และส่งรูปเข้าทริป</summary>${shareSection()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -3942,7 +3951,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-legs1";
+const BUILD = "2026-11-06-sharefile1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
