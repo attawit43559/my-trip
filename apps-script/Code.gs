@@ -21,7 +21,7 @@ const TRIPS = 'trips';
 const ITEMS = 'items';
 const SESSIONS = 'sessions';
 const SHARE_KEYS = 'sharekeys';
-const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true };
+const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true, shareTrips: true };
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -259,6 +259,15 @@ const ACTIONS = {
   // positions for plan stops that were added without one (used when saving day pages with a map)
   geocode: (req) => (Array.isArray(req.q) ? req.q : []).slice(0, 60).map(q => { try { return geocode_(q); } catch (e) { return null; } }),
 
+  // called first by the iPhone shortcuts: the trips to choose from (trips not yet over; one name means no question)
+  shareTrips: (req) => {
+    const key = String(req.key || '').trim();
+    const row = /^mt[a-f0-9]{24}$/.test(key) ? find_(SHARE_KEYS, key) : null;
+    if (!row) return { names: ['รหัสคำสั่งลัดไม่ถูกต้อง'] };
+    const list = shareTripChoices_(row.obj.uid);
+    return { names: list.length ? list.map(x => x.label) : ['ยังไม่มีทริป'] };
+  },
+
   // called by the iPhone shortcut with the personal code: add the shared place to สนใจ, answer with one line
   shareAdd: (req) => {
     const key = String(req.key || '').trim();
@@ -281,7 +290,9 @@ const ACTIONS = {
     // links shared from an iPhone carry the name and address but no position: Google's geocoder finds the building
     if (place.lat == null && place.address) { try { const g = geocode_(name + ', ' + place.address); if (g) { place.lat = g.lat; place.lon = g.lon; } } catch (e) {} }
     // with several trips, put it in the trip whose places are nearest to it
-    try { trip = nearestTrip_(mine, place, today, endOf, lastOpened) || trip; } catch (e) {}
+    const picked = pickedTrip_(uid, req.trip);
+    if (picked) trip = picked;
+    else { try { trip = nearestTrip_(mine, place, today, endOf, lastOpened) || trip; } catch (e) {} }
     const link = (sent.match(/https?:\/\/[^\s<>"]+/) || [''])[0];
     return withLock_(() => {
       const dup = rows_(ITEMS).find(r => r.tripId === trip.id && r.obj.type === 'idea' && (mapNameParts_(r.obj.title).name.toLowerCase() === name.toLowerCase() || (link && (r.obj.data || {}).mapsUrl === link)));
@@ -305,7 +316,7 @@ const ACTIONS = {
     if (!mine.length) return { message: 'ยังไม่มีทริป สร้างทริปในแอปก่อนนะ' };
     const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
     const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
-    const trip = mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
+    const trip = pickedTrip_(uid, req.trip) || mine.find(t => t.id === row.obj.tripId) || mine.filter(t => endOf(t) >= today).sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1)[0] || mine[0];
     const list = [].concat(req.data || []).filter(Boolean).slice(0, 5);
     if (!list.length) return { message: 'ไม่ได้รับไฟล์ ลองแชร์รูปหรือ PDF อีกครั้ง' };
     const items = rows_(ITEMS).filter(r => r.tripId === trip.id).map(r => r.obj).filter(o => ['place', 'idea', 'stay', 'flight'].indexOf(o.type) >= 0);
@@ -1038,6 +1049,28 @@ function resolveMapLink_(req) {
   return { name: name.slice(0, 80), address: address.slice(0,500), originalName: originalName.slice(0,500), lat, lon, kind };
 }
 
+/* trips a shortcut may send to: the ones not over yet (all trips when every one is over), soonest first, with labels unique */
+function shareTripChoices_(uid) {
+  const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+  const mine = rows_(TRIPS).filter(r => isMember_(r.obj, uid)).map(r => r.obj);
+  const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
+  let pool = mine.filter(t => endOf(t) >= today);
+  if (!pool.length) pool = mine.slice(-1);
+  pool.sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1);
+  const seen = {};
+  return pool.map(t => {
+    let label = String(t.name || 'ทริป').trim() || 'ทริป';
+    if (seen[label]) label += ' · ' + (t.startDate || t.id);
+    seen[label] = true;
+    return { trip: t, label };
+  });
+}
+function pickedTrip_(uid, label) {
+  label = String(label || '').trim();
+  if (!label) return null;
+  const hit = shareTripChoices_(uid).find(x => x.label === label);
+  return hit ? hit.trip : null;
+}
 function tripDates_(trip) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trip.startDate || '')) return [];
   const out = [], d = new Date(trip.startDate + 'T00:00:00Z');
