@@ -1387,7 +1387,7 @@ function dayEntries(dateStr){
   const prevNight = addDays(dateStr, -1), slept = S.items.find(i => i.type === "stay" && validD(i.date) && validD(i.endDate) && i.date <= prevNight && prevNight < i.endDate);
   const landing = out.some(e => e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === dateStr && e.it.date !== dateStr)));
   if(slept && !landing && !out.some(e => e.it.type === "stay" && s_(e.it.title).toLowerCase() === s_(slept.title).toLowerCase()))
-    out.unshift({it:slept, phase:"start", start:true, time:"", title:"ออกจาก " + (slept.title || "ที่พัก"), sub:""});
+    out.unshift({it:slept, phase:"start", start:true, time:s_((slept.data||{}).leave?.[dateStr]), title:"ออกจาก " + (slept.title || "ที่พัก"), sub:""});
   /* where everyone sleeps tonight: any stay whose nights cover this date (one row per hotel, even with two rooms or two bookings) */
   const sleptAt = new Set();
   for(const it of S.items){
@@ -1445,8 +1445,8 @@ function entryHtml(e){
     const how=[s_(d.mode)||'ขนส่งสาธารณะ',e.dur?e.dur.join(' '):'',e.time?'ออก '+e.time:''].filter(Boolean).join(' · ');
     return swipeItem(e.it, e.it.id + "::" + (e.time||""), `<button class="entry entry-move${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}"`:""} data-act="item" data-id="${esc(e.it.id)}" aria-label="${esc(how+' · '+title)}"><span class="time"></span><span class="move-rail" aria-hidden="true"></span><span class="move-ic" aria-hidden="true">${ic(itemIcon(e.it),15)}</span><span class="grow entry-copy"><span class="ttl">${esc(how)}</span></span></button>`);
   }
-  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}${e.it.type==='move'&&!e.night?' entry-move':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night || e.start ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
-    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out')))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}${!e.night&&itemFiles(e.it).length?`<button type="button" class="entry-doc" data-act="doc-open" data-id="${esc(e.it.id)}" aria-label="เปิดตั๋ว / ใบจอง ${esc(title)}">${ic("ticket",19)}</button>`:''}`);
+  return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}${e.it.type==='move'&&!e.night?' entry-move':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
+    ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out'||e.start)))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.start?'leave:'+e.dayDate:e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}${!e.night&&itemFiles(e.it).length?`<button type="button" class="entry-doc" data-act="doc-open" data-id="${esc(e.it.id)}" aria-label="เปิดตั๋ว / ใบจอง ${esc(title)}">${ic("ticket",19)}</button>`:''}`);
 }
 function catRow(it){
     if(it.type === "idea"){
@@ -3497,6 +3497,9 @@ document.addEventListener("focusout", e => {
 document.addEventListener('focusout',e=>{
   const el=e.target;if(!el.classList?.contains('time-pick'))return;
   const it=S.items.find(i=>i.id===el.dataset.timeId),t=S.trip,f=el.dataset.timeField==='endTime'?'endTime':'time';
+  /* leaving last night's hotel: the time is kept per day on that stay */
+  const lv=/^leave:(\d{4}-\d\d-\d\d)$/.exec(el.dataset.timeField||'');
+  if(lv){if(it&&t&&s_((it.data||{}).leave?.[lv[1]])!==el.value){const leave={...((it.data||{}).leave||{})};leave[lv[1]]=el.value;store.updateItem(t.id,it.id,{data:{...(it.data||{}),leave}}).then(()=>toast(el.value?'ตั้งเวลา '+el.value+' แล้ว':'ลบเวลาแล้ว')).catch(fail);}return;}
   if(it&&t&&(it[f]||'')!==el.value)store.updateItem(t.id,it.id,{[f]:el.value}).then(()=>toast(el.value?'ตั้งเวลา '+el.value+' แล้ว':'ลบเวลาแล้ว')).catch(fail);
 });
 document.addEventListener("change", e => {
@@ -3976,7 +3979,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-06-booking2";
+const BUILD = "2026-11-06-leave1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
