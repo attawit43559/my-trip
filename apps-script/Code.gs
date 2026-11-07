@@ -219,6 +219,8 @@ const ACTIONS = {
   readBooking: (req) => readBooking_(req),
   // short tips for each day of the exported plan (the app keeps them, so this runs again only when a day changes)
   dayTips: (req) => dayTips_(req),
+  // how much AI the app used today, and whether Google said the free quota is full
+  aiStatus: () => { let st = {}; try { st = JSON.parse(PropertiesService.getScriptProperties().getProperty('aiStatus') || '{}'); } catch (e) {} const day = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd'); return st.day === day ? st : { day: day, used: 0, full: false, fullAt: '' }; },
   applyReviewFix: (req) => applyReviewFix_(req),
   secureBookingFiles: (req) => secureBookingFiles_(req),
 
@@ -1203,6 +1205,7 @@ function callGeminiMany_(props, prompts, extra) {
   const reqs = prompts.map(p => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': key }, muteHttpExceptions: true,
     payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: p }] }], generationConfig: { responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' }, maxOutputTokens: 16384 } }) }));
   const t0 = Date.now(), res = UrlFetchApp.fetchAll(reqs);
+  aiNote_(res.length, res.some(r => r.getResponseCode() === 429) ? true : res.some(r => r.getResponseCode() < 300) ? false : undefined);
   console.log('gemini many ' + model + ': ' + res.map(r => r.getResponseCode()).join(',') + ' in ' + (Date.now() - t0) + 'ms');
   return res.map((r, i) => {
     try {
@@ -1247,12 +1250,25 @@ function callOpenAI_(props, prompt, files) {
 }
 
 const LAST_429 = [];
+/* a count of AI calls per day (Thai time) and whether Google last said the free quota is used up */
+function aiNote_(hits, full) {
+  try {
+    const props = PropertiesService.getScriptProperties(), day = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+    let st = {}; try { st = JSON.parse(props.getProperty('aiStatus') || '{}'); } catch (e) {}
+    if (st.day !== day) st = { day: day, used: 0, full: false, fullAt: '' };
+    st.used += hits;
+    if (full === true) { st.full = true; st.fullAt = new Date().toISOString(); }
+    if (full === false) st.full = false;
+    props.setProperty('aiStatus', JSON.stringify(st));
+  } catch (e) {}
+}
 function fetchJson_(url, opt) {
   const r = UrlFetchApp.fetch(url, {
     method: 'post', contentType: 'application/json', headers: opt.headers,
     payload: JSON.stringify(opt.payload), muteHttpExceptions: true
   });
   const code = r.getResponseCode();
+  if (url.indexOf('generativelanguage') >= 0) aiNote_(1, code === 429 ? true : code < 300 ? false : undefined);
   if (code === 429) { const e = new Error('rate_limited'); e.detail = url.split('/models/')[1].split(':')[0] + ' ' + r.getContentText().replace(/\s+/g, ' ').slice(0, 300); console.warn('429 ' + e.detail); LAST_429.push(e.detail); throw e; }
   if (code >= 300) throw new Error('ai_error_' + code + ': ' + r.getContentText().slice(0, 300));
   return JSON.parse(r.getContentText());

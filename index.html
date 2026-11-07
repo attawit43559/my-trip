@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=16"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=17"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -318,6 +318,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw.en i{transform:translateX(39px)}
 .lang-sw b{position:relative;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--muted);transition:color .2s}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
+.acc-ai{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;padding:6px 0 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.acc-ai>span:first-child{display:flex;align-items:center;gap:8px;font-weight:500}.acc-ai small{grid-column:1/-1;padding-left:26px}.ai-badge{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px}.ai-badge.ok{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.ai-badge.full{background:#FDE7E4;color:#A62219}
 .sc-ask{margin:4px 0 6px}.sc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sc-tabs button{min-height:44px;border-radius:999px;border:1.5px solid var(--line,var(--tile));background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}.sc-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
 .sc-step{display:flex;gap:10px;align-items:flex-start}
 .sc-n{width:24px;height:24px;border-radius:999px;background:var(--idea-soft);color:var(--idea);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
@@ -2019,7 +2020,7 @@ async function helpRun(oneDay){
   } catch(e){
     if(S.help !== h) return;
     h.busyDay = null;
-    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : /^ai_error_5|rate_limited|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
+    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : String(e && e.code) === "rate_limited" ? "AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00" : /^ai_error_5|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
   }
 }
 async function helpFix(di,ti,fi){
@@ -2267,6 +2268,7 @@ function vAccount(){
     <div class="acc-lang"><span>${ic("globe",18)}ภาษา · Language</span>
       <button class="lang-sw${LANG === "en" ? " en" : ""}" data-act="lang-toggle" role="switch" aria-checked="${LANG === "en"}" aria-label="ภาษา · Language"><i></i><b lang="th">TH</b><b lang="en">EN</b></button>
     </div>
+    ${aiStatusRow()}
     <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
@@ -2448,7 +2450,7 @@ async function lookupTravel(ai=false){
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return;
   const signature=travelQueryKey(s);s.lookupSource=ai?'ai':'maps';s.approximateRoutes=true;s.lookupBusy=true;s.lookupError='';if(!ai)s.lookup=null;s.lookupCtl=new AbortController();render();
   try{const result=await api('travelOptions',{ai,tripId:s.tripId,date:s.date,time:s.time,timezone:s.timezone,mode:s.mode,fromId:leg.fromId,toId:leg.toId,from:leg.from,to:leg.to},s.lookupCtl.signal);if(S.sheet===s&&travelQueryKey(s)===signature){if(!travelResultMatches(s,result))throw {code:'travel_date_mismatch'};s.lookup=result;s.lookupKey=signature;s.selectedIndex=result.routes.findIndex(r=>s.chosen&&travelModeFor(r)===s.mode&&r.minutes===Number(s.minutes));travelResultsCache.set(s.cacheKey,{result,selectedIndex:s.selectedIndex});if(travelResultsCache.size>50)travelResultsCache.delete(travelResultsCache.keys().next().value);}}
-  catch(e){if(S.sheet===s)s.lookupError=({travel_date_mismatch:'ผลลัพธ์ไม่ตรงวันเวลาที่เลือก กรุณาค้นหาใหม่',travel_date_range:'ตารางรองรับช่วง 7 วันที่ผ่านมาถึง 100 วันข้างหน้า',travel_quota:'วันนี้ใช้โควตาค้นหาครบแล้ว',travel_date_time:'ตรวจสอบวัน เวลา และเขตเวลา',travel_maps_unavailable:'ยังดึงตารางไม่ได้ เปิด Google Maps เพื่อตรวจสอบได้',rate_limited:'AI ใช้งานเต็มโควตาชั่วคราว',offline:'ไม่มีอินเทอร์เน็ต'})[e.code]||'ค้นหาไม่สำเร็จ ลองใหม่หรือเปิด Google Maps';}
+  catch(e){if(S.sheet===s)s.lookupError=({travel_date_mismatch:'ผลลัพธ์ไม่ตรงวันเวลาที่เลือก กรุณาค้นหาใหม่',travel_date_range:'ตารางรองรับช่วง 7 วันที่ผ่านมาถึง 100 วันข้างหน้า',travel_quota:'วันนี้ใช้โควตาค้นหาครบแล้ว',travel_date_time:'ตรวจสอบวัน เวลา และเขตเวลา',travel_maps_unavailable:'ยังดึงตารางไม่ได้ เปิด Google Maps เพื่อตรวจสอบได้',rate_limited:'AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00',offline:'ไม่มีอินเทอร์เน็ต'})[e.code]||'ค้นหาไม่สำเร็จ ลองใหม่หรือเปิด Google Maps';}
   finally{s.lookupBusy=false;if(S.sheet===s)render();}
 }
 function travelModeFor(route){
@@ -2690,7 +2692,7 @@ const aiErr = e => ({
   plan_place_missing:"ข้อมูลสถานที่ไม่ครบ ลองกลับไปเลือกสถานที่แล้วจัดเวลาใหม่",
   duplicate_plan_place:"มีสถานที่ซ้ำ กรุณากลับไปเลือกใหม่",
   duplicate_plan_day:"มีวันซ้ำ กรุณาเลือกวันใหม่",
-  rate_limited:"AI ใช้งานเยอะเกินไปตอนนี้ ลองใหม่อีกครั้งในอีกสักครู่",
+  rate_limited:"AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00",
   pending_sync:"ยังมีข้อมูลรอซิงก์ รอให้บันทึกครบก่อนวิเคราะห์",
   offline:"ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง"
 })[e && e.code] || "วางแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
@@ -3316,7 +3318,7 @@ function errCopy(code){
     too_big:"ไฟล์ PDF ใหญ่เกิน 15 MB ลองแคปหน้าจอแทน",
     nothing:"ไม่เจอข้อมูลเที่ยวบินหรือที่พักในสิ่งที่ส่งมา ลองไฟล์อื่น หรือกรอกเอง",
     unsupported:"รองรับไฟล์ PDF, JPG, JPEG และ PNG",
-    rate_limited:"ใช้งานถี่เกินไป รอสักครู่แล้วลองใหม่",
+    rate_limited:"AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00",
     invalid_json:"อ่านใบจองไม่ออก ลองรูปที่ชัดขึ้น หรือกรอกเอง"
   })[code] || "อ่านใบจองไม่สำเร็จ ลองใหม่อีกครั้ง หรือกรอกเอง";
 }
@@ -3599,6 +3601,13 @@ document.addEventListener("focusout", e => {
 /* the shortcut section stays open (and the sheet keeps its scroll) when a toast re-renders the account sheet */
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='sc-sec')S.scOpen=e.target.open;},true);
 const SC_HOWTO = `<small class="muted">กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· สถานที่ → เก็บใน สนใจ<br>· รูป / PDF → AI แนบให้สถานที่ที่ตรงกัน<br>· มีหลายทริป จะให้เลือกก่อน</small>`;
+/* today's AI use, shown on the profile sheet */
+async function aiStatusLoad(){ if(!CONNECTED || !S.token) return; try { S.aiStatus = await api("aiStatus", {}); if(S.sheet && S.sheet.kind === "account") render(); } catch(_){} }
+function aiStatusRow(){
+  const a = S.aiStatus; if(!a) return "";
+  const full = a.full, n = +a.used || 0;
+  return `<div class="acc-ai"><span>${ic("spark",18)}AI วันนี้</span><span class="ai-badge ${full ? "full" : "ok"}">${full ? "เต็มโควตา · ลองหลัง ~15:00" : "พร้อมใช้"}</span><small class="muted">ใช้ไป ${n} ครั้ง</small></div>`;
+}
 /* the share section: one tab per phone, the phone in hand first */
 function shareTabs(){
   const tab = S.scTab || (/Android/i.test(navigator.userAgent) ? "android" : "iphone");
@@ -4045,7 +4054,7 @@ document.addEventListener("click", async e => {
       try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
       break; }
     case "join-confirm": confirmJoin(); break;
-    case "account": S.sheet = {kind:"account"}; render();
+    case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad();
       if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
       break;
     case "share-on": case "share-reset": {
@@ -4147,7 +4156,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-book2";
+const BUILD = "2026-11-07-ai1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
