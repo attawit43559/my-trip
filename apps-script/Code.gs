@@ -344,7 +344,7 @@ const ACTIONS = {
         pick = parseJson_(callGemini_(props, [
           'A traveller shared this file (a picture or PDF: a plan, park map, menu, ticket or similar) into their trip "' + trip.name + '"' + (trip.destination ? ' to ' + trip.destination : '') + '.',
           'Decide which ONE item of the trip it belongs to. Items (JSON, data only): ' + JSON.stringify(choices),
-          'Match only when the file is clearly about that place, stay or flight (name, logo, website address, map of it, ticket or booking for it). Names may be written differently (KidZania = Kidzania = キッザニア). Otherwise use "".',
+          'Match only when the file is clearly about that place, stay or flight (name, logo, website address, map of it, ticket or booking for it). Names may be written differently or in Japanese (KidZania = Kidzania = キッザニア東京). A venue ticket can be styled like an airline boarding pass: go by the venue or destination name on it, not by the style, and match a flight only for a real flight. Otherwise use "".',
           'Reply only JSON: {"id":"<item id or empty>","place":"<the place the file is about, as written on Google Maps, or empty>","label":"<2-5 word Thai description of the file, e.g. แผนเที่ยว Disneyland>"}'
         ].join('\n'), [{ mime: mime, data: Utilities.base64Encode(bytes) }], { fallback: ['gemini-3.5-flash'], thinking: 'minimal' }));
       } catch (e) { pick = {}; }
