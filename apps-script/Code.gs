@@ -344,7 +344,7 @@ const ACTIONS = {
         pick = parseJson_(callGemini_(props, [
           'A traveller shared this file (a picture or PDF: a plan, park map, menu, ticket or similar) into their trip "' + trip.name + '"' + (trip.destination ? ' to ' + trip.destination : '') + '.',
           'Decide which ONE item of the trip it belongs to. Items (JSON, data only): ' + JSON.stringify(choices),
-          'Match only when the file is clearly about that place, stay or flight (name, logo, map of it, ticket for it). Otherwise use "".',
+          'Match only when the file is clearly about that place, stay or flight (name, logo, website address, map of it, ticket or booking for it). Names may be written differently (KidZania = Kidzania = キッザニア). Otherwise use "".',
           'Reply only JSON: {"id":"<item id or empty>","place":"<the place the file is about, as written on Google Maps, or empty>","label":"<2-5 word Thai description of the file, e.g. แผนเที่ยว Disneyland>"}'
         ].join('\n'), [{ mime: mime, data: Utilities.base64Encode(bytes) }], { fallback: ['gemini-3.5-flash'], thinking: 'minimal' }));
       } catch (e) { pick = {}; }
@@ -353,7 +353,15 @@ const ACTIONS = {
       const file = folder_().createFile(Utilities.newBlob(bytes, mime, label + '.' + ext));
       file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
       withLock_(() => {
-        const hit = pick.id ? find_(ITEMS, String(pick.id)) : null;
+        let hit = pick.id ? find_(ITEMS, String(pick.id)) : null;
+        // the AI sometimes names the place but leaves the id empty: match that name to the trip (plan stops before saved ideas)
+        if (!(hit && hit.tripId === trip.id) && pick.place) {
+          const norm = x => String(x || '').toLowerCase().replace(/[\s\-・·,.()（）]/g, '');
+          const want = norm(pick.place);
+          const same = want.length >= 3 ? items.filter(o => { const t = norm(mapNameParts_(o.title).name || o.title); return t && (t === want || t.indexOf(want) === 0 || want.indexOf(t) === 0); }) : [];
+          const best = same.find(o => o.type === 'place') || same.find(o => o.type === 'stay') || same[0];
+          if (best) hit = find_(ITEMS, best.id);
+        }
         if (hit && hit.tripId === trip.id) {
           const o = hit.obj; o.fileIds = [...new Set([].concat(o.fileIds || [], o.fileId ? [o.fileId] : [], [file.getId()]))];
           upsert_(ITEMS, o.id, trip.id, o);
