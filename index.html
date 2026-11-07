@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=8"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=9"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -311,8 +311,15 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .share-box .pill-btn{align-self:flex-start;background:var(--surface)}
 .share-box .link-box{background:var(--surface);min-height:44px}
 .link-box.sm input{font-size:13px}
-.sc-install{display:flex;flex-direction:column;gap:8px;margin:10px 0}.sc-install p{margin:0;line-height:1.5}.sc-install .sc-get{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
-.share-how summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--idea)}
+.sc-intro{margin:0;line-height:1.5;color:var(--muted)}
+.sc-step{display:flex;gap:10px;align-items:flex-start}
+.sc-n{width:24px;height:24px;border-radius:999px;background:var(--idea-soft);color:var(--idea);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.sc-body{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}.sc-body small{line-height:1.5}
+.sc-get{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:14px;padding:10px 12px;text-decoration:none;color:inherit}
+.sc-get .sc-ic{width:34px;height:34px;border-radius:999px;background:var(--idea-soft,var(--tile));color:var(--idea);display:flex;align-items:center;justify-content:center;flex:none}
+.sc-get>span:nth-child(2){display:flex;flex-direction:column;flex:1;min-width:0}.sc-get small{color:var(--muted);font-size:12.5px}
+.sc-go{font-size:13px;font-weight:600;color:var(--idea);flex:none}
+.share-how summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--idea);padding:4px 0}
 .share-how ol{margin:8px 0;padding-left:20px;font-size:13.5px;line-height:1.6}
 .share-act{display:flex;gap:4px;justify-content:flex-end}
 .link-wait{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 12px}
@@ -2214,47 +2221,52 @@ function vLogin(){
 }
 /* one-tap install: iCloud links to the shared shortcuts; each asks for the person's own key when added */
 const SC_LINKS={add:"https://www.icloud.com/shortcuts/bcd8bf8b4b8a49a5a9224ab9650cefc0",send:"https://www.icloud.com/shortcuts/ae2d9ce9f6104443a3dc3a894413ffe7"};
-function scInstall(k){
-  const b=(id,icon,label)=>SC_LINKS[id]?`<a class="pill-btn sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k)}">${ic(icon,16)} ${label}</a>`:'';
-  const btns=b('add','pin','คำสั่งลัด: แชร์จาก Google Maps')+b('send','ticket','คำสั่งลัด: ส่งรูป / PDF เข้าทริป');
-  return btns?`<div class="sc-install"><p class="small"><b>ติดตั้งแบบกดง่าย (บน iPhone)</b> กดปุ่ม แอปจะคัดลอกรหัสให้ แล้วกด <b>เพิ่มคำสั่งลัด</b> · ถ้าถามรหัสให้กดวาง</p>${btns}</div>`:'';
-}
-/* the iPhone shortcut: Google Maps → แชร์ → "เพิ่มใน My Trip" adds to สนใจ without opening anything */
+/* the iPhone shortcuts: share a place from Google Maps, or a picture / PDF, into the trip without opening the app */
 function shareSection(){
   const k = S.shareKey;
   const copy = (label, text) => `<div class="link-box sm"><input readonly value="${esc(text)}" aria-label="${esc(label)}"><button data-act="copy" data-text="${esc(text)}">คัดลอก</button></div>`;
+  const step = (n, title, body) => `<div class="sc-step"><span class="sc-n">${n}</span><div class="sc-body"><b>${title}</b>${body}</div></div>`;
+  const get = (id, icon, label, what) => `<a class="sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k||"")}"><span class="sc-ic">${ic(icon,18)}</span><span><b>${label}</b><small>${what}</small></span><span class="sc-go">เชื่อมต่อ</span></a>`;
+  if(!k) return `<section class="share-box">
+    <p class="small sc-intro">ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
+    <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "เริ่มตั้งค่า"}</button>
+  </section>`;
   return `<section class="share-box">
-    <div class="share-hd">${ic("pin",18)}<b>แชร์จาก Google Maps เข้า "สนใจ"</b></div>
-    ${!k ? `<p class="muted small">ตั้งคำสั่งลัดบน iPhone ครั้งเดียว แล้วกดแชร์ร้านหรือที่เที่ยวจาก Google Maps เข้าทริปได้เลย ไม่ต้องเปิดแอป</p>
-      <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "สร้างรหัสคำสั่งลัด"}</button>`
-    : `<p class="muted small">ระบบจะใส่ลงทริปที่อยู่ใกล้สถานที่นั้นให้เอง ถ้าหาไม่ได้จะใส่ทริปที่เปิดล่าสุดในแอป</p>
-      <span class="small">รหัสส่วนตัว (ห้ามส่งให้คนอื่น)</span>${copy("รหัสส่วนตัว", k)}
-      ${scInstall(k)}
-      <details class="share-how"><summary>หรือตั้งเองทีละขั้น</summary><ol>
-        <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
-        <li>กดชื่อด้านบน (หรือ ⓘ) → <b>Details</b> → เปิด <b>Show in Share Sheet</b> → ในบล็อกแรก "Receive" เลือกแค่ <b>URLs</b> และ <b>Text</b></li>
-        <li>เพิ่ม <b>Get URLs from Input</b></li>
-        <li>เพิ่ม <b>Get Contents of URL</b> → URL: วางลิงก์ด้านล่าง → กด ˅ → Method <b>POST</b> · Request Body <b>JSON</b> → Add new field แบบ Text 3 ช่อง: <b>action</b> = shareAdd · <b>key</b> = รหัสด้านบน · <b>url</b> = ตัวแปร <b>URLs</b></li>
-        <li>เพิ่ม <b>Get Dictionary Value</b> → Get <b>Value</b> for <b>data.message</b></li>
-        <li>เพิ่ม <b>Show Notification</b> → ข้อความเป็นตัวแปร <b>Dictionary Value</b></li>
-      </ol>${copy("ลิงก์หลังบ้าน", API_URL)}</details>
-      <details class="share-how"><summary>คำสั่งลัดที่ 2: ส่งรูปหรือไฟล์เข้าทริป</summary>
-      <p class="muted small">แชร์รูปหรือ PDF (เช่น แผนเที่ยว Disneyland ที่ครอปไว้ แผนที่ เมนู ตั๋ว) แล้ว AI จะแนบไว้ที่สถานที่ที่ตรงกันในทริปที่เปิดล่าสุดให้เอง ถ้าไม่เจอจะเก็บไว้ใน ที่สนใจ</p><ol>
-        <li>เปิดแอป <b>Shortcuts</b> → กด <b>+</b> → ตั้งชื่อ <b>Send to My Trip</b></li>
-        <li>กดชื่อด้านบน (หรือ ⓘ) → <b>Details</b> → เปิด <b>Show in Share Sheet</b> → ในบล็อกแรก "Receive" เลือกแค่ <b>Images</b> และ <b>PDFs</b></li>
-        <li>เพิ่ม <b>Base64 Encode</b> (ใช้ Shortcut Input) → กด ˅ → Line Breaks เป็น <b>None</b></li>
-        <li>เพิ่ม <b>Get Contents of URL</b> → URL: วางลิงก์หลังบ้าน (ลิงก์เดียวกับด้านบน) → Method <b>POST</b> · Request Body <b>JSON</b> → Add new field แบบ Text 3 ช่อง: <b>action</b> = shareFile · <b>key</b> = รหัสด้านบน · <b>data</b> = ตัวแปร <b>Base64 Encoded</b></li>
-        <li>เพิ่ม <b>Get Dictionary Value</b> → Get <b>Value</b> for <b>data.message</b></li>
-        <li>เพิ่ม <b>Show Notification</b> → ข้อความเป็นตัวแปร <b>Dictionary Value</b></li>
-      </ol></details>
-      <div class="share-act"><button class="link-btn" data-act="share-reset">สร้างรหัสใหม่</button><button class="link-btn" data-act="share-off">ปิดการแชร์</button></div>`}
+    <p class="small sc-intro">ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
+    ${step(1, "รหัสของคุณ", `<small class="muted">ใช้คู่กับคำสั่งลัดในเครื่องนี้ ห้ามส่งให้คนอื่น</small>${copy("รหัสส่วนตัว", k)}`)}
+    ${step(2, "กดเชื่อมต่อทีละอัน", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
+      ${get("add","pin","แชร์ที่จาก Google Maps","ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ")}
+      ${get("send","ticket","ส่งรูป / PDF เข้าทริป","AI แนบไว้ที่สถานที่ที่ตรงกัน")}`)}
+    ${step(3, "วิธีใช้", `<small class="muted">เปิดร้านใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>Add to My Trip</b> หรือ <b>Send to My Trip</b> · ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
+    <details class="share-how"><summary>ถ้าขึ้นว่า "รหัสไม่ถูกต้อง"</summary><ol>
+      <li>กด <b>คัดลอก</b> ที่รหัสด้านบน</li>
+      <li>เปิดแอป <b>Shortcuts</b> → กด <b>⋯</b> ที่คำสั่งลัด</li>
+      <li>ลบข้อความในกล่อง <b>Text</b> อันแรก แล้ววางรหัสใหม่ → <b>Done</b></li>
+    </ol></details>
+    <details class="share-how"><summary>ตั้งคำสั่งลัดเอง (ไม่ใช้ปุ่มเชื่อมต่อ)</summary>
+      <p class="small"><b>แชร์ที่จาก Google Maps</b></p><ol>
+        <li>แอป <b>Shortcuts</b> → <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
+        <li>ⓘ → เปิด <b>Show in Share Sheet</b> → รับแค่ <b>URLs</b> และ <b>Text</b></li>
+        <li>เพิ่ม <b>Get Contents of URL</b> → ใส่ลิงก์หลังบ้าน → Method <b>POST</b> · Body <b>JSON</b> → 3 ช่อง: <b>action</b> = shareAdd · <b>key</b> = รหัสของคุณ · <b>url</b> = <b>Shortcut Input</b></li>
+        <li>เพิ่ม <b>Get Dictionary Value</b> → <b>data.message</b></li>
+        <li>เพิ่ม <b>Show Notification</b> → <b>Dictionary Value</b></li>
+      </ol>
+      <p class="small"><b>ส่งรูป / PDF เข้าทริป</b></p><ol>
+        <li><b>+</b> → ตั้งชื่อ <b>Send to My Trip</b> → ⓘ → เปิด <b>Show in Share Sheet</b> → รับแค่ <b>Images</b> และ <b>PDFs</b></li>
+        <li>เพิ่ม <b>Base64 Encode</b> → Line Breaks <b>None</b></li>
+        <li>เพิ่ม <b>Get Contents of URL</b> แบบเดียวกัน แต่ <b>action</b> = shareFile และช่องที่ 3 ชื่อ <b>data</b> = <b>Base64 Encoded</b></li>
+        <li>เพิ่ม <b>Get Dictionary Value</b> และ <b>Show Notification</b> แบบเดียวกัน</li>
+      </ol>
+      <span class="small">ลิงก์หลังบ้าน</span>${copy("ลิงก์หลังบ้าน", API_URL)}
+    </details>
+    <div class="share-act"><button class="link-btn" data-act="share-reset">สร้างรหัสใหม่</button><button class="link-btn" data-act="share-off">ปิดการแชร์</button></div>
   </section>`;
 }
 function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
-    <details class="advanced-options"><summary>คำสั่งลัด: Google Maps และส่งรูปเข้าทริป</summary>${shareSection()}</details>
+    <details class="advanced-options"><summary>คำสั่งลัด iPhone: แชร์เข้าทริป</summary>${shareSection()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -3990,7 +4002,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-icloud4";
+const BUILD = "2026-11-07-scui";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
