@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=9"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=10"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -2220,7 +2220,7 @@ function vLogin(){
   </main>`;
 }
 /* one-tap install: iCloud links to the shared shortcuts; each asks for the person's own key when added */
-const SC_LINKS={add:"https://www.icloud.com/shortcuts/bcd8bf8b4b8a49a5a9224ab9650cefc0",send:"https://www.icloud.com/shortcuts/ae2d9ce9f6104443a3dc3a894413ffe7"};
+const SC_LINKS={one:"https://www.icloud.com/shortcuts/33e0ce21b8e74d86bf79b53c31eef1fa"};
 /* the iPhone shortcuts: share a place from Google Maps, or a picture / PDF, into the trip without opening the app */
 function shareSection(){
   const k = S.shareKey;
@@ -2234,28 +2234,20 @@ function shareSection(){
   return `<section class="share-box">
     <p class="small sc-intro">ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
     ${step(1, "รหัสของคุณ", `<small class="muted">ใช้คู่กับคำสั่งลัดในเครื่องนี้ ห้ามส่งให้คนอื่น</small>${copy("รหัสส่วนตัว", k)}`)}
-    ${step(2, "กดเชื่อมต่อทีละอัน", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
-      ${get("add","pin","แชร์ที่จาก Google Maps","ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ")}
-      ${get("send","ticket","ส่งรูป / PDF เข้าทริป","AI แนบไว้ที่สถานที่ที่ตรงกัน")}`)}
-    ${step(3, "วิธีใช้", `<small class="muted">เปิดร้านใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>Add to My Trip</b> หรือ <b>Send to My Trip</b> · ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
+    ${step(2, "กดเชื่อมต่อ", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
+      ${get("one","upload","คำสั่งลัด My Trip","ร้านจาก Google Maps · รูป · PDF")}`)}
+    ${step(3, "วิธีใช้", `<small class="muted">เปิดร้านใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ<br>· รูป / PDF ให้ AI แนบไว้ที่สถานที่ที่ตรงกัน<br>· ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
     <details class="share-how"><summary>ถ้าขึ้นว่า "รหัสไม่ถูกต้อง"</summary><ol>
       <li>กด <b>คัดลอก</b> ที่รหัสด้านบน</li>
       <li>เปิดแอป <b>Shortcuts</b> → กด <b>⋯</b> ที่คำสั่งลัด</li>
       <li>ลบข้อความในกล่อง <b>Text</b> อันแรก แล้ววางรหัสใหม่ → <b>Done</b></li>
     </ol></details>
-    <details class="share-how"><summary>ตั้งคำสั่งลัดเอง (ไม่ใช้ปุ่มเชื่อมต่อ)</summary>
-      <p class="small"><b>แชร์ที่จาก Google Maps</b></p><ol>
-        <li>แอป <b>Shortcuts</b> → <b>+</b> → ตั้งชื่อ <b>Add to My Trip</b></li>
-        <li>ⓘ → เปิด <b>Show in Share Sheet</b> → รับแค่ <b>URLs</b> และ <b>Text</b></li>
-        <li>เพิ่ม <b>Get Contents of URL</b> → ใส่ลิงก์หลังบ้าน → Method <b>POST</b> · Body <b>JSON</b> → 3 ช่อง: <b>action</b> = shareAdd · <b>key</b> = รหัสของคุณ · <b>url</b> = <b>Shortcut Input</b></li>
-        <li>เพิ่ม <b>Get Dictionary Value</b> → <b>data.message</b></li>
-        <li>เพิ่ม <b>Show Notification</b> → <b>Dictionary Value</b></li>
-      </ol>
-      <p class="small"><b>ส่งรูป / PDF เข้าทริป</b></p><ol>
-        <li><b>+</b> → ตั้งชื่อ <b>Send to My Trip</b> → ⓘ → เปิด <b>Show in Share Sheet</b> → รับแค่ <b>Images</b> และ <b>PDFs</b></li>
+    <details class="share-how"><summary>ตั้งคำสั่งลัดเอง (ไม่ใช้ปุ่มเชื่อมต่อ)</summary><ol>
+        <li>แอป <b>Shortcuts</b> → <b>+</b> → ตั้งชื่อ <b>My Trip</b></li>
+        <li>ⓘ → เปิด <b>Show in Share Sheet</b> → รับ <b>URLs</b>, <b>Text</b>, <b>Images</b> และ <b>PDFs</b></li>
         <li>เพิ่ม <b>Base64 Encode</b> → Line Breaks <b>None</b></li>
-        <li>เพิ่ม <b>Get Contents of URL</b> แบบเดียวกัน แต่ <b>action</b> = shareFile และช่องที่ 3 ชื่อ <b>data</b> = <b>Base64 Encoded</b></li>
-        <li>เพิ่ม <b>Get Dictionary Value</b> และ <b>Show Notification</b> แบบเดียวกัน</li>
+        <li>เพิ่ม <b>Get Contents of URL</b> → ใส่ลิงก์หลังบ้าน → Method <b>POST</b> · Body <b>JSON</b> → 4 ช่อง: <b>action</b> = shareAny · <b>key</b> = รหัสของคุณ · <b>url</b> = <b>Shortcut Input</b> · <b>data</b> = <b>Base64 Encoded</b></li>
+        <li>เพิ่ม <b>Get Dictionary Value</b> → <b>data.message</b> แล้วเพิ่ม <b>Show Notification</b> → <b>Dictionary Value</b></li>
       </ol>
       <span class="small">ลิงก์หลังบ้าน</span>${copy("ลิงก์หลังบ้าน", API_URL)}
     </details>
@@ -4004,7 +3996,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-scui2";
+const BUILD = "2026-11-07-scone";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
