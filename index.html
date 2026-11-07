@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=13"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=14"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -312,7 +312,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .share-box .link-box{background:var(--surface);min-height:44px}
 .link-box.sm input{font-size:13px}
 .sc-intro{margin:0;line-height:1.5;color:var(--muted)}
-.sc-seg{margin-top:8px}.sc-seg button{font-size:13px}.sc-seg button[aria-selected="true"]{background:var(--idea-soft);color:var(--idea);font-weight:600}
+.sc-ask{margin:4px 0 6px}.sc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sc-tabs button{min-height:44px;border-radius:999px;border:1.5px solid var(--line,var(--tile));background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}.sc-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
 .sc-step{display:flex;gap:10px;align-items:flex-start}
 .sc-n{width:24px;height:24px;border-radius:999px;background:var(--idea-soft);color:var(--idea);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
 .sc-body{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}.sc-body small{line-height:1.5}
@@ -2229,21 +2229,21 @@ function shareSection(){
   const step = (n, title, body) => `<div class="sc-step"><span class="sc-n">${n}</span><div class="sc-body"><b>${title}</b>${body}</div></div>`;
   const get = (id, icon, label, what) => `<a class="sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k||"")}"><span class="sc-ic">${ic(icon,18)}</span><span><b>${label}</b><small>${what}</small></span><span class="sc-go">เชื่อมต่อ</span></a>`;
   if(!k) return `<section class="share-box">
-    <p class="small sc-intro">ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
+    <p class="small sc-intro">แชร์สถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้เลย ไม่ต้องเปิดแอป</p>
     <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "เริ่มตั้งค่า"}</button>
   </section>`;
   return `<section class="share-box">
-    <p class="small sc-intro">ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
-    ${step(1, "รหัสของคุณ", `<small class="muted">ใช้คู่กับคำสั่งลัดในเครื่องนี้ ห้ามส่งให้คนอื่น</small>${copy("รหัสส่วนตัว", k)}`)}
-    ${step(2, "กดเชื่อมต่อ", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
-      ${get("one","upload","คำสั่งลัด My Trip","ร้านจาก Google Maps · รูป · PDF")}`)}
-    ${step(3, "วิธีใช้", `<small class="muted">เปิดร้านใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ<br>· รูป / PDF ให้ AI แนบไว้ที่สถานที่ที่ตรงกัน<br>· ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
-    <details class="share-how"><summary>ถ้าขึ้นว่า "รหัสไม่ถูกต้อง"</summary><ol>
+    <p class="small sc-intro">แชร์สถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้เลย ไม่ต้องเปิดแอป</p>
+    ${step(1, "รหัสของคุณ", `<small class="muted">ใช้กับเครื่องนี้เท่านั้น อย่าส่งให้คนอื่น</small>${copy("รหัสส่วนตัว", k)}`)}
+    ${step(2, "กดเชื่อมต่อ", `<small class="muted">กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส ให้กด <b>วาง</b> → Done</small>
+      ${get("one","upload","คำสั่งลัด My Trip","สถานที่ · รูป · PDF")}`)}
+    ${step(3, "วิธีใช้", SC_HOWTO)}
+    <details class="share-how"><summary>ขึ้นว่ารหัสไม่ถูกต้อง?</summary><ol>
       <li>กด <b>คัดลอก</b> ที่รหัสด้านบน</li>
-      <li>เปิดแอป <b>Shortcuts</b> → กด <b>⋯</b> ที่คำสั่งลัด</li>
-      <li>ลบข้อความในกล่อง <b>Text</b> อันแรก แล้ววางรหัสใหม่ → <b>Done</b></li>
+      <li>แอป <b>Shortcuts</b> → กด <b>⋯</b> ที่ My Trip</li>
+      <li>ลบข้อความในกล่อง <b>Text</b> แรก วางรหัสใหม่ → <b>Done</b></li>
     </ol></details>
-    <details class="share-how"><summary>ตั้งคำสั่งลัดเอง (ไม่ใช้ปุ่มเชื่อมต่อ)</summary><ol>
+    <details class="share-how"><summary>ตั้งคำสั่งลัดเอง</summary><ol>
         <li>แอป <b>Shortcuts</b> → <b>+</b> → ตั้งชื่อ <b>My Trip</b></li>
         <li>ⓘ → เปิด <b>Show in Share Sheet</b> → รับ <b>URLs</b>, <b>Text</b>, <b>Images</b> และ <b>PDFs</b></li>
         <li>เพิ่ม <b>Base64 Encode</b> → Line Breaks <b>None</b></li>
@@ -2259,7 +2259,7 @@ function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
-    <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริปจากแอปอื่น (iPhone / Android)</summary>${shareTabs()}</details>
+    <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -3510,23 +3510,24 @@ document.addEventListener("focusout", e => {
 });
 /* the shortcut section stays open (and the sheet keeps its scroll) when a toast re-renders the account sheet */
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='sc-sec')S.scOpen=e.target.open;},true);
+const SC_HOWTO = `<small class="muted">กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· สถานที่ → เก็บใน สนใจ<br>· รูป / PDF → AI แนบให้สถานที่ที่ตรงกัน<br>· มีหลายทริป จะให้เลือกก่อน</small>`;
 /* the share section: one tab per phone, the phone in hand first */
 function shareTabs(){
   const tab = S.scTab || (/Android/i.test(navigator.userAgent) ? "android" : "iphone");
-  const t = (id, label) => `<button data-act="sc-tab" data-tab="${id}" aria-selected="${tab === id}"><span>${label}</span></button>`;
-  return `<div class="seg sc-seg" role="tablist">${t("iphone","iPhone")}${t("android","Android")}</div>${tab === "android" ? androidSection() : shareSection()}`;
+  const t = (id, label) => `<button data-act="sc-tab" data-tab="${id}" role="tab" aria-selected="${tab === id}">${label}</button>`;
+  return `<p class="small muted sc-ask">เครื่องของคุณคือ</p><div class="sc-tabs" role="tablist">${t("iphone","iPhone")}${t("android","Android")}</div>${tab === "android" ? androidSection() : shareSection()}`;
 }
 function androidSection(){
   const step = (n, title, body) => `<div class="sc-step"><span class="sc-n">${n}</span><div class="sc-body"><b>${title}</b>${body}</div></div>`;
   return `<section class="share-box">
-    <p class="small sc-intro">ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ Android ไม่ต้องใช้รหัส</p>
-    ${step(1, "เปิดแอปนี้ใน Chrome", `<small class="muted">แล้วล็อกอินให้เรียบร้อย</small>`)}
-    ${step(2, "ติดตั้งแอปลงหน้าจอหลัก", `<small class="muted">กด <b>⋮</b> มุมขวาบนของ Chrome → <b>ติดตั้งแอป</b> (บางเครื่องเขียนว่า <b>เพิ่มลงในหน้าจอหลัก</b>) → กด <b>ติดตั้ง</b> แล้วเปิดแอปจากไอคอนบนหน้าจอหลัก 1 ครั้ง</small>`)}
-    ${step(3, "วิธีใช้", `<small class="muted">เปิดสถานที่ใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ<br>· รูป / PDF ให้ AI แนบไว้ที่สถานที่ที่ตรงกัน<br>· ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
-    <details class="share-how"><summary>ถ้าไม่เห็น My Trip ในเมนูแชร์</summary><ol>
-      <li>เปิดแอปจากไอคอนบนหน้าจอหลัก 1 ครั้ง แล้วลองแชร์ใหม่</li>
-      <li>ถ้ายังไม่ขึ้น กดค้างที่ไอคอน → <b>ถอนการติดตั้ง</b> แล้วทำขั้นที่ 2 ใหม่</li>
-      <li>ในเมนูแชร์ เลื่อนดูทั้งหมด หรือกด <b>เพิ่มเติม</b></li>
+    <p class="small sc-intro">แชร์สถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้เลย ไม่ต้องใช้รหัส</p>
+    ${step(1, "เปิดแอปใน Chrome แล้วล็อกอิน", "")}
+    ${step(2, "ติดตั้งแอป", `<small class="muted">กด <b>⋮</b> → <b>ติดตั้งแอป</b> (หรือ <b>เพิ่มลงในหน้าจอหลัก</b>) → เปิดจากไอคอน 1 ครั้ง</small>`)}
+    ${step(3, "วิธีใช้", SC_HOWTO)}
+    <details class="share-how"><summary>ไม่เห็น My Trip ในเมนูแชร์?</summary><ol>
+      <li>เปิดแอปจากไอคอน 1 ครั้ง แล้วแชร์ใหม่</li>
+      <li>ยังไม่ขึ้น: กดค้างที่ไอคอน → <b>ถอนการติดตั้ง</b> แล้วทำขั้น 2 ใหม่</li>
+      <li>ในเมนูแชร์ ลองกด <b>เพิ่มเติม</b></li>
     </ol></details>
   </section>`;
 }
@@ -4057,7 +4058,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-android2";
+const BUILD = "2026-11-07-android3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
