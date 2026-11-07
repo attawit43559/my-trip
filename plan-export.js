@@ -300,6 +300,7 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     plum:["#F1E5F6","#6A3A86","#4F3A5C"], teal:["#EEF8F9","#12626A","#24464A"], blue:["#E0ECFF","#2B61B2","#1F3354"]};
   const DAYTONE = [["#FFE8D6","#B4501A"],["#E2F5E2","#2F7A2E"],["#E0ECFF","#2B61B2"],["#F1E5F6","#6A3A86"],["#FFF4C7","#8A6A00"],["#EEF8F9","#12626A"],["#FCE4EC","#B83A68"],["#F1E7DE","#6F4A2F"]];
   async function fontsReady(){
+    await logoImg();
     if(document.fonts && document.fonts.load){
       try{ await Promise.all([document.fonts.load(font(600, 40, DISPLAY), "วันที่ 1"), document.fonts.load(font(500, 40), "ก A"), document.fonts.load(font(400, 40), "ก A")]); } catch(_){}
     }
@@ -311,9 +312,17 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     x.fillStyle = ink; x.textBaseline = "middle"; x.textAlign = "left"; x.fillText(text, X + size * 0.7, Y + h / 2 + 1);
     return w;
   }
+  /* the app's logo (mountain and plane) with its name, bottom left; the trip and page on the right */
+  let logo = null;
+  async function logoImg(){ if(logo === null) logo = await loadImg("icons/icon-192.png") || false; return logo; }
   function footer(x, left, right){
-    x.fillStyle = B.muted; x.font = font(400, 22); x.textBaseline = "alphabetic";
-    x.textAlign = "left"; x.fillText(left, PM, PH - 64); x.textAlign = "right"; x.fillText(right, PW - PM, PH - 64);
+    const y = PH - 62, L = 58;
+    x.textBaseline = "alphabetic";
+    let lx = PM;
+    if(logo){ rrect(x, PM, y - 42, L, L, 14); x.fillStyle = "#FFFFFF"; x.fill(); x.save(); x.strokeStyle = B.line; x.lineWidth = 2; x.stroke(); x.restore(); x.drawImage(logo, PM + 1, y - 41, L - 2, L - 2); lx += L + 14; }
+    x.fillStyle = B.ink; x.font = font(600, 30, DISPLAY); x.textAlign = "left"; x.fillText("My Trip", lx, y - 4);
+    if(left){ const w = x.measureText("My Trip").width; x.fillStyle = B.muted; x.font = font(400, 22); x.fillText(left, lx + w + 14, y); }
+    x.fillStyle = B.muted; x.font = font(400, 22); x.textAlign = "right"; x.fillText(right, PW - PM, y);
   }
   const BED = "M3 18V7 M3 14h18v4 M21 14v-2a3 3 0 0 0-3-3h-7v5 M9 11a2 2 0 1 1 -4 0 a2 2 0 1 1 4 0";
 
@@ -355,7 +364,7 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
         x.fillStyle = B.plum[1]; x.font = font(500, 22); x.fillText(wrap(x, d.stay, cw - P * 2 - 40, 1)[0] || "", X + P + 38, sy + 20);
       }
     });
-    footer(x, "My Trip", o.pageCount > 1 ? `ภาพรวม ${o.pageNo}/${o.pageCount}` : "ภาพรวมทั้งทริป");
+    footer(x, "", o.pageCount > 1 ? `ภาพรวม ${o.pageNo}/${o.pageCount}` : "ภาพรวมทั้งทริป");
     return c;
   }
 
@@ -459,7 +468,7 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
         x.restore();
       }
     }
-    footer(x, `My Trip · ${d.tripName || ""}`, `วันที่ ${d.dayNo} / ${d.dayCount}`);
+    footer(x, d.tripName ? "· " + d.tripName : "", `วันที่ ${d.dayNo} / ${d.dayCount}`);
     return c;
   }
 
