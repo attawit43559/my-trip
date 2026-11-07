@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=14"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=15"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -312,6 +312,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .share-box .link-box{background:var(--surface);min-height:44px}
 .link-box.sm input{font-size:13px}
 .sc-intro{margin:0;line-height:1.5;color:var(--muted)}
+.acc-lang{display:flex;flex-direction:column;gap:8px;padding:6px 0 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.acc-lang>span{display:flex;align-items:center;gap:8px;font-weight:500}.acc-lang .sc-tabs{margin:0}
 .sc-ask{margin:4px 0 6px}.sc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sc-tabs button{min-height:44px;border-radius:999px;border:1.5px solid var(--line,var(--tile));background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}.sc-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
 .sc-step{display:flex;gap:10px;align-items:flex-start}
 .sc-n{width:24px;height:24px;border-radius:999px;background:var(--idea-soft);color:var(--idea);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
@@ -1268,8 +1269,7 @@ function vTripMore(){
     <button data-act="export-open">${ic("image",20)}ส่งออกแผนเป็นรูป / PDF</button>
     <button data-act="sos-open">${ic("sos",20)}ข้อมูลฉุกเฉิน</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
-    <button data-act="account">${ic("info",20)}บัญชีและคำสั่งลัด</button>
-    <button data-act="lang-switch" lang="${LANG === "en" ? "th" : "en"}">${ic("globe",20)}${LANG === "en" ? "ภาษาไทย" : "English"}</button>
+    <button data-act="account">${ic("info",20)}บัญชีและการตั้งค่า</button>
     ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
   </div></div></div>`;
 }
@@ -2259,6 +2259,10 @@ function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
+    <div class="acc-lang"><span>${ic("globe",18)}ภาษา · Language</span><div class="sc-tabs">
+      <button data-act="lang-set" data-lang="th" lang="th" aria-selected="${LANG !== "en"}">ไทย</button>
+      <button data-act="lang-set" data-lang="en" lang="en" aria-selected="${LANG === "en"}">English</button>
+    </div></div>
     <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
@@ -3839,6 +3843,7 @@ document.addEventListener("click", async e => {
     case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "lang-switch": setLang(LANG === "en" ? "th" : "en"); break;
+    case "lang-set": if((el.dataset.lang === "en") !== (LANG === "en")) setLang(el.dataset.lang); break;
     case "tab": selectTab(el.dataset.k); break;
     case "help-pace": S.help.pace = el.dataset.k; render(); break;
     case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
@@ -4058,7 +4063,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-android3";
+const BUILD = "2026-11-07-lang1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

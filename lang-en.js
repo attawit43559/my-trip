@@ -401,6 +401,8 @@ window.MYTRIP_EN = {
 "เปิดแอปใน Chrome แล้วล็อกอิน": "Open the app in Chrome and sign in",
 "ติดตั้งแอป": "Install the app",
 "ไม่เห็น My Trip ในเมนูแชร์?": "My Trip not in the share menu?",
+"บัญชีและการตั้งค่า": "Account & settings",
+"ภาษา · Language": "Language",
 "วิธีตั้งคำสั่งลัด": "How to set up the shortcut",
 "เปิดแอป": "Open the",
 "→ กด": "→ tap",
