@@ -294,5 +294,174 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     return c;
   }
 
-  window.PlanExport = { renderDay, W, H };
+  /* ---------- A4 trip book: one overview page, then one page per day (photos, timeline, AI tips) ---------- */
+  const PW = 1588, PH = 2246, PM = 104;                       // A4 at 2x (794 x 1123 css px)
+  const B = {bg:"#FFFDF9", tile:"#F6F1EA", ink:"#2B211C", muted:"#6E6259", line:"#EFE9E0", rule:"#E8DFD3", accent:"#B4501A",
+    plum:["#F1E5F6","#6A3A86","#4F3A5C"], teal:["#EEF8F9","#12626A","#24464A"], blue:["#E0ECFF","#2B61B2","#1F3354"]};
+  const DAYTONE = [["#FFE8D6","#B4501A"],["#E2F5E2","#2F7A2E"],["#E0ECFF","#2B61B2"],["#F1E5F6","#6A3A86"],["#FFF4C7","#8A6A00"],["#EEF8F9","#12626A"],["#FCE4EC","#B83A68"],["#F1E7DE","#6F4A2F"]];
+  async function fontsReady(){
+    if(document.fonts && document.fonts.load){
+      try{ await Promise.all([document.fonts.load(font(600, 40, DISPLAY), "วันที่ 1"), document.fonts.load(font(500, 40), "ก A"), document.fonts.load(font(400, 40), "ก A")]); } catch(_){}
+    }
+  }
+  function page(bg){ const c = document.createElement("canvas"); c.width = PW; c.height = PH; const x = tr2d(c.getContext("2d")); x.fillStyle = bg; x.fillRect(0, 0, PW, PH); return [c, x]; }
+  function pill(x, text, X, Y, soft, ink, size){
+    x.font = font(600, size); const w = x.measureText(text).width + size * 1.4, h = size * 2;
+    rrect(x, X, Y, w, h, h / 2); x.fillStyle = soft; x.fill();
+    x.fillStyle = ink; x.textBaseline = "middle"; x.textAlign = "left"; x.fillText(text, X + size * 0.7, Y + h / 2 + 1);
+    return w;
+  }
+  function footer(x, left, right){
+    x.fillStyle = B.muted; x.font = font(400, 22); x.textBaseline = "alphabetic";
+    x.textAlign = "left"; x.fillText(left, PM, PH - 64); x.textAlign = "right"; x.fillText(right, PW - PM, PH - 64);
+  }
+  const BED = "M3 18V7 M3 14h18v4 M21 14v-2a3 3 0 0 0-3-3h-7v5 M9 11a2 2 0 1 1 -4 0 a2 2 0 1 1 4 0";
+
+  /* o: {tripName, sub, chips:[{label, soft, ink}], days:[{n, date, dow, title, stops:[{t, name}], stay}], pageNo, pageCount} */
+  async function renderOverview(o){
+    await fontsReady();
+    const [c, x] = page(B.tile);
+    let y = PM + 20;
+    x.textAlign = "left"; x.textBaseline = "alphabetic";
+    x.fillStyle = B.accent; x.font = font(600, 24); x.fillText("TRAVEL PLAN", PM, y + 4);
+    x.fillStyle = B.ink; x.font = font(600, 88, DISPLAY);
+    const tl = wrap(x, o.tripName || "My Trip", PW - PM * 2 - 40, 1)[0]; x.fillText(tl, PM, y + 108);
+    x.fillStyle = B.muted; x.font = font(400, 29); x.fillText(o.sub || "", PM, y + 160);
+    let cx = PM; (o.chips || []).forEach(ch => { cx += pill(x, ch.label, cx, y + 190, ch.soft, ch.ink, 22) + 12; });
+    const top = y + 270, bottom = PH - 120, n = o.days.length, cols = 3, rows = Math.max(1, Math.ceil(n / cols)), gap = 24;
+    const cw = (PW - PM * 2 - gap * (cols - 1)) / cols, ch = Math.min(560, (bottom - top - gap * (rows - 1)) / rows);
+    o.days.forEach((d, i) => {
+      const X = PM + (i % cols) * (cw + gap), Y = top + Math.floor(i / cols) * (ch + gap), P = 30, [soft, ink] = DAYTONE[(d.n - 1) % DAYTONE.length];
+      card(x, X, Y, cw, ch, 34, "#FFFFFF", true);
+      rrect(x, X + P, Y + P, 78, 78, 22); x.fillStyle = soft; x.fill();
+      x.fillStyle = ink; x.font = font(600, 38, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(d.n), X + P + 39, Y + P + 41);
+      x.textAlign = "left"; x.textBaseline = "alphabetic";
+      x.fillStyle = B.ink; x.font = font(600, 28); x.fillText(d.date, X + P + 98, Y + P + 34);
+      x.fillStyle = B.muted; x.font = font(400, 22); x.fillText(d.dow, X + P + 98, Y + P + 68);
+      let yy = Y + P + 126;
+      x.fillStyle = B.ink; x.font = font(600, 30);
+      wrap(x, d.title, cw - P * 2, 2).forEach(l => { x.fillText(l, X + P, yy); yy += 40; });
+      yy += 6;
+      const stayH = d.stay ? 64 : 0, room = Y + ch - P - stayH - yy, per = 34, can = Math.max(0, Math.floor(room / per));
+      const stops = d.stops.length > can ? d.stops.slice(0, Math.max(0, can - 1)).concat([{t:"", name:`และอีก ${d.stops.length - can + 1} ที่`}]) : d.stops;
+      stops.forEach(s => {
+        x.font = font(400, 22); x.fillStyle = B.muted; x.fillText(s.t || "", X + P, yy);
+        x.fillStyle = B.ink; x.fillText(wrap(x, s.name, cw - P * 2 - 70, 1)[0] || "", X + P + 70, yy); yy += per;
+      });
+      if(d.stay){
+        const sy = Y + ch - P - 40;
+        x.save(); x.strokeStyle = "#E4DBCF"; x.lineWidth = 2; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(X + P, sy - 14); x.lineTo(X + cw - P, sy - 14); x.stroke(); x.restore();
+        strokeD(x, BED, X + P, sy - 2, 1.15, B.plum[1], 2);
+        x.fillStyle = B.plum[1]; x.font = font(500, 22); x.fillText(wrap(x, d.stay, cw - P * 2 - 40, 1)[0] || "", X + P + 38, sy + 20);
+      }
+    });
+    footer(x, "My Trip", o.pageCount > 1 ? `ภาพรวม ${o.pageNo}/${o.pageCount}` : "ภาพรวมทั้งทริป");
+    return c;
+  }
+
+  /* d: {tripName, dayNo, dayCount, dateLong, title, entries, photos:[{img, name}], tips:[], stay:{name, sub}, travel:[lines]} */
+  async function renderBookDay(d, opts = {}){
+    await fontsReady();
+    const icons = opts.icons || {};
+    const [c, x] = page(B.bg);
+    x.textAlign = "left"; x.textBaseline = "alphabetic";
+    const num = String(d.dayNo).padStart(2, "0");
+    x.fillStyle = B.accent; x.font = font(600, 150, DISPLAY); x.fillText(num, PM - 6, PM + 140);
+    const nw = x.measureText(num).width + 30;
+    x.fillStyle = B.muted; x.font = font(400, 26); x.fillText(d.dateLong || "", PM + nw, PM + 82);
+    x.fillStyle = B.ink; x.font = font(600, 54, DISPLAY);
+    x.fillText(wrap(x, d.title || "", PW - PM * 2 - nw - 220, 1)[0] || "", PM + nw, PM + 140);
+    x.fillStyle = B.muted; x.font = font(400, 23); x.textAlign = "right"; x.fillText(wrap(x, d.tripName || "", 260, 1)[0] || "", PW - PM, PM + 140); x.textAlign = "left";
+    x.fillStyle = B.ink; x.fillRect(PM, PM + 176, PW - PM * 2, 3);
+    let y = PM + 216;
+
+    // photos of the day's places
+    const ph = (d.photos || []).filter(p => p && p.img).slice(0, 3);
+    if(ph.length){
+      const H2 = 336, gap = 20, total = PW - PM * 2, fr = ph.length === 1 ? [1] : ph.length === 2 ? [1, 1] : [2, 1, 1], unit = (total - gap * (ph.length - 1)) / fr.reduce((a, b) => a + b, 0);
+      let px = PM;
+      ph.forEach((p, i) => {
+        const w = unit * fr[i];
+        x.save(); rrect(x, px, y, w, H2, 32); x.clip();
+        const s2 = Math.max(w / p.img.width, H2 / p.img.height), iw = p.img.width * s2, ih = p.img.height * s2;
+        x.drawImage(p.img, px + (w - iw) / 2, y + (H2 - ih) / 2, iw, ih);
+        const g = x.createLinearGradient(0, y + H2 - 110, 0, y + H2); g.addColorStop(0, "rgba(20,14,10,0)"); g.addColorStop(1, "rgba(20,14,10,0.55)");
+        x.fillStyle = g; x.fillRect(px, y + H2 - 110, w, 110);
+        x.fillStyle = "#FFFFFF"; x.font = font(500, 24); x.fillText(wrap(x, p.name, w - 48, 1)[0] || "", px + 24, y + H2 - 24);
+        x.restore(); px += w + gap;
+      });
+      x.fillStyle = B.muted; x.font = font(400, 18); x.textAlign = "right"; x.fillText("รูปจาก Google Maps" + (ph.some(p => p.by) ? " · " + [...new Set(ph.map(p => p.by).filter(Boolean))].slice(0, 3).join(", ") : ""), PW - PM, y + H2 + 28); x.textAlign = "left";
+      y += H2 + 56;
+    }
+
+    // timeline on the left, stay / travel / tips on the right
+    const side = 472, gapC = 56, LW = PW - PM * 2 - side - gapC, bottom = PH - 130, ents = d.entries || [];
+    const rowsOf = s => ents.map(e => {
+      if(e.type === "move"){ x.font = font(400, 23 * s); const label = [e.mode, e.minutes ? fmtMin(e.minutes) : ""].filter(Boolean).join(" · ") || e.title; return {e, h:56 * s, line:wrap(x, label, LW - 180 * s, 1)[0] || ""}; }
+      x.font = font(500, 30 * s); const tl = wrap(x, e.title, LW - 190 * s, 2);
+      x.font = font(400, 23 * s); const nl = e.note ? wrap(x, e.note, LW - 190 * s, 1) : [];
+      const th = tl.length * 40 * s + nl.length * 32 * s; return {e, h:Math.max(92 * s, th + 28 * s), tl, nl, th};
+    });
+    let s = 1, rows = rowsOf(s); const tot = () => rows.reduce((a, r) => a + r.h, 0);
+    while(y + tot() > bottom && s > 0.55){ s -= 0.03; rows = rowsOf(s); }
+    while(rows.length && y + tot() < bottom - 260 && s < 1.25){ s += 0.03; rows = rowsOf(s); }   // a light day gets roomier rows
+    if(y + tot() > bottom){ s -= 0.03; rows = rowsOf(s); }
+    const tX = PM, icX = PM + 108 * s, txX = icX + 54 * s;
+    if(rows.length){
+      // one quiet line through the stops
+      let first = null, last = null, yy = y; rows.forEach(r => { if(r.e.type !== "move"){ const cy = yy + r.h / 2; if(first == null) first = cy; last = cy; } yy += r.h; });
+      if(first != null && last > first){ x.fillStyle = B.rule; x.fillRect(icX - 2, first, 4, last - first); }
+      let ry = y;
+      rows.forEach(r => {
+        const e = r.e, cy = ry + r.h / 2;
+        if(e.type === "move"){
+          const k = 0.95 * s; ride(x, e.ride || "car", txX - 6 * s, cy - 15 * k, k, icons);
+          x.fillStyle = (RIDE[e.ride] || RIDE.car)[1]; x.font = font(400, 23 * s); x.textBaseline = "middle"; x.fillText(r.line, txX + 46 * k + 8 * s, cy + 1); x.textBaseline = "alphabetic";
+        } else {
+          x.beginPath(); x.arc(icX, cy, 38 * s, 0, Math.PI * 2); x.fillStyle = B.bg; x.fill();
+          spot(x, e.spot || "sight", icX, cy, 32 * s, icons);
+          x.textBaseline = "middle"; x.textAlign = "right";
+          if(e.night){ x.fillStyle = SPOT.night[1]; x.font = font(500, 24 * s, DISPLAY); x.fillText("คืนนี้", tX + 62 * s, cy + 1); }
+          else if(e.time){ x.fillStyle = B.ink; x.font = font(600, 27 * s, DISPLAY); x.fillText(e.time, tX + 62 * s, cy + 1); }
+          x.textAlign = "left"; x.textBaseline = "alphabetic";
+          let ty = cy - r.th / 2 + 30 * s;
+          x.fillStyle = B.ink; x.font = font(500, 30 * s); r.tl.forEach(l => { x.fillText(l, txX, ty); ty += 40 * s; });
+          x.fillStyle = B.muted; x.font = font(400, 23 * s); r.nl.forEach(l => { x.fillText(l, txX, ty - 4 * s); ty += 32 * s; });
+        }
+        ry += r.h;
+      });
+    } else { x.fillStyle = B.muted; x.font = font(400, 28); x.fillText("ยังไม่มีแผนสำหรับวันนี้", PM, y + 40); }
+
+    // side cards
+    const SX = PW - PM - side; let sy = y;
+    const box = (title, tone, lines, big) => {
+      x.font = font(big ? 600 : 400, big ? 29 : 24); const ls = []; lines.forEach((l, i) => { x.font = i === 0 && big ? font(600, 29) : font(400, 24); wrap(x, l, side - 60, 3).forEach(w => ls.push([w, i === 0 && big])); });
+      const h = 76 + ls.reduce((a, [, b]) => a + (b ? 40 : 34), 0);
+      if(sy + h > bottom) return;
+      rrect(x, SX, sy, side, h, 32); x.fillStyle = tone[0]; x.fill();
+      x.fillStyle = tone[1]; x.font = font(600, 21); x.fillText(title, SX + 30, sy + 46);
+      let ly = sy + 46;
+      ls.forEach(([w, b]) => { ly += b ? 40 : 34; x.fillStyle = b ? B.ink : tone[2]; x.font = b ? font(600, 29) : font(400, 24); x.fillText(w, SX + 30, ly); });
+      sy += h + 22;
+    };
+    if(d.stay) box("ที่พักคืนนี้", B.plum, [d.stay.name, d.stay.sub].filter(Boolean), true);
+    if(d.travel && d.travel.length) box("เดินทางวันนี้", B.teal, d.travel, false);
+    if(d.tips && d.tips.length){
+      x.font = font(400, 24); const lines = []; d.tips.forEach(t => wrap(x, t, side - 84, 4).forEach((w, i) => lines.push([w, i === 0])));
+      let h = 84 + lines.length * 36 + d.tips.length * 8;
+      if(sy + h > bottom){ h = bottom - sy; }
+      if(h > 160){
+        rrect(x, SX, sy, side, h, 32); x.fillStyle = B.blue[0]; x.fill();
+        drawIcon(x, '<path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>', SX + 42, sy + 38, 26, B.blue[1], 2);
+        x.fillStyle = B.blue[1]; x.font = font(600, 21); x.fillText("TIPS จาก AI", SX + 64, sy + 46);
+        let ly = sy + 46; x.save(); rrect(x, SX, sy, side, h, 32); x.clip();
+        lines.forEach(([w, firstLine]) => { if(firstLine){ ly += 8; } ly += 36; if(ly > sy + h - 20) return; if(firstLine){ x.fillStyle = B.blue[1]; x.fillText("•", SX + 30, ly); } x.fillStyle = B.blue[2]; x.font = font(400, 24); x.fillText(w, SX + 54, ly); });
+        x.restore();
+      }
+    }
+    footer(x, `My Trip · ${d.tripName || ""}`, `วันที่ ${d.dayNo} / ${d.dayCount}`);
+    return c;
+  }
+
+  window.PlanExport = { renderDay, renderOverview, renderBookDay, W, H, PW, PH };
 })();
