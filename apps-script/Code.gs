@@ -1250,7 +1250,7 @@ function fetchJson_(url, opt) {
     payload: JSON.stringify(opt.payload), muteHttpExceptions: true
   });
   const code = r.getResponseCode();
-  if (code === 429) throw new Error('rate_limited');
+  if (code === 429) { console.warn('429 ' + url.split('/models/')[1] + ' ' + r.getContentText().slice(0, 400)); throw new Error('rate_limited'); }
   if (code >= 300) throw new Error('ai_error_' + code + ': ' + r.getContentText().slice(0, 300));
   return JSON.parse(r.getContentText());
 }
