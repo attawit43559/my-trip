@@ -348,20 +348,22 @@ const ACTIONS = {
           'Reply only JSON: {"id":"<item id or empty>","place":"<the place the file is about, as written on Google Maps, or empty>","label":"<2-5 word Thai description of the file, e.g. แผนเที่ยว Disneyland>"}'
         ].join('\n'), [{ mime: mime, data: Utilities.base64Encode(bytes) }], { fallback: ['gemini-3.5-flash'], thinking: 'minimal' }));
       } catch (e) { pick = {}; }
+      // the AI sometimes names the place but leaves the id empty: match that name to the trip (plan stops before saved ideas)
+      let byName = null;
+      if (pick.place) {
+        const norm = x => String(x || '').toLowerCase().replace(/[\s\-・·,.()（）]/g, '');
+        const want = norm(pick.place);
+        const same = want.length >= 3 ? items.filter(o => { const t = norm(mapNameParts_(o.title).name || o.title); return t && (t === want || t.indexOf(want) === 0 || want.indexOf(t) === 0); }) : [];
+        byName = same.find(o => o.type === 'place') || same.find(o => o.type === 'stay') || same[0] || null;
+      }
+      if (req.dry) { const h = items.find(o => o.id === pick.id); done.push(JSON.stringify({ ai: h ? h.type + ':' + h.title : '', place: pick.place || '', byName: byName ? byName.type + ':' + byName.title : '' })); return; }  // test only: save nothing
       const label = String(pick.label || 'ไฟล์ที่แชร์มา').slice(0, 60);
       const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/heic': 'heic', 'image/webp': 'webp', 'application/pdf': 'pdf' }[mime];
       const file = folder_().createFile(Utilities.newBlob(bytes, mime, label + '.' + ext));
       file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
       withLock_(() => {
         let hit = pick.id ? find_(ITEMS, String(pick.id)) : null;
-        // the AI sometimes names the place but leaves the id empty: match that name to the trip (plan stops before saved ideas)
-        if (!(hit && hit.tripId === trip.id) && pick.place) {
-          const norm = x => String(x || '').toLowerCase().replace(/[\s\-・·,.()（）]/g, '');
-          const want = norm(pick.place);
-          const same = want.length >= 3 ? items.filter(o => { const t = norm(mapNameParts_(o.title).name || o.title); return t && (t === want || t.indexOf(want) === 0 || want.indexOf(t) === 0); }) : [];
-          const best = same.find(o => o.type === 'place') || same.find(o => o.type === 'stay') || same[0];
-          if (best) hit = find_(ITEMS, best.id);
-        }
+        if (!(hit && hit.tripId === trip.id) && byName) hit = find_(ITEMS, byName.id);
         if (hit && hit.tripId === trip.id) {
           const o = hit.obj; o.fileIds = [...new Set([].concat(o.fileIds || [], o.fileId ? [o.fileId] : [], [file.getId()]))];
           upsert_(ITEMS, o.id, trip.id, o);
