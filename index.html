@@ -2266,7 +2266,7 @@ function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
     <p class="muted small" style="margin-top:-8px">${esc(S.user && S.user.email || "")}</p>
-    <details class="advanced-options"><summary>คำสั่งลัด iPhone: แชร์เข้าทริป</summary>${shareSection()}</details>
+    <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>คำสั่งลัด iPhone: แชร์เข้าทริป</summary>${shareSection()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
 }
@@ -3514,6 +3514,8 @@ document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
 });
+/* the shortcut section stays open (and the sheet keeps its scroll) when a toast re-renders the account sheet */
+document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='sc-sec')S.scOpen=e.target.open;},true);
 /* one-tap shortcut install: copy the private key first, then let the link open the signed shortcut */
 document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(!a)return;const k=a.dataset.key||'';try{navigator.clipboard.writeText(k).then(()=>toast('คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง')).catch(()=>{});}catch(_){}});
 /* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
@@ -4002,7 +4004,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-scui";
+const BUILD = "2026-11-07-scui2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
