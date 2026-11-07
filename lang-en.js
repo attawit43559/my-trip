@@ -360,7 +360,7 @@ window.MYTRIP_EN = {
 "หรือตั้งเองทีละขั้น": "Or set it up step by step",
 "คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง": "Key copied — if iPhone asks for it, tap Paste",
 "คำสั่งลัด iPhone: แชร์เข้าทริป": "iPhone shortcuts: share into a trip",
-"ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป": "Send places from Google Maps, or pictures / PDFs, into a trip from the iPhone share button — no need to open the app",
+"ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป": "Send places from Google Maps, or pictures / PDFs, into a trip from the iPhone share button — no need to open the app",
 "เริ่มตั้งค่า": "Set up",
 "รหัสของคุณ": "Your key",
 "ใช้คู่กับคำสั่งลัดในเครื่องนี้ ห้ามส่งให้คนอื่น": "Used by the shortcuts on this phone — don't share it",

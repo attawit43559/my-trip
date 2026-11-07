@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=10"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=11"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -2228,11 +2228,11 @@ function shareSection(){
   const step = (n, title, body) => `<div class="sc-step"><span class="sc-n">${n}</span><div class="sc-body"><b>${title}</b>${body}</div></div>`;
   const get = (id, icon, label, what) => `<a class="sc-get" href="${SC_LINKS[id]}" target="_blank" rel="noopener" data-key="${esc(k||"")}"><span class="sc-ic">${ic(icon,18)}</span><span><b>${label}</b><small>${what}</small></span><span class="sc-go">เชื่อมต่อ</span></a>`;
   if(!k) return `<section class="share-box">
-    <p class="small sc-intro">ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
+    <p class="small sc-intro">ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
     <button class="pill-btn" data-act="share-on" ${S.shareBusy ? "disabled" : ""}>${S.shareBusy ? "กำลังสร้าง…" : "เริ่มตั้งค่า"}</button>
   </section>`;
   return `<section class="share-box">
-    <p class="small sc-intro">ส่งร้านจาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
+    <p class="small sc-intro">ส่งพิกัดสถานที่จาก Google Maps หรือรูป / PDF เข้าทริปได้จากปุ่มแชร์ของ iPhone ไม่ต้องเปิดแอป</p>
     ${step(1, "รหัสของคุณ", `<small class="muted">ใช้คู่กับคำสั่งลัดในเครื่องนี้ ห้ามส่งให้คนอื่น</small>${copy("รหัสส่วนตัว", k)}`)}
     ${step(2, "กดเชื่อมต่อ", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
       ${get("one","upload","คำสั่งลัด My Trip","ร้านจาก Google Maps · รูป · PDF")}`)}
@@ -3996,7 +3996,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-scone";
+const BUILD = "2026-11-07-scone2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
