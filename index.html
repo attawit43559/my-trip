@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=11"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=12"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -2237,6 +2237,7 @@ function shareSection(){
     ${step(2, "กดเชื่อมต่อ", `<small class="muted">กดแล้วแอปจะคัดลอกรหัสให้ → กด <b>เพิ่มคำสั่งลัด</b> → ถ้าถามรหัส กดค้างที่ช่อง เลือก <b>วาง</b> แล้วกด Done</small>
       ${get("one","upload","คำสั่งลัด My Trip","ร้านจาก Google Maps · รูป · PDF")}`)}
     ${step(3, "วิธีใช้", `<small class="muted">เปิดร้านใน Google Maps หรือเปิดรูป / PDF → กด <b>แชร์</b> → เลือก <b>My Trip</b><br>· ร้าน / ที่เที่ยว เก็บไว้ใน สนใจ<br>· รูป / PDF ให้ AI แนบไว้ที่สถานที่ที่ตรงกัน<br>· ถ้ามีหลายทริปที่ยังไม่จบ จะให้เลือกทริปก่อน</small>`)}
+    <p class="small muted sc-intro"><b>Android:</b> เปิดแอปใน Chrome → ⋮ → <b>ติดตั้งแอป</b> (หรือเพิ่มลงในหน้าจอหลัก) แล้วกดแชร์ → <b>My Trip</b> ได้เลย ไม่ต้องใช้รหัส</p>
     <details class="share-how"><summary>ถ้าขึ้นว่า "รหัสไม่ถูกต้อง"</summary><ol>
       <li>กด <b>คัดลอก</b> ที่รหัสด้านบน</li>
       <li>เปิดแอป <b>Shortcuts</b> → กด <b>⋯</b> ที่คำสั่งลัด</li>
@@ -3050,6 +3051,7 @@ function vSheet(){
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "trip-more") return vTripMore();
   if(s.kind === "trip-edit") return vTripEdit(s);
+  if(s.kind === "share-in") return vShareIn(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
@@ -3508,6 +3510,43 @@ document.addEventListener("focusout", e => {
 });
 /* the shortcut section stays open (and the sheet keeps its scroll) when a toast re-renders the account sheet */
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='sc-sec')S.scOpen=e.target.open;},true);
+/* Android share menu → the app: send what was shared (a place, or pictures / PDFs) into a trip with the same backend as the iPhone shortcut */
+async function shareIn(){
+  let c = null, meta = null;
+  try { c = await caches.open("mytrip-share"); const r = await c.match("./__share/meta"); meta = r && await r.json(); } catch(_){}
+  if(!meta){ toast("ไม่พบสิ่งที่แชร์มา ลองแชร์ใหม่อีกครั้ง"); return; }
+  const files = [];
+  for(let i = 0; i < Math.min(meta.n || 0, 5); i++){ const r = await c.match("./__share/f" + i); if(r) files.push(await r.blob()); }
+  S.sheet = {kind:"share-in", busy:"กำลังเตรียม…"}; render();
+  try {
+    const key = (await api("shareKey", {name:S.myName})).key;
+    const names = ((await api("shareTrips", {key})) || {}).names || [];
+    S.shareIn = {key, names, text: meta.text || "", files};
+    if(names.length > 1){ S.sheet = {kind:"share-in"}; render(); return; }
+    await shareInSend(names[0] || "");
+  } catch(e){ S.sheet = null; render(); toast("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+}
+const blob64 = b => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = no; r.readAsDataURL(b); });
+async function shareInSend(trip){
+  const x = S.shareIn; if(!x) return;
+  S.sheet = {kind:"share-in", busy: x.files.length ? "AI กำลังดูไฟล์…" : "กำลังเพิ่ม…"}; render();
+  try {
+    const data = []; for(const f of x.files) data.push(await blob64(f));
+    const r = await api("shareAny", {key: x.key, trip, url: x.text, data: data.join(" ")});
+    S.sheet = null; S.shareIn = null; render();
+    toast((r && r.message) || "ส่งแล้ว");
+    try { const c = await caches.open("mytrip-share"); for(const k of await c.keys()) await c.delete(k); } catch(_){}
+    refreshTrips().catch(()=>{});
+  } catch(e){ S.sheet = {kind:"share-in"}; render(); toast("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+}
+function vShareIn(s){
+  const x = S.shareIn || {names:[]};
+  const body = s.busy ? `<p class="muted" style="display:flex;align-items:center;gap:10px"><span class="spinner" style="width:22px;height:22px;border-width:3px"></span>${esc(s.busy)}</p>`
+    : `<p class="muted small" style="margin-top:-6px">${x.files && x.files.length ? "รูป / PDF " + x.files.length + " ไฟล์" : "สถานที่จาก Google Maps"}</p>
+       <div class="menu">${x.names.map(n => `<button data-act="share-in-pick" data-name="${esc(n)}">${ic("place",20)}${esc(n)}</button>`).join("")}</div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ส่งเข้าทริป" data-stop="1">
+    <div class="hd"><h2>ส่งเข้าทริปไหน?</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>${body}</div></div>`;
+}
 /* one-tap shortcut install: copy the private key first, then let the link open the signed shortcut */
 document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(!a)return;const k=a.dataset.key||'';try{navigator.clipboard.writeText(k).then(()=>toast('คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง')).catch(()=>{});}catch(_){}});
 /* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
@@ -3930,6 +3969,7 @@ document.addEventListener("click", async e => {
         S.sheet = null; render(); toast(a === "trip-delete" ? "ลบทริปแล้ว" : "ออกจากทริปแล้ว");
       } catch(err){ if(S.sheet) S.sheet.busy = false; render(); fail(err); }
       break; }
+    case "share-in-pick": shareInSend(el.dataset.name || ""); break;
     case "copy": {
       const text = el.dataset.text;
       try { await navigator.clipboard.writeText(text); toast("คัดลอกแล้ว"); }
@@ -3996,7 +4036,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-07-scone2";
+const BUILD = "2026-11-07-android1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -4022,7 +4062,7 @@ async function checkUpdate(){
   flush();
   checkUpdate();
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
-  let add = ""; try { add = new URLSearchParams(location.search).get("add") || ""; } catch(_){}
+  let add = "", shareInNow = false; try { const q = new URLSearchParams(location.search); add = q.get("add") || ""; shareInNow = q.get("share-in") === "1"; if(q.has("share-in")) history.replaceState(null, "", location.pathname); } catch(_){}
   if(!add){ const h = (location.hash || "").match(/^#add=(.+)$/); if(h) try { add = decodeURIComponent(h[1]); } catch(_){} }
   const addUrl = (String(add).match(MAPS_LINK) || [])[0] || "";
   if(addUrl){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
@@ -4030,6 +4070,7 @@ async function checkUpdate(){
   if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
   if(!S.token){ S.pendingJoin = m ? m[1] : null; S.pendingAdd = addUrl; go("login"); return; }
   if(m) startJoin(m[1]);
+  else if(shareInNow){ go("home"); shareIn(); }
   else if(addUrl){ go("home"); waitTrips(() => addFromLink(addUrl)); }
   else go("home");
 })();

@@ -36,8 +36,21 @@ function savedFirst(req){
   }));
 }
 
+/* Android: the installed app is in the share menu; what is shared arrives here, is kept for the page, and the page opens */
+async function takeShare(req){
+  const f = await req.formData();
+  const c = await caches.open("mytrip-share");
+  for(const k of await c.keys()) await c.delete(k);
+  const files = f.getAll("files").filter(x => x && typeof x === "object" && x.size).slice(0, 5);
+  const text = [f.get("title"), f.get("text"), f.get("url")].filter(Boolean).join("\n");
+  await c.put("./__share/meta", new Response(JSON.stringify({text, n: files.length, at: Date.now()}), {headers: {"content-type": "application/json"}}));
+  await Promise.all(files.map((x, i) => c.put("./__share/f" + i, new Response(x, {headers: {"content-type": x.type || "application/octet-stream"}}))));
+  return Response.redirect("./?share-in=1", 303);
+}
+
 self.addEventListener("fetch", e => {
   const req = e.request;
+  if(req.method === "POST" && new URL(req.url).pathname.endsWith("/share-target")){ e.respondWith(takeShare(req).catch(() => Response.redirect("./?share-in=0", 303))); return; }
   if(req.method !== "GET") return;
   const url = new URL(req.url);
   const same = url.origin === self.location.origin;
