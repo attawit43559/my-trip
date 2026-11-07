@@ -21,7 +21,7 @@ const TRIPS = 'trips';
 const ITEMS = 'items';
 const SESSIONS = 'sessions';
 const SHARE_KEYS = 'sharekeys';
-const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true, shareTrips: true };
+const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true, shareTrips: true, shareAny: true };
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -258,6 +258,18 @@ const ACTIONS = {
 
   // positions for plan stops that were added without one (used when saving day pages with a map)
   geocode: (req) => (Array.isArray(req.q) ? req.q : []).slice(0, 60).map(q => { try { return geocode_(q); } catch (e) { return null; } }),
+
+  // the one "My Trip" shortcut: it sends the shared thing both as text and as base64; a picture or PDF goes to
+  // shareFile, anything else (a Google Maps link or its text) goes to shareAdd
+  shareAny: (req) => {
+    const files = [];
+    [].concat(req.data || []).forEach(d => String(d || '').split(/\s+/).forEach(part => {
+      if (!part || files.length >= 5) return;
+      try { const b = Utilities.base64Decode(part.replace(/^data:[^,]*,/, '')); if (sniffMime_(b)) files.push(part); } catch (e) {}
+    }));
+    if (files.length) return ACTIONS.shareFile(Object.assign({}, req, { data: files }));
+    return ACTIONS.shareAdd(Object.assign({}, req, { data: null }));
+  },
 
   // called first by the iPhone shortcuts: the trips to choose from (trips not yet over; one name means no question)
   shareTrips: (req) => {
