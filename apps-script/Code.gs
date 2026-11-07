@@ -1054,7 +1054,10 @@ function shareTripChoices_(uid) {
   const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
   const mine = rows_(TRIPS).filter(r => isMember_(r.obj, uid)).map(r => r.obj);
   const endOf = t => { const d = tripDates_(t); return d.length ? d[d.length - 1] : '9999'; };
+  const dated = t => /^\d{4}-\d{2}-\d{2}$/.test(t.startDate || '');
   let pool = mine.filter(t => endOf(t) >= today);
+  // a trip with no dates yet is only a draft: offer it only when no dated trip is still ahead
+  if (pool.some(dated)) pool = pool.filter(dated);
   if (!pool.length) pool = mine.slice(-1);
   pool.sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1);
   const seen = {};
