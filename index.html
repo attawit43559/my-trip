@@ -3540,7 +3540,7 @@ function vShareIn(s){
     <div class="hd"><h2>ส่งเข้าทริปไหน?</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>${body}</div></div>`;
 }
 /* one-tap shortcut install: copy the private key first, then let the link open the signed shortcut */
-document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(!a)return;const k=a.dataset.key||'';try{navigator.clipboard.writeText(k).then(()=>toast('คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง')).catch(()=>{});}catch(_){}});
+document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(!a)return;try{localStorage.setItem('mytrip-share-on','1');}catch(_){}const k=a.dataset.key||'';try{navigator.clipboard.writeText(k).then(()=>toast('คัดลอกรหัสแล้ว ถ้า iPhone ถามรหัสให้กดวาง')).catch(()=>{});}catch(_){}});
 /* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
 document.addEventListener('focusout',e=>{
   const el=e.target;if(!el.classList?.contains('time-pick'))return;
@@ -3901,7 +3901,7 @@ document.addEventListener("click", async e => {
     case "start-skip": try { localStorage.setItem("mytrip-start-off", "1"); } catch(_){} render(); toast("ซ่อนแล้ว · เปิดอีกทีได้ที่รูปโปรไฟล์ มุมขวาบน"); break;
     case "start-back": try { localStorage.removeItem("mytrip-start-off"); } catch(_){} S.sheet = null; render(); break;
     case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad(); docKeys().then(k => { k.forEach(x => DOCS.have.add(x)); if(S.sheet && S.sheet.kind === "account") render(); });
-      if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
+      if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; if(S.shareKey) try { localStorage.setItem("mytrip-share-on", "1"); } catch(_){} render(); }).catch(() => {});
       break;
     case "share-on": case "share-reset": {
       S.shareBusy = true; render();
@@ -4001,7 +4001,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-start3";
+const BUILD = "2026-11-08-start4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
