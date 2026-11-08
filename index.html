@@ -1375,6 +1375,21 @@ function saveDayRowOrder(date,keys,tripId){
   C.trips[tripId]=deepMerge(C.trips[tripId],patch);
   queue('saveTrip',{trip:{id:tripId,...patch}});emit();toast('เรียงรายการแล้ว');return true;
 }
+/* the stay whose nights cover the night of `date` (check-in ≤ date < check-out): where the group sleeps that night,
+   and so where the next day starts. A stay saved without a check-out date (a booking the AI could not read fully)
+   still counts, until the next stay's check-in or the trip's last day. */
+function stayForNight(date){
+  if(!validD(date)) return null;
+  const stays = S.items.filter(i => i.type === "stay" && validD(i.date));
+  const hit = stays.find(i => validD(i.endDate) && i.date <= date && date < i.endDate); if(hit) return hit;
+  const open = stays.filter(i => !validD(i.endDate) && i.date <= date).sort((a, b) => a.date < b.date ? 1 : -1)[0];
+  if(!open) return null;
+  const nextIn = stays.filter(i => i.date > open.date).map(i => i.date).sort()[0];
+  const ds = S.trip ? tripDates(S.trip) : [], last = ds.length ? ds[ds.length - 1] : "";
+  return (nextIn ? date < nextIn : (!last || date < last)) ? open : null;
+}
+/* the day opens at an airport when the group lands that day after flying overnight (or flew in to stay) */
+function landsOn(date, entries){ return (entries || dayEntries(date)).some(e => !e.night && e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === date && e.it.date !== date))); }
 function dayEntries(dateStr){
   const out = [];
   for(const it of S.items){
@@ -1399,14 +1414,14 @@ function dayEntries(dateStr){
     out.sort((a,b)=>(ranks.has(dayEntryKey(a))?ranks.get(dayEntryKey(a)):saved.length+base.get(dayEntryKey(a)))-(ranks.has(dayEntryKey(b))?ranks.get(dayEntryKey(b)):saved.length+base.get(dayEntryKey(b))));
   }
   /* the day starts where we slept last night, unless that hotel's check-out or a landing already opens the day */
-  const prevNight = addDays(dateStr, -1), slept = S.items.find(i => i.type === "stay" && validD(i.date) && validD(i.endDate) && i.date <= prevNight && prevNight < i.endDate);
+  const slept = stayForNight(addDays(dateStr, -1));
   const landing = out.some(e => e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === dateStr && e.it.date !== dateStr)));
   if(slept && !landing && !out.some(e => e.it.type === "stay" && s_(e.it.title).toLowerCase() === s_(slept.title).toLowerCase()))
     out.unshift({it:slept, phase:"start", start:true, time:s_((slept.data||{}).leave?.[dateStr]), title:"ออกจาก " + (slept.title || "ที่พัก"), sub:""});
   /* where everyone sleeps tonight: any stay whose nights cover this date (one row per hotel, even with two rooms or two bookings) */
   const sleptAt = new Set();
   for(const it of S.items){
-    if(it.type === "stay" && validD(it.date) && validD(it.endDate) && it.date <= dateStr && dateStr < it.endDate && !sleptAt.has(s_(it.title).toLowerCase()) && sleptAt.add(s_(it.title).toLowerCase()))
+    if(it.type === "stay" && validD(it.date) && (validD(it.endDate) ? it.date <= dateStr && dateStr < it.endDate : stayForNight(dateStr) === it) && !sleptAt.has(s_(it.title).toLowerCase()) && sleptAt.add(s_(it.title).toLowerCase()))
       out.push({it, phase:"night", night:true, time:"", title:"นอนที่ " + (it.title||"ที่พัก"), sub:""});
     if(it.type === "flight" && validD(it.date)){
       const ad = arrDateOf(it);
@@ -2387,7 +2402,7 @@ function nextStopLink(it){
 function manualTravelLegs(date){
   const entries=dayEntries(date),points=[];
   const arrival=entries.some(e=>!e.night&&e.it.type==='flight'&&(e.phase==='arr'||(arrDateOf(e.it)===date&&e.it.date!==date)));
-  const prev=addDays(date,-1),hotel=!arrival&&S.items.find(i=>i.type==='stay'&&i.date<=prev&&prev<i.endDate);
+  const hotel=!arrival&&stayForNight(addDays(date,-1));
   if(hotel)points.push({id:hotel.id,name:hotel.title,key:''});
   for(const e of entries){
     const it=e.it,d=it.data||{};if(!['place','stay','flight'].includes(it.type)||(e.night&&it.type!=='stay'))continue;
@@ -2779,9 +2794,9 @@ function dayRouteLinks(date){
   if(moves.length)return moves.map(it=>({title:moveTitle(it.data.from,it.data.to),mode:it.data.mode||'',href:routeLink(it),time:it.time||''}));
   const places=entries.filter(e=>e.it.type==='place').map(e=>e.it);
   if(!places.length)return [];
-  const prev=addDays(date,-1),hasFlight=entries.some(e=>e.it.type==='flight');
-  const start=!hasFlight&&S.items.find(i=>i.type==='stay'&&i.date<=prev&&prev<i.endDate);
-  const end=!hasFlight&&S.items.find(i=>i.type==='stay'&&i.date<=date&&date<i.endDate);
+  const leaves=entries.some(e=>e.it.type==='flight'&&e.it.date===date&&e.phase!=='arr');
+  const start=!landsOn(date,entries)&&stayForNight(addDays(date,-1));
+  const end=!leaves&&stayForNight(date);
   const stops=[start,...places,end].filter(Boolean),links=[];
   for(let i=1;i<stops.length;i++)if(stops[i-1].id!==stops[i].id){
     const from=stops[i-1].title,to=stops[i].title;
@@ -2793,7 +2808,7 @@ function dayRoutePoints(date){
   const entries=dayEntries(date).filter(e=>!e.night),places=entries.filter(e=>e.it.type==='place').map(e=>e.it);
   if(!places.length)return [];
   const flights=S.items.filter(i=>i.type==='flight'&&i.data),prev=addDays(date,-1);
-  const stay=x=>S.items.find(i=>i.type==='stay'&&i.date<=x&&x<i.endDate);
+  const stay=stayForNight;
   const arr=flights.find(i=>arrDateOf(i)===date&&(i.date<date||stay(date))),dep=flights.find(i=>i.date===date&&i!==arr);
   const moves=entries.filter(e=>e.it.type==='move').map(e=>e.it),point=it=>({name:it.title,record:it});
   const start=arr?{name:arr.data.to+' airport'}:stay(prev)?point(stay(prev)):moves[0]?.data.from?{name:moves[0].data.from}:null;
@@ -4156,7 +4171,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-sc7";
+const BUILD = "2026-11-08-sc7-hotel";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
