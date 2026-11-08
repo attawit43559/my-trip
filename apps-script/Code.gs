@@ -302,7 +302,10 @@ const ACTIONS = {
       try { PropertiesService.getScriptProperties().setProperty('shareDebug', JSON.stringify({ at: new Date().toISOString(), sent: sent.slice(0, 500), err: String(e && e.message || e), chain: LINK_TRACE_ }).slice(0, 8000)); } catch (_) {}
       return { message: 'อ่านลิงก์นี้ไม่ได้ ลองแชร์จากหน้าสถานที่ใน Google Maps' };
     }
-    const name = place.name || 'สถานที่จาก Google Maps';
+    // Google sometimes gives "Name, full address" as the name: keep only the name, the address goes to its own field
+    const parts = mapNameParts_(place.name || '');
+    const name = parts.name || 'สถานที่จาก Google Maps';
+    if (!place.address && parts.address) place.address = parts.address;
     // links shared from an iPhone carry the name and address but no position: Google's geocoder finds the building
     if (place.lat == null && place.address) { try { const g = geocode_(name + ', ' + place.address); if (g) { place.lat = g.lat; place.lon = g.lon; } } catch (e) {} }
     // with several trips, put it in the trip whose places are nearest to it
