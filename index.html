@@ -1820,7 +1820,9 @@ async function localizeTrip(only){
 }
 async function checkShared(){
   const t = S.trip; if(!t || checkShared.busy || !navigator.onLine) return;
-  const want = S.items.filter(i => i.type === "idea" && i.source === "share" && !(i.data || {}).gchecked).slice(0, 10);
+  // a title that is really an address ("Japan, 〒110-8718 Tokyo, … くじらカフェ"): ask Google for the place's own name
+  const looksAddr = x => /〒|\b\d{3}-\d{4}\b|chome|丁目|,.*\d/i.test(String(x || "")) && String(x).length > 24;
+  const want = S.items.filter(i => i.type === "idea" && i.source === "share" && (!(i.data || {}).gchecked || (looksAddr(i.title) && !(i.data || {}).gnamed))).slice(0, 10);
   if(!want.length) return;
   checkShared.busy = true;
   try{
@@ -1829,10 +1831,11 @@ async function checkShared(){
       const d = it.data || {};
       const g = await gmapsPlace([it.title, d.address].filter(Boolean).join(", "));
       if(g === undefined) return;   // Google not reachable now: try again next time
-      const patch = {gchecked:1};
-      if(g){ if(g.kind) patch.kind = g.kind; if(g.placeId) patch.placeId = g.placeId; if(g.lat != null){ patch.lat = g.lat; patch.lon = g.lon; } if(!d.address && g.address) patch.address = g.address; }
+      const patch = {gchecked:1, gnamed:1};
+      if(g){ if(g.kind) patch.kind = g.kind; if(g.placeId) patch.placeId = g.placeId; if(g.lat != null){ patch.lat = g.lat; patch.lon = g.lon; } if((!d.address || looksAddr(it.title)) && g.address) patch.address = g.address; }
       if(S.trip !== t || !S.items.some(i => i.id === it.id)) continue;   // deleted while we were asking Google
-      await store.updateItem(t.id, it.id, {data:patch});
+      const rename = g && g.name && looksAddr(it.title) && g.name !== it.title ? {title:g.name} : {};
+      await store.updateItem(t.id, it.id, {...rename, data:patch});
     }
   } finally { checkShared.busy = false; }
 }
@@ -4189,7 +4192,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-sc7-hotel2";
+const BUILD = "2026-11-08-names2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
