@@ -288,6 +288,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw.en i{transform:translateX(39px)}
 .lang-sw b{position:relative;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--muted);transition:color .2s}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
+.off-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:4px 10px;margin:2px 0 6px}.off-chip .ic{opacity:.8}
 .acc-ai{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;padding:6px 0 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.acc-ai>span:first-child{display:flex;align-items:center;gap:8px;font-weight:500}.acc-ai small{grid-column:1/-1;padding-left:26px}.ai-badge{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px}.ai-badge.ok{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.ai-badge.full{background:#FDE7E4;color:#A62219}
 .sc-ask{margin:4px 0 6px}.sc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sc-tabs button{min-height:44px;border-radius:999px;border:1.5px solid var(--line,var(--tile));background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}.sc-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
 .sc-step{display:flex;gap:10px;align-items:flex-start}
@@ -830,6 +831,7 @@ const IC = {
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
   navi:'<path d="M12 3 5 20l7-4 7 4z"/>',
+  wifiOff:'<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M14.8 10.3A10 10 0 0 1 19 12.9"/><path d="M2 9.3a15 15 0 0 1 4.3-2.6M10.7 5.1A15 15 0 0 1 22 9.3"/><path d="M12 20h.01"/>',
   wxFog:'<path d="M4 9h12M6 13h14M4 17h11"/>',
   wxDrizzle:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M10 18.5l-.6 1.5M14.5 18.5l-.6 1.5"/>',
   wxStorm:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M13 13l-3 4.5h3.5L11 22"/>',
@@ -1516,7 +1518,9 @@ async function docShow(){
   try {
     if(/pdf/i.test(rec.mime) || /\.pdf$/i.test(rec.name)){
       if(!window.pdfjsLib) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      if(!DOCS.worker){ const w = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";   // the saved copy as a local file, so it also starts offline
+        DOCS.worker = await fetch(w).then(r => r.ok ? r.blob() : Promise.reject()).then(b => URL.createObjectURL(new Blob([b], {type:"text/javascript"}))).catch(() => w); }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = DOCS.worker;
       const pdf = await pdfjsLib.getDocument({data:new Uint8Array(await rec.blob.arrayBuffer())}).promise;
       const wide = Math.min(window.innerWidth, 720) * Math.min(3, window.devicePixelRatio || 2);
       for(let p = 1; p <= Math.min(pdf.numPages, 20); p++){
@@ -2203,6 +2207,7 @@ function vAccount(){
       <button class="lang-sw${LANG === "en" ? " en" : ""}" data-act="lang-toggle" role="switch" aria-checked="${LANG === "en"}" aria-label="ภาษา · Language"><i></i><b lang="th">TH</b><b lang="en">EN</b></button>
     </div>
     ${aiStatusRow()}
+    ${offlineRow()}
     <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
@@ -2661,7 +2666,7 @@ function syncCopy(){
   if(C.outbox.length)return !navigator.onLine?'ออฟไลน์ · รอส่ง '+C.outbox.length+' รายการ':flushing?'กำลังบันทึก '+C.outbox.length+' รายการ…':'รอส่ง '+C.outbox.length+' รายการ';
   return S.directSaving?'กำลังบันทึกแผน…':!navigator.onLine?'ออฟไลน์ · ข้อมูลที่บันทึกแล้วอยู่ในเครื่อง':'บันทึกแล้ว';
 }
-function vSyncError(){return S.localSaveError||C.outbox.some(o=>o.error)?`<button id="sync-state" class="sync-state sync-error" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`:'';}
+function vSyncError(){return S.localSaveError||C.outbox.some(o=>o.error)?`<button id="sync-state" class="sync-state sync-error" role="status" aria-live="polite" data-act="sync-retry">${esc(syncCopy())}</button>`:!navigator.onLine?`<span class="off-chip" role="status">${ic('wifiOff',14)}${esc(syncCopy())}</span>`:'';}
 function updateSync(){const slot=document.getElementById('sync-slot');if(slot)slot.innerHTML=vSyncError();}
 function vSync(){return `<span id="sync-slot">${vSyncError()}</span>`;}
 
@@ -3421,6 +3426,13 @@ function aiStatusRow(){
   const full = a.full, n = +a.used || 0;
   return `<div class="acc-ai"><span>${ic("spark",18)}AI วันนี้</span><span class="ai-badge ${full ? "full" : "ok"}">${full ? "เต็มโควตา · ลองหลัง ~15:00" : "พร้อมใช้"}</span><small class="muted">ใช้ไป ${n} ครั้ง</small></div>`;
 }
+/* without internet: the plan is always on the phone; booking files are once the trip has been opened online */
+function offlineRow(){
+  let id = S.tripId; if(!id) try { id = localStorage.getItem("mytrip-last-trip"); } catch(_){}
+  const t = id && C.trips[id]; if(!t) return "";
+  const files = [...new Set(itemList(id).flatMap(itemFiles))], got = files.filter(f => DOCS.have.has(f)).length, ready = got >= files.length;
+  return `<div class="acc-ai"><span>${ic("wifiOff",18)}ใช้ตอนไม่มีเน็ต</span><span class="ai-badge ${ready ? "ok" : "full"}">${ready ? "พร้อม" : "ยังไม่ครบ"}</span><small class="muted">${esc(t.name || "ทริป")} · แผนอยู่ในเครื่องแล้ว${files.length ? ` · ใบจอง ${got}/${files.length} ไฟล์` : ""}${ready ? "" : " · เปิดทริปตอนมีเน็ตสักครู่ แอปจะเก็บให้ครบ"}</small></div>`;
+}
 /* the share section: one tab per phone, the phone in hand first */
 function shareTabs(){
   const tab = S.scTab || (/Android/i.test(navigator.userAgent) ? "android" : "iphone");
@@ -3835,7 +3847,7 @@ document.addEventListener("click", async e => {
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
-    case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad();
+    case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad(); docKeys().then(k => { k.forEach(x => DOCS.have.add(x)); if(S.sheet && S.sheet.kind === "account") render(); });
       if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
       break;
     case "share-on": case "share-reset": {
@@ -3936,7 +3948,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-order1";
+const BUILD = "2026-11-08-offline1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

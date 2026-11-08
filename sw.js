@@ -3,11 +3,13 @@
  * The app's own scripts: network first too. Fonts, icons and the PDF/viewer libraries: the saved copy straight away, refreshed in the background.
  * Trip data lives in the page's own storage; the backend (Apps Script), sign-in, Drive and weather are never touched here. */
 const CACHE = "mytrip-shell-v1";
+/* the booking-file viewer, kept ahead of time so a PDF ticket opens offline even if no PDF was opened before */
+const LIBS = ["https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"];
 const SHELL = ["./", "./index.html", "./plan-export.js", "./lang-en.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/apple-touch-icon.png", "./icons/icon-512.png"];
 const KEEP = /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com)\//;
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, {cache: "reload"})).catch(() => {})))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all([...SHELL.map(u => c.add(new Request(u, {cache: "reload"})).catch(() => {})), ...LIBS.map(u => c.match(u).then(hit => hit || c.add(u)).catch(() => {}))])).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("mytrip-shell-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
