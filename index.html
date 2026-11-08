@@ -1413,6 +1413,24 @@ function dayEntries(dateStr){
     const ranks=new Map(saved.map((key,n)=>[key,n])),base=new Map(out.map((e,n)=>[dayEntryKey(e),n]));
     out.sort((a,b)=>(ranks.has(dayEntryKey(a))?ranks.get(dayEntryKey(a)):saved.length+base.get(dayEntryKey(a)))-(ranks.has(dayEntryKey(b))?ranks.get(dayEntryKey(b)):saved.length+base.get(dayEntryKey(b))));
   }
+  /* the hotel slept in last night opens the day. Its check-out row goes first when it has no time yet,
+     or when a saved order from before it existed would leave it at the bottom; a timed check-out keeps its place by time */
+  const lastNight = stayForNight(addDays(dateStr, -1));
+  if(lastNight){
+    const k = out.findIndex(e => e.it.type === "stay" && e.phase === "out" && s_(e.it.title).toLowerCase() === s_(lastNight.title).toLowerCase());
+    const ranked = k >= 0 && Array.isArray(saved) && saved.includes(dayEntryKey(out[k]));
+    if(k > 0 && !ranked){
+      const e = out.splice(k, 1)[0], t = /^\d\d:\d\d$/.test(e.time || "") ? e.time : "";
+      const at = t ? out.findIndex(x => /^\d\d:\d\d$/.test(x.time || "") && x.time > t) : 0;
+      out.splice(at < 0 ? out.length : at, 0, e);
+    }
+  }
+  /* a travel leg with no time of its own goes just before the place it goes to (you travel, then check in) */
+  for(const e of out.filter(x => x.it.type === "move" && !/^\d\d:\d\d$/.test(x.time || "") && !(Array.isArray(saved) && saved.includes(dayEntryKey(x))))){
+    const to = s_((e.it.data || {}).to).toLowerCase(); if(!to) continue;
+    const k = out.indexOf(e), dest = out.findIndex(x => x !== e && !x.night && x.it.type !== "move" && s_(x.it.title).toLowerCase() === to);
+    if(dest >= 0 && dest < k){ out.splice(k, 1); out.splice(dest, 0, e); }
+  }
   /* the day starts where we slept last night, unless that hotel's check-out or a landing already opens the day */
   const slept = stayForNight(addDays(dateStr, -1));
   const landing = out.some(e => e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === dateStr && e.it.date !== dateStr)));
@@ -4171,7 +4189,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-sc7-hotel";
+const BUILD = "2026-11-08-sc7-hotel2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
