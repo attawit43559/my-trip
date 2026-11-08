@@ -119,12 +119,6 @@ p{margin:0}
 .fld input[type=date],.fld input[type=time]{box-sizing:border-box;line-height:22px;padding-top:12px;padding-bottom:12px;overflow:hidden}
 .fld.sm input[type=date],.fld.sm input[type=time]{padding-top:10px;padding-bottom:10px}
 .fld input[type=date]::-webkit-date-and-time-value,.fld input[type=time]::-webkit-date-and-time-value{line-height:22px;min-height:22px}
-.stepper-card{background:var(--surface);border-radius:24px;padding:4px 16px}
-.step-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
-.step-row+.step-row{border-top:1px solid var(--line)}
-.stepper{display:flex;align-items:center;gap:12px}
-.stepper button{width:44px;height:44px;border-radius:999px;border:0;background:var(--tile);display:flex;align-items:center;justify-content:center}
-.stepper output{width:28px;text-align:center;font-family:var(--display);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
 .note{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
 .trip-head{background:var(--accent-soft);border-radius:28px;padding:16px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
 .trip-head .row{display:flex;justify-content:space-between;align-items:center;position:relative}
@@ -135,7 +129,6 @@ p{margin:0}
 .tile{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:24px;border:0;background:var(--surface);text-align:left}
 .tile .thumb{width:44px;height:44px;border-radius:14px}
 .tile b{font-family:var(--display);font-weight:500;font-size:17px;display:block}
-.tabs-wrap{overflow-x:auto;margin-inline:-4px;padding:2px 4px}
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(58px,1fr);gap:8px}
 .tab{height:58px;border-radius:18px;border:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
 .tab span{font-size:12px}
@@ -148,10 +141,6 @@ p{margin:0}
 .entry .thumb{width:40px;height:40px;border-radius:12px}
 .entry .ttl{font-weight:500;overflow-wrap:anywhere}
 .add-dash{height:54px;border-radius:20px;border:2px dashed var(--line);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;width:100%}
-.add-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.add-row .add-dash{border-color:color-mix(in srgb,var(--mid) 45%,transparent);color:var(--deep);font-size:14px;gap:6px;padding:0 8px;white-space:nowrap}
-.add-row>[data-act="day-ideas-open"]{grid-column:1/-1}
-.add-row .add-dash .ic{color:var(--mid)}
 .drop{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px 26px;border-radius:28px;border:2px dashed var(--accent-line);background:var(--accent-soft);text-align:center;cursor:pointer}
 .files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 #paste-text{border:0;border-radius:16px;background:var(--surface);padding:12px 14px;font:inherit;font-size:15px;font-weight:400;resize:vertical;min-height:130px;width:100%}
@@ -166,9 +155,7 @@ p{margin:0}
 #gbtn{min-height:44px;display:flex;justify-content:center}
 .new-btn{height:44px;padding:0 16px 0 12px;border-radius:999px;border:0;box-shadow:none;background:var(--accent-soft);color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:500;font-size:15px;flex:none}
 .eyebrow{font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.02em}
-.tlist{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:20px;overflow:hidden}
 .trow{position:relative;overflow:hidden}
-.tlist .trow+.trow .trow-slide{border-top:1px solid var(--line)}
 .trow.big{border-radius:28px}
 .trow.small{border-radius:22px}
 .trow.big .trow-actions,.trow.small .trow-actions{width:96px}
@@ -194,14 +181,10 @@ p{margin:0}
 .day-list .entry{padding-left:16px;padding-right:16px}
 .cat-list.cat-list{padding:0}
 .cat-list .cat-row{padding-left:4px;padding-right:4px}
-.swipe-del{flex:1;border:0;background:var(--danger);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600}
 .trow-slide{position:relative;background:var(--surface);transition:transform .22s ease;touch-action:pan-y;will-change:transform}
 .trow.dragging .trow-slide{transition:none}
 .trow.open .trow-slide,.trow:has(.swipe-del:focus-visible) .trow-slide{transform:translateX(-88px)}
 @media (prefers-reduced-motion: reduce){.trow-slide{transition:none}}
-.trow-main{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;background:none;text-align:left;min-height:64px;color:var(--muted)}
-.trow-main .grow{color:var(--ink)}
-.trow-main .t-name{font-size:15px}
 .badge{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;flex:none}
 .badge b{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;display:flex}
 .badge span{font-size:10px}
@@ -213,7 +196,6 @@ p{margin:0}
 .menu button{display:flex;align-items:center;gap:12px;min-height:52px;border:0;background:none;text-align:left;font-weight:500}
 .menu button+button{border-top:1px solid var(--line)}
 .menu .danger{color:var(--danger)}
-.cat-card{background:var(--surface);border-radius:24px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
 /* trip info lives in a floating bar at the bottom: it slides away while scrolling down, comes back on the way up, and opens upward when a tab is tapped */
 .dock{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;z-index:16;
   background:var(--surface);border-radius:22px;padding:6px;
@@ -222,15 +204,9 @@ p{margin:0}
 html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock .seg{background:transparent;padding:0}
-.dock-panel{display:flex;flex-direction:column;gap:6px;padding:6px 6px 4px;max-height:min(62vh,var(--vvh,100vh) - 170px)}
-.dock.anim .dock-panel{animation:dockUp .22s ease}
-.dock-hd{display:flex;align-items:center;gap:10px;padding:2px 2px 0 4px;color:var(--deep)}
-.dock-hd .round.sm{width:34px;height:34px;background:var(--tile);color:var(--muted)}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
 /* dims from the bottom and fades to clear before the top: iPhone tints the status bar from the page a beat late, so a dark top made it flash */
 .dock-dismiss{position:fixed;inset:0;z-index:15;border:0;padding:0;background:transparent;cursor:default}
-.dock-scrim{position:fixed;inset:0;z-index:15;background:linear-gradient(to top,rgba(20,19,26,.34) 0%,rgba(20,19,26,.24) 40%,rgba(20,19,26,.08) 72%,rgba(20,19,26,0) 90%)}
-.dock-scrim.anim{animation:fadeIn .22s ease}
 .dock.open{box-shadow:0 -4px 40px rgba(43,33,28,.22),0 0 0 1px var(--line)}
 @keyframes dockUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -287,11 +263,6 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .thumb-sm{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}
 .cat-row.done .ttl{color:var(--muted)}
 .ok-mini{width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--place-soft);color:var(--place);flex:none}
-.plan-box{background:var(--soft);color:var(--deep);border-radius:18px;padding:14px;display:flex;align-items:center;gap:12px}
-.plan-box.stack{display:flex;flex-direction:column;align-items:stretch}
-.plan-box .fld{color:var(--ink)}
-.plan-box .fld input,.plan-box .fld select{background:var(--surface)}
-.plan-box .pill-btn{background:var(--surface);color:var(--deep)}
 .chips.t-idea button[aria-pressed="true"]{background:var(--soft);color:var(--deep);border-color:var(--mid)}
 /* wish-list kinds: sights teal, food orange, shopping pink */
 /* trip header colours */
@@ -307,7 +278,6 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .chips.t-idea button[aria-pressed="true"].k-sight,.chips.t-idea button[aria-pressed="true"].k-food,.chips.t-idea button[aria-pressed="true"].k-shop,.chips.t-idea button[aria-pressed="true"].k-cafe{background:var(--soft);color:var(--deep)}
 
 .share-box{background:var(--tile);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.share-hd{display:flex;align-items:center;gap:8px;color:var(--idea)}
 .share-box .pill-btn{align-self:flex-start;background:var(--surface)}
 .share-box .link-box{background:var(--surface);min-height:44px}
 .link-box.sm input{font-size:13px}
@@ -332,13 +302,6 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .share-act{display:flex;gap:4px;justify-content:flex-end}
 .link-wait{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:10px 12px}
 .spinner.sm{width:20px;height:20px;border-width:3px}
-.paste-link{text-decoration:none;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:-6px;color:var(--idea);font-size:14px}
-
-.day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
-.day-h>p{margin-right:auto}.day-h .clear-btn{flex:none}
-.clear-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px}
-.clear-ask{display:flex;gap:6px}
-.clear-ask .pill-btn{height:32px;padding:0 12px;font-size:13px;background:var(--tile)}
 .pill-btn.danger-soft{background:color-mix(in srgb,var(--danger) 12%,var(--surface));color:var(--danger)}
 
 .aic{height:38px;border-radius:10px;border:0;background:var(--tile);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:var(--ink)}
@@ -401,7 +364,6 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .kv{display:flex;justify-content:space-between;gap:16px;font-size:14px;padding:6px 0}
 .kv span:first-child{color:var(--muted)}
 .kv span:last-child{text-align:right;font-weight:500;overflow-wrap:anywhere}
-.danger-btn{border:0;background:none;color:var(--danger);font-weight:500;min-height:44px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--tile);font-size:14px;display:inline-flex;align-items:center;gap:6px}
@@ -443,13 +405,8 @@ input,select,textarea{font-size:16px!important}
 .trip-bar svg.art{position:absolute;right:40px;bottom:0;left:auto;width:168px;height:92px;overflow:visible}
 .trip-bar .tb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3;gap:2px}
 .trip-bar h1{font-size:26px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trip-bar .tb-invite,.trip-bar .tb-save{position:relative;flex:none}
-.trip-bar .tb-invite em{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-style:normal;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .fld input,.fld select{height:46px;border-radius:14px}
 .fld.sm input{height:42px}
-.step-row{min-height:56px}
-.stepper button{width:40px;height:40px}
-.stepper output{font-size:18px}
 .tabs{display:grid;gap:4px}
 .tab{height:46px;border-radius:12px;padding:0}
 .tab span{font-size:10px}
@@ -464,7 +421,6 @@ input,select,textarea{font-size:16px!important}
 .moon svg{width:16px;height:16px}
 .moon[class*="t-"]{border-width:1.33px}
 .add-dash{height:44px;border-radius:16px}
-.cat-card{border-radius:20px}
 .cat-row{min-height:46px}
 .drop.compact{padding:12px}
 .sheet{gap:12px;padding-top:16px;border-radius:24px 24px 0 0}
@@ -505,16 +461,10 @@ html.lock,html.lock body{overflow:hidden}
 
 .aic:disabled{opacity:.3}
 
-.thumb-xs{width:22px;height:22px;border-radius:7px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--soft);color:var(--deep)}
-
 /* the planner's own buttons wear an "AI" gradient */
 
 /* English words look bigger and bolder than Thai at the same size; tone them down to match */
-.seg button span.latin{font-size:.88em;font-weight:400;letter-spacing:.01em}
-.dock-hd b.latin{font-size:.92em;font-weight:500}
-
-.trip-tools{display:flex;gap:8px;flex-wrap:wrap}.sync-state{border:0;background:var(--tile);color:var(--muted);padding:8px 12px;border-radius:10px;text-align:left;font-size:12px}.sync-error{color:var(--danger)}.history-row,.overview-day{padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}.overview-sheet{max-width:780px!important}.trip-map{height:300px;min-height:300px;flex-shrink:0;border-radius:14px;background:var(--tile);z-index:0}.overview-day ol{padding-left:24px;line-height:1.8}.lock-field{display:flex;gap:8px;align-items:center;font-size:14px}.lock-field input{width:20px;height:20px}
-.static-map{height:auto;min-height:180px;overflow:hidden;border:1px solid var(--line)}.static-map a{display:block}.static-map-image{display:block;width:100%;height:auto}.static-map>p{padding:20px}.map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.map-legend span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pin);margin-right:5px}.map-pin-list{list-style:none;padding:0;margin:8px 0}.map-pin-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.map-pin-label{color:white;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex:none;font-weight:600}.map-pin-list li>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.map-pin-list small{display:block;color:var(--muted)}.map-pin-list a{font-size:12px;white-space:nowrap;color:var(--place)}
+.seg button span.latin{font-size:.88em;font-weight:400;letter-spacing:.01em}.sync-state{border:0;background:var(--tile);color:var(--muted);padding:8px 12px;border-radius:10px;text-align:left;font-size:12px}.sync-error{color:var(--danger)}.history-row,.overview-day{padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}.lock-field{display:flex;gap:8px;align-items:center;font-size:14px}.lock-field input{width:20px;height:20px}
 /* Long route names and transport choices wrap inside the available phone width. */
 .sheet,.dock-body,.entry .grow,.cat-row .grow{overflow-wrap:anywhere}
 .screen,.dock-panel,.dock-body,.ai-stack,.ai-day,.ai-form,.ai-q,.ai-row-q .chips{min-width:0}
@@ -522,34 +472,25 @@ html.lock,html.lock body{overflow:hidden}
 .kv span:first-child{flex-shrink:0;max-width:42%}
 .sheet input,.sheet select,.sheet textarea{min-width:0;max-width:100%}
 .chips button{max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;padding-top:7px;padding-bottom:7px}
-
-@media(max-width:360px){.map-pin-list li{flex-wrap:wrap}}
 /* Minimal trip shell: daily plan first, bookings and secondary tools one level deeper. */
-.plan-actions{display:flex;flex-wrap:wrap;gap:8px}.plan-actions .pill-btn{background:var(--soft);color:var(--deep);height:40px;font-weight:500}
-.plan-actions .pill-btn:last-child{margin-left:auto}
+.plan-actions{display:flex;flex-wrap:wrap;gap:8px}
 .entry-copy .ttl{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .entry-sub{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;margin-top:3px}
 .sync-state{font-size:11px;max-width:55%;text-align:right}.sync-state.sync-ok{background:transparent;padding:0;min-height:24px;cursor:default}
 .dock{border-radius:18px;box-shadow:0 2px 16px rgba(0,0,0,.09),0 0 0 1px var(--line)}
 .booking-group{padding:8px 0 14px}.booking-group+.booking-group{border-top:1px solid var(--line)}
-.booking-group h3{font:500 14px var(--body)}.text-action{border:0;background:transparent;min-height:40px;padding:0 8px;color:var(--ink);font-size:13px}
+.booking-group h3{font:500 14px var(--body)}
 .item-edit-visible{border:1px solid var(--line);height:44px;font:500 14px var(--body)}
 .advanced-options summary{min-height:44px;cursor:pointer;padding:12px 0;font-weight:500}.advanced-options .share-box{margin-top:8px}
 
 .ai-priority{display:flex;align-items:center;gap:10px;text-align:left;background:var(--tile);border:1px solid transparent;border-radius:12px;padding:10px;width:100%;font-size:13px}.ai-priority>span{flex:1;min-width:0;overflow-wrap:anywhere}.ai-priority small{flex:none;color:var(--muted)}.ai-priority[aria-pressed="true"]{background:var(--ai-soft);border-color:var(--ai-mid)}
 
-.route-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.route-link-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.route-link{display:flex;align-items:center;gap:10px;padding:14px;background:var(--tile);border-radius:16px;text-decoration:none;color:var(--ink);min-width:0}.route-link .grow{min-width:0;overflow-wrap:anywhere}.route-link b{font-size:14px}.route-link small{display:block;color:var(--muted);margin-top:5px}.route-number{background:var(--flight-soft,#e3eeff);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;flex-shrink:0}.route-link>svg{flex-shrink:0}
-
-.workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}.picker-footer{display:grid;gap:10px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px)}.picker-footer .btn{width:100%}.maps-import{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;min-height:48px;background:var(--idea-soft);color:var(--idea);font:inherit;font-weight:600}.route-hint{display:block;font-size:12px;margin-top:3px}
-.day-add{min-height:48px;background:var(--idea-soft);border:0;color:var(--idea);font-weight:600}.dock-hd .text-action{white-space:nowrap;font-size:12px}
-#sync-slot:empty{display:none}
-.day-picker.inline-picker{gap:10px;max-height:none;overflow:visible!important;border:1px solid var(--line);border-radius:20px;padding:12px;background:var(--surface)}.inline-picker .picker-list{flex:0 1 auto;max-height:clamp(80px,calc(var(--vvh,100dvh) - 510px),220px);min-height:0}.inline-picker .picker-footer{padding-bottom:0}.inline-picker h2{font-size:17px}.inline-picker .workflow-search{flex:none}
-.compact-picker.inline-picker{gap:8px;padding:10px;border-radius:16px}.picker-toolbar{display:flex;align-items:center;gap:6px;min-width:0}.picker-toolbar .picker-filters{flex:1;min-width:0;margin:0;gap:4px}.picker-toolbar .picker-filters button{min-height:34px;padding:5px 9px;font-size:12px}.picker-search{display:flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border:0;border-radius:10px;background:var(--tile);color:var(--ink)}.compact-picker .picker-choice{min-height:42px;padding:7px 9px;font-size:13px;border-radius:10px}.compact-picker .thumb-sm{width:24px;height:24px;border-radius:8px}.compact-picker .picker-list{max-height:clamp(120px,calc(var(--vvh,100dvh) - 380px),300px);gap:5px}.compact-picker .compact-footer{display:grid;grid-template-columns:auto 1fr;gap:8px}.compact-footer .btn{height:38px;min-height:38px;font-size:14px;padding:6px 14px}.compact-picker .workflow-search{min-height:38px;padding:7px 10px;font-size:14px}
-.dock.planning{height:min(360px,calc(var(--vvh,100dvh) - var(--calendar-bottom,220px) - 24px - env(safe-area-inset-bottom,0px)));min-height:110px}.dock.planning .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden;padding:4px}.planner-picker{flex:1;min-height:0;max-height:none;overflow:hidden!important;gap:8px}.planner-picker .picker-list{flex:1;min-height:0;max-height:none}.planner-picker .picker-toolbar,.planner-picker .workflow-search{flex:none}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--idea-soft);border-color:var(--idea-mid);color:var(--idea)}.dock.planning .seg{flex:none}html.kb .dock.planning .seg{display:none}
-.dock.open{top:var(--trip-panel-top,140px);height:auto;max-height:none;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}.dock.open .dock-panel{flex:1;min-height:0;max-height:none;overflow:hidden}.dock.open .dock-body{flex:1;min-height:0}.dock.planning{height:auto;min-height:0}.planner-calendar{flex:none;padding:0 4px 6px}.interest-tools{flex:none;display:flex;flex-direction:column;gap:8px;padding:2px 4px 6px}.interest-tools .workflow-search{min-height:38px;font-size:14px}.dock.open .seg,.dock.open .cat-add{flex:none}.dock.open .planner-picker{min-height:0}.dock.open .cal{margin:0}.dock.open .cal .tab{min-height:40px}.dock.open .planner-calendar{max-height:35%;overflow-y:auto;overscroll-behavior:contain}
+.workflow-search{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);color:var(--ink);font:inherit;box-sizing:border-box}.day-picker{display:flex;flex-direction:column;gap:14px;overflow:hidden!important;max-height:calc(var(--vvh,100dvh) - 24px)}.day-picker .hd{flex:none}.picker-filters{flex-wrap:nowrap;overflow-x:auto;flex:none}.picker-filters button{white-space:nowrap;flex:none}.picker-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}.picker-choice{width:100%;text-align:left;flex:none;gap:10px;min-height:52px}.picker-choice .grow{overflow-wrap:anywhere}.picker-choice>.thumb-sm,.picker-choice>.picker-check{flex:none}
+#sync-slot:empty{display:none}.picker-toolbar{display:flex;align-items:center;gap:6px;min-width:0}.picker-toolbar .picker-filters{flex:1;min-width:0;margin:0;gap:4px}.picker-toolbar .picker-filters button{min-height:34px;padding:5px 9px;font-size:12px}.picker-search{display:flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border:0;border-radius:10px;background:var(--tile);color:var(--ink)}.compact-picker .picker-choice{min-height:42px;padding:7px 9px;font-size:13px;border-radius:10px}.compact-picker .thumb-sm{width:24px;height:24px;border-radius:8px}.compact-picker .picker-list{max-height:clamp(120px,calc(var(--vvh,100dvh) - 380px),300px);gap:5px}.compact-picker .workflow-search{min-height:38px;padding:7px 10px;font-size:14px}
+.dock.planning{height:min(360px,calc(var(--vvh,100dvh) - var(--calendar-bottom,220px) - 24px - env(safe-area-inset-bottom,0px)));min-height:110px}.planner-picker{flex:1;min-height:0;max-height:none;overflow:hidden!important;gap:8px}.planner-picker .picker-list{flex:1;min-height:0;max-height:none}.planner-picker .picker-toolbar,.planner-picker .workflow-search{flex:none}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--idea-soft);border-color:var(--idea-mid);color:var(--idea)}.dock.planning .seg{flex:none}html.kb .dock.planning .seg{display:none}
+.dock.open{top:var(--trip-panel-top,140px);height:auto;max-height:none;bottom:calc(10px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}.dock.open .dock-body{flex:1;min-height:0}.dock.planning{height:auto;min-height:0}.planner-calendar{flex:none;padding:0 4px 6px}.interest-tools{flex:none;display:flex;flex-direction:column;gap:8px;padding:2px 4px 6px}.interest-tools .workflow-search{min-height:38px;font-size:14px}.dock.open .seg,.dock.open .cat-add{flex:none}.dock.open .planner-picker{min-height:0}.dock.open .cal{margin:0}.dock.open .cal .tab{min-height:40px}.dock.open .planner-calendar{max-height:35%;overflow-y:auto;overscroll-behavior:contain}
 /* One warm accent for interaction; category colors identify content only. */
-.dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;box-shadow:none;color:var(--ink);font-weight:600}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--place-soft);border-color:transparent;color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock .text-action{color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
-.travel-leg-link small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.travel-leg-link .grow,.travel-points{overflow-wrap:anywhere}.travel-points{margin:0;font-weight:500}.maps-travel-link{color:var(--ink);background:var(--tile);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14px;min-height:44px}
+.dock .seg button{color:var(--muted)}.dock .seg button .ic{color:currentColor}.dock .seg button[aria-expanded="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}.dock .cal .tab[aria-selected="true"],.cal .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}.cal .tab[aria-selected="true"]::after{border-color:var(--on-accent)}.picker-filters button{border:1px solid transparent;background:var(--tile);color:var(--muted)}.picker-filters button[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;box-shadow:none;color:var(--ink);font-weight:600}.planner-picker .picker-choice[aria-pressed="true"]{background:var(--place-soft);border-color:transparent;color:var(--ink)}.dock .cat-add{background:var(--accent);color:var(--on-accent)}.dock .picker-search{background:var(--tile);color:var(--ink)}.dock button:focus-visible,.dock input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}.travel-leg-link .grow,.travel-points{overflow-wrap:anywhere}.travel-points{margin:0;font-weight:500}.maps-travel-link{color:var(--ink);background:var(--tile);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14px;min-height:44px}
 .entry .time{text-align:center}.entry .time.dur{display:flex;flex-direction:column;align-items:center;line-height:1.1;color:var(--ink)}.entry .time.fixed{color:var(--muted)}
 .time-pick{position:absolute;left:0;top:0;bottom:0;width:66px;opacity:0;border:0;padding:0;margin:0;z-index:2;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}.entry .time.dur b{font-weight:400;font-size:12.5px}.entry .time.dur small{font-size:10.5px;font-family:var(--body);font-weight:400}
 .travel-gap{position:relative;list-style:none;padding:0 12px}
@@ -573,8 +514,7 @@ html.lock,html.lock body{overflow:hidden}
 .travel-gap button::before{content:"";position:absolute;left:71px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}.day-list .travel-gap b{font-size:13px;font-weight:500;line-height:1.3}
 .travel-gap .gap-dot{display:flex;align-items:center;flex:none}
 .day-list .now-line{position:relative}.day-list .now-line::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}
-.travel-when{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--accent-soft)}.travel-when>b{font-size:14px}.travel-when .fld{font-size:12px}.travel-when input{min-height:40px}.travel-source-choices{display:grid;gap:8px}.travel-source{display:flex;align-items:center;gap:10px;min-height:64px;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;text-align:left;background:var(--surface);color:var(--ink);font:inherit}.travel-source>span{flex:1;min-width:0}.travel-source b{font-size:14px;display:block}.travel-source small{display:block;font-size:11px;color:var(--muted);margin-top:3px}.maps-source>.ic:first-child{color:var(--place)}.travel-source[aria-pressed="true"]{border-color:var(--accent-line);background:var(--accent-soft)}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.external-maps{border-top:1px solid var(--line)}.travel-result>summary{cursor:pointer;list-style:revert}.travel-result-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-source{min-height:44px;padding:10px 12px}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}.booking-add-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.booking-add-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit}.booking-add-tabs button[aria-selected="true"]{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.travel-result>summary{cursor:pointer;list-style:revert}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
 
@@ -587,7 +527,6 @@ html.lock,html.lock body{overflow:hidden}
 .idea-compose-sheet .chips.t-idea.suggest-cats{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:2px}.idea-compose-sheet .chips.t-idea.suggest-cats button{flex-direction:row;gap:5px;font-size:14px;padding:10px 4px}
 .idea-suggest-row .grow{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
 .suggest-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:0}.soft-btn.suggest-ok{min-height:50px;border:0;border-radius:14px;font-size:15px;font-weight:600;background:var(--place-soft);color:var(--place)}.soft-btn.suggest-ok:disabled{opacity:.5}.small-wait{padding:10px 0}.small-wait .spinner{width:22px;height:22px}
-.idea-add-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}.idea-add-choice button{display:flex;align-items:center;justify-content:center;gap:6px;height:48px;border:0;border-radius:14px;background:var(--soft);color:var(--deep);font-family:var(--body);font-size:15px;font-weight:600}.idea-add-choice button .ic{color:var(--mid)}.idea-add-choice .ai-pick,.idea-add-choice .ai-pick .ic{background:var(--ai-soft);color:var(--ai)}.idea-add-choice .ai-pick .ic{background:none}
 html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;gap:8px}html.kb .idea-compose-sheet:not(.steady) .hd .round{height:32px;width:32px}html.kb .idea-compose-sheet:not(.steady) .hd h2{font-size:17px}html.kb .idea-compose-sheet:not(.steady) .idea-compose-body{gap:8px}html.kb .idea-compose-sheet:not(.steady) .fld{gap:4px}html.kb .idea-compose-sheet:not(.steady) .fld input{height:40px;padding:7px 12px}html.kb .idea-compose-sheet:not(.steady) .chips button{min-height:32px;padding:5px 9px}html.kb .idea-compose-sheet:not(.steady) .btn{height:42px;min-height:42px}
 .idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding:7px 2px;flex-direction:column;gap:3px;border-radius:14px;font-size:12.5px;line-height:1.2}html.kb .idea-compose-sheet .chips.t-idea button{padding:5px 2px}
 
@@ -625,7 +564,6 @@ html.kb .tabbar{display:none}
 @media (prefers-reduced-motion:reduce){.tab-pill{transition:none}}
 .page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
 .page .picker-list{max-height:none;overflow:visible;flex:none}
-.page-cal .cal{margin:0}
 .page-add{align-self:flex-start;background:var(--soft)!important;color:var(--deep)!important;box-shadow:none!important;border:0!important}.page-add.t-idea{--soft:var(--place-soft);--deep:var(--place)}.page-add.ai-pick{--soft:var(--ai-soft);--deep:var(--ai)}.page-add-row{display:flex;gap:8px;align-self:flex-start;flex:none}.page-add .ic{color:currentColor!important}
 .page .booking-group{padding:14px 16px}
 .workflow-search,.workflow-search:focus,.workflow-search:focus-visible,.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none!important;box-shadow:0 1px 3px rgba(43,33,28,.08)!important;border-color:transparent!important;background:var(--surface)!important}
@@ -712,7 +650,6 @@ html.kb .tabbar{display:none}
 .trow-slide:has(.entry-doc) .entry{padding-right:48px}
 .trow-slide{position:relative}
 .doc-off{display:block;font-size:11.5px;color:var(--place);font-weight:500}
-.docs-state{display:flex;align-items:center;gap:6px;margin:0 4px}
 .doc-sheet{position:fixed;inset:0;z-index:30;background:#FFFFFF;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
 .doc-hd>.grow{min-width:0}
 .doc-hd{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
@@ -725,8 +662,6 @@ html.kb .tabbar{display:none}
 .doc-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#F4F1EC;padding-bottom:env(safe-area-inset-bottom,0px)}
 .doc-pages{display:flex;flex-direction:column;gap:10px;padding:10px;box-sizing:border-box;width:100%}
 .doc-body{overscroll-behavior:contain;touch-action:pan-x pan-y}
-.doc-zoom{display:flex;align-items:center;gap:2px;background:var(--tile);border-radius:999px;padding:2px}
-.doc-zoom button{width:34px;height:34px;border:0;border-radius:999px;background:none;color:var(--ink);display:grid;place-items:center;padding:0}
 
 .doc-page{display:block;width:100%;height:auto;background:#FFFFFF;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .doc-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:80px 24px;color:var(--muted)}
@@ -742,12 +677,6 @@ html.kb .tabbar{display:none}
 .tb-wx{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;font-size:12px;color:var(--ink);background:rgba(255,255,255,.7);border-radius:999px;padding:2px 9px 2px 7px;position:relative;z-index:1}
 .tb-wx .ic{color:var(--deep,#8A5300);vertical-align:-3px;margin-right:4px}
 .tb-wx.none{color:var(--muted)}.tb-wx.none .ic{color:var(--muted);opacity:.7}
-.wx-row{display:flex;align-items:center;gap:8px;margin:0 4px;font-size:14px;color:var(--ink)}
-.wx-row .ic{color:#E0A030}.wx-row.wet .ic{color:#5F8FC0}
-.wx-row span{color:var(--muted)}
-.wx-rain{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
-.wx-rain .ic{color:#5F8FC0!important}
-.wx-wait .ic{color:var(--muted)}
 .trip-top{position:sticky;top:0;z-index:12;display:flex;flex-direction:column;gap:10px;background:var(--bg);margin:calc(-12px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px}
 .pin-cal .cal{margin:0}
 .cal-nav{display:flex;align-items:center;gap:6px;min-height:34px}
@@ -931,9 +860,6 @@ const IC = {
   coffee:'<path d="M4 8h14v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8z"/><path d="M18 9h1a2 2 0 0 1 0 4h-1M3 21h16M8 3v2m4-2v2"/>',
   image:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
   shop:'<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
-};
-const TYPE = {
-  flight:{label:"เที่ยวบิน"}, stay:{label:"ที่พัก"}, place:{label:"สถานที่"}, move:{label:"การเดินทาง"}, idea:{label:"สนใจ"}
 };
 const ic = (n, s=22) => `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${IC[n]||""}</svg>`;
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1165,7 +1091,6 @@ async function prepFile(f){
   const small = await shrinkImage(f, 2000);
   return {mime:"image/jpeg", data: await fileToB64(small)};
 }
-const fileUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id) + "/view";
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
@@ -1280,13 +1205,6 @@ function vTripMore(){
   </div></div></div>`;
 }
 
-function stepRow(label, sub, key, min, max){
-  const v = S.newTrip[key];
-  return `<div class="step-row"><span><span style="font-weight:500">${label}</span>${sub ? `<br><span class="muted small">${sub}</span>` : ""}</span>
-    <span class="stepper"><button type="button" aria-label="ลด${label}" data-act="step" data-k="${key}" data-d="-1" data-min="${min}" data-max="${max}">${ic("minus",20)}</button>
-    <output aria-live="polite">${v}</output>
-    <button type="button" aria-label="เพิ่ม${label}" data-act="step" data-k="${key}" data-d="1" data-min="${min}" data-max="${max}">${ic("plus",20)}</button></span></div>`;
-}
 function tripFields(root, n){
   return `<label class="fld">ชื่อทริป<input id="nt-name" required maxlength="60" placeholder="เช่น เชียงใหม่หน้าหนาว" value="${esc(n.name)}" data-bind="${root}:name"></label>
       <div class="grid2"><label class="fld">วันไป<input type="date" value="${esc(n.start||"")}" data-bind="${root}:start"></label><label class="fld">วันกลับ<input type="date" value="${esc(n.end||"")}" min="${esc(n.start||"")}" data-bind="${root}:end"></label></div>`;
@@ -1356,15 +1274,6 @@ function orderedDayPlaces(date){
   return base.sort((a,b)=>(Number.isFinite(a.data?.dayOrder)?a.data.dayOrder:index.get(a.id))-(Number.isFinite(b.data?.dayOrder)?b.data.dayOrder:index.get(b.id)));
 }
 function dayOrderPending(date){return S.items.some(i=>i.type==='place'&&i.date===date&&i.data?.orderPending);}
-function saveDayOrder(date,ids,tripId){
-  if(S.trip?.id!==tripId||S.directSaving)return false;
-  const places=orderedDayPlaces(date),known=new Set(places.map(i=>i.id));
-  if(ids.length!==places.length||new Set(ids).size!==ids.length||ids.some(id=>!known.has(id))){toast('รายการเปลี่ยนไปแล้ว ลองเรียงใหม่อีกครั้ง');render();return false;}
-  if(ids.every((id,n)=>id===places[n].id)){render();return true;}
-  const patches=ids.map((id,dayOrder)=>({id,data:{...places.find(i=>i.id===id).data,dayOrder,orderPending:true}}));
-  for(const patch of patches)C.items[tripId][patch.id]={...C.items[tripId][patch.id],data:patch.data};
-  queue('saveItems',{tripId,items:patches});emit();toast('เรียงสถานที่แล้ว');return true;
-}
 function dayEntryKey(e){return JSON.stringify([e.it.id,e.phase||'']);}
 function saveDayRowOrder(date,keys,tripId){
   if(S.trip?.id!==tripId||S.directSaving)return false;
@@ -1388,8 +1297,6 @@ function stayForNight(date){
   const ds = S.trip ? tripDates(S.trip) : [], last = ds.length ? ds[ds.length - 1] : "";
   return (nextIn ? date < nextIn : (!last || date < last)) ? open : null;
 }
-/* the day opens at an airport when the group lands that day after flying overnight (or flew in to stay) */
-function landsOn(date, entries){ return (entries || dayEntries(date)).some(e => !e.night && e.it.type === "flight" && (e.phase === "arr" || (arrDateOf(e.it) === date && e.it.date !== date))); }
 function dayEntries(dateStr){
   const out = [];
   for(const it of S.items){
@@ -1519,7 +1426,6 @@ function selectTab(k, landed){
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
 const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0};
-function tabAt(bar, x){ const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(TRIP_TABS.length - 1, Math.floor((x - r.left - 4) / ((r.width - 8) / TRIP_TABS.length)))); }
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar) return;
   const r = bar.getBoundingClientRect(); TB.cell = (r.width - 8) / TRIP_TABS.length; TB.max = TB.cell * (TRIP_TABS.length - 1);
@@ -1761,13 +1667,6 @@ function wxKind(c){
   if(c >= 71 && c <= 77 || c === 85 || c === 86) return ["wxSnow", c === 75 || c === 86 ? "หิมะตกหนัก" : "หิมะตก", "snow"];
   if(c >= 95) return ["wxStorm", c >= 96 ? "พายุ มีลูกเห็บ" : "พายุฝน", "thunderstorm"];
   return ["wxPart", "", ""];
-}
-function vWx(date){
-  if(!date || date < today()) return "";
-  const w = wxFor(date);
-  if(!w) return date > addDays(today(), 15) ? `<p class="wx-row wx-wait muted small">${ic("wxPart",18)}พยากรณ์อากาศจะขึ้นเมื่อใกล้วัน (ไม่เกิน 16 วันล่วงหน้า)</p>` : "";
-  const [icn, th] = wxKind(w.code), wet = w.rain >= 50;
-  return `<p class="wx-row${wet ? " wet" : ""}">${ic(icn,22)}<b>${w.max}° / ${w.min}°</b><span>${esc(th)}</span>${w.rain != null ? `<span class="wx-rain">${ic("wxDrop",14)}ฝน ${w.rain}%</span>` : ""}</p>`;
 }
 /* the picture on the trip bar: mountains, with the sky of the chosen day */
 function tripArt(w){
@@ -2216,7 +2115,6 @@ function fld(label, path, val, type="text", cls=""){
 }
 function vReview(){
   const r = S.review;
-  const anyWarn = r.uncertain && r.uncertain.size > 0;
   const found = [r.flights.length ? `${r.flights.length} เที่ยวบิน` : "", r.stays.length ? `${r.stays.length} ที่พัก` : ""].filter(Boolean).join(" · ");
   const fileRow = r.fileName ? `<div class="file-row"><span class="thumb" style="width:44px;height:52px;border-radius:10px">${ic("file")}</span>
     <span class="grow"><span style="font-weight:500;overflow-wrap:anywhere">${esc(r.fileName)}</span><br><span class="muted small">อ่านเสร็จแล้ว${found?` · พบ ${found}`:""}</span></span><span class="ok-dot">${ic("check",18)}</span></div>` : "";
@@ -2405,21 +2303,6 @@ function mapsLink(it){
   if(point.placeId)q.set('query_place_id',point.placeId);
   return point.query?'https://www.google.com/maps/search/?'+q.toString():'';
 }
-function nextPlanStop(it,date){
-  if(it.type!=='place')return null;
-  const entries=dayEntries(date),at=entries.findIndex(e=>e.it.id===it.id&&!e.night);
-  if(at<0)return null;
-  for(const e of entries.slice(at+1)){
-    if(e.it.type==='flight')return null;
-    if(e.it.id!==it.id&&['place','stay'].includes(e.it.type))return e.it;
-    if(e.it.type==='move'&&s_((e.it.data||{}).to))return {title:e.it.data.to};
-  }
-  return null;
-}
-function nextStopLink(it){
-  const date=tripDates(S.trip)[S.day],next=nextPlanStop(it,date);if(!next)return '';
-  return `<a class="lnk" href="${esc(routeLink({type:'move',data:{from:it.title,to:next.title}}))}" target="_blank" rel="noopener">${ic('move',20)}<span class="grow">เดินทางต่อไป ${esc(briefName(next.title))}</span>${ic('ext',16)}</a>`;
-}
 function manualTravelLegs(date){
   const entries=dayEntries(date),points=[];
   const arrival=entries.some(e=>!e.night&&e.it.type==='flight'&&(e.phase==='arr'||(arrDateOf(e.it)===date&&e.it.date!==date)));
@@ -2573,10 +2456,6 @@ async function planIdea(){
     toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
   } catch(err){ fail(err); }finally{S.planAdding=null;render();}
 }
-function dayIdeaChoices(s){
-  const query=(s.query||'').trim().toLocaleLowerCase();
-  return S.items.filter(i=>i.type==='idea'&&!plannedFrom(i.id)&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
-}
 function plannerIdeas(s){
   const query=(s.query||'').trim().toLocaleLowerCase();
   return S.items.filter(i=>i.type==='idea'&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
@@ -2625,7 +2504,6 @@ function openIdeaRecommend(){
   S.sheet={kind:'idea-recommend',step:'form',cat:'sight',city:city||t.destination||'',likes:{sight:[],food:[],cafe:[]},note:'',places:[],selected:new Set(),busy:false};
   render();
 }
-function vIdeaAddChoice(){return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เพิ่มที่สนใจ" data-stop="1"><div class="hd"><h2>เพิ่มที่สนใจ</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="idea-add-choice"><button type="button" class="t-place" data-act="idea-add-manual">${ic('plus',18)}เพิ่มเอง</button><button type="button" class="ai-pick" data-act="idea-suggest-open">${ic('spark',18)}แนะนำ</button></div></div></div>`;}
 function vIdeaRecommend(s){
   const C=SUGGEST_CATS[s.cat]||SUGGEST_CATS.sight;
   const head=`<div class="hd"><h2>${s.step==='results'?`${esc(C.label)} ที่น่าไป`:'หาไอเดีย'}</h2><button type="button" class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>`;
@@ -2685,16 +2563,6 @@ async function saveIdeaRecommendations(){
 window.addEventListener('resize',fitPlannerPanel);
 window.addEventListener('scroll',fitPlannerPanel,{passive:true});
 
-async function addDayIdeas(){
-  const s=S.sheet,t=S.trip;if(!s||s.kind!=='day-ideas'||s.busy||!s.selected.length)return;
-  const selected=s.selected.map(id=>S.items.find(i=>i.type==='idea'&&i.id===id&&!plannedFrom(id))).filter(Boolean);
-  s.busy=true;render();
-  try{
-    for(const it of selected){const d=it.data||{};await store.addItem(t.id,{type:'place',date:s.date,time:'',title:it.title,sub:it.sub||'',data:{address:d.address||'',lat:d.lat,lon:d.lon,placeId:d.placeId||'',kind:d.kind||'',fromIdea:it.id},createdBy:S.me,createdAt:Date.now(),source:'idea'});}
-    if(S.trip?.id===t.id){const at=tripDates(t).indexOf(s.date);if(at>=0)S.day=at;if(S.sheet===s)S.sheet=null;}
-    toast('เพิ่มสถานที่แล้ว');
-  }catch(e){fail(e);}finally{s.busy=false;render();}
-}
 /* the places and travel legs people planned on these days (flights and stays are bookings, never cleared) */
 const ownOn = dates => S.items.filter(i => (i.type === "place" || i.type === "move") && dates.includes(i.date));
 function aiClock(value,locked=false){
@@ -2797,11 +2665,6 @@ function vSyncError(){return S.localSaveError||C.outbox.some(o=>o.error)?`<butto
 function updateSync(){const slot=document.getElementById('sync-slot');if(slot)slot.innerHTML=vSyncError();}
 function vSync(){return `<span id="sync-slot">${vSyncError()}</span>`;}
 
-async function historyOpen(){
-  S.sheet={kind:'history',loading:true};render();
-  try{await flush(); if(C.outbox.length)throw {code:'pending_sync'};const entries=await api('planHistory',{tripId:S.trip.id});if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',entries};render();}}
-  catch(e){if(S.sheet&&S.sheet.kind==='history'){S.sheet={kind:'history',err:featureError(e)};render();}}
-}
 function featureError(e){return ({plan_changed:'ทริปมีการแก้ไขจากอีกเครื่องแล้ว โหลดข้อมูลล่าสุดแล้วจัดแผนใหม่',pending_sync:'ยังมีข้อมูลรอบันทึก กรุณารอให้บันทึกครบหรือลองส่งอีกครั้ง',plan_outside_flight_window:'บันทึกไม่ได้: มีสถานที่ก่อนถึงปลายทางหรือหลังเดินทางกลับ กรุณาจัดแผนใหม่',plan_before_arrival:'บันทึกไม่ได้: เวลาท่องเที่ยวอยู่ก่อนพร้อมออกจากสนามบิน กรุณาจัดแผนใหม่',locked_booking_conflict:'แผนนี้เปลี่ยนหรือลืมนัดที่ล็อกเวลาไว้ กรุณาจัดแผนใหม่',offline:'ไม่มีอินเทอร์เน็ต แผนเดิมยังอยู่ กรุณาลองใหม่เมื่อเชื่อมต่อ',history_not_found:'ไม่พบแผนฉบับนี้',history_incomplete:'สำรองแผนนี้ไม่ครบ กรุณาเลือกฉบับอื่น'})[e&&e.code]||'บันทึกไม่สำเร็จ แผนเดิมยังอยู่ กรุณาลองใหม่';}
 function vHistory(s){return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ประวัติแผน" data-stop="1"><div class="hd"><h2>ประวัติแผน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><p class="muted small">เก็บฉบับก่อนใช้ AI หรือล้างแผน การย้อนกลับจะสำรองแผนปัจจุบันไว้อีกฉบับ</p>${s.loading?'<p>กำลังโหลด…</p>':s.err?`<p class="err">${esc(s.err)}</p>`:!(s.entries||[]).length?'<p>ยังไม่มีประวัติ จะเริ่มเก็บเมื่อใช้แผน AI ครั้งถัดไป</p>':s.entries.map(h=>`<section class="card history-row"><b>${esc(h.label)}</b><span class="muted small">${esc(new Date(h.createdAt).toLocaleString('th-TH'))} · ${h.dates.length} วัน</span>${s.confirm===h.id?`<p>ย้อนแผนของวันที่ ${h.dates.map(dShort).map(esc).join(', ')} กลับเป็นฉบับนี้?</p><button class="btn primary" data-act="history-restore" data-id="${esc(h.id)}" ${s.busy?'disabled':''}>${s.busy?'กำลังย้อนแผน…':'ยืนยันย้อนแผน'}</button>`:`<button class="pill-btn" data-act="history-confirm" data-id="${esc(h.id)}">ย้อนเป็นฉบับนี้</button>`}</section>`).join('')}</div></div>`;}
 async function restoreHistory(id){
@@ -2810,55 +2673,6 @@ async function restoreHistory(id){
   catch(e){s.busy=false;s.err=featureError(e);render();}
 }
 function applyPlanResponse(id,res){C.items[id]=Object.fromEntries(res.items.map(i=>[i.id,i]));(C.revisions ||= {})[id]=res.revision;emit();}
-function dayRouteLinks(date){
-  const entries=dayEntries(date).filter(e=>!e.night),moves=entries.filter(e=>e.it.type==='move'&&routeLink(e.it)).map(e=>e.it);
-  if(moves.length)return moves.map(it=>({title:moveTitle(it.data.from,it.data.to),mode:it.data.mode||'',href:routeLink(it),time:it.time||''}));
-  const places=entries.filter(e=>e.it.type==='place').map(e=>e.it);
-  if(!places.length)return [];
-  const leaves=entries.some(e=>e.it.type==='flight'&&e.it.date===date&&e.phase!=='arr');
-  const start=!landsOn(date,entries)&&stayForNight(addDays(date,-1));
-  const end=!leaves&&stayForNight(date);
-  const stops=[start,...places,end].filter(Boolean),links=[];
-  for(let i=1;i<stops.length;i++)if(stops[i-1].id!==stops[i].id){
-    const from=stops[i-1].title,to=stops[i].title;
-    links.push({title:moveTitle(from,to),mode:'เลือกวิธีเดินทางใน Google Maps',href:routeLink({type:'move',data:{from,to}}),time:''});
-  }
-  return links;
-}
-function dayRoutePoints(date){
-  const entries=dayEntries(date).filter(e=>!e.night),places=entries.filter(e=>e.it.type==='place').map(e=>e.it);
-  if(!places.length)return [];
-  const flights=S.items.filter(i=>i.type==='flight'&&i.data),prev=addDays(date,-1);
-  const stay=stayForNight;
-  const arr=flights.find(i=>arrDateOf(i)===date&&(i.date<date||stay(date))),dep=flights.find(i=>i.date===date&&i!==arr);
-  const moves=entries.filter(e=>e.it.type==='move').map(e=>e.it),point=it=>({name:it.title,record:it});
-  const start=arr?{name:arr.data.to+' airport'}:stay(prev)?point(stay(prev)):moves[0]?.data.from?{name:moves[0].data.from}:null;
-  const end=dep?{name:dep.data.from+' airport'}:stay(date)?point(stay(date)):moves.at(-1)?.data.to?{name:moves.at(-1).data.to}:null;
-  const out=[];for(const p of [start,...places.map(point),end].filter(Boolean)){const last=out.at(-1);if(!last||last.name!==p.name)out.push(p);}return out;
-}
-function fullRouteUrl(points,mode){
-  if(points.length<2||!['driving','walking'].includes(mode))return '';
-  const ends=points.map(p=>mapEndpoint(p.name,p.record)),first=ends[0],last=ends.at(-1),mid=ends.slice(1,-1);
-  const q=new URLSearchParams({api:'1',origin:first.query,destination:last.query,travelmode:mode});
-  if(first.placeId)q.set('origin_place_id',first.placeId);if(last.placeId)q.set('destination_place_id',last.placeId);
-  if(mid.length){q.set('waypoints',mid.map(p=>p.query).join('|'));if(mid.every(p=>p.placeId))q.set('waypoint_place_ids',mid.map(p=>p.placeId).join('|'));}
-  return 'https://www.google.com/maps/dir/?'+q.toString();
-}
-function fullDayRoutes(date,mode='driving'){
-  const points=dayRoutePoints(date),out=[];let at=0;
-  while(at<points.length-1){let end=Math.min(at+4,points.length-1),href='';while(end>at){href=fullRouteUrl(points.slice(at,end+1),mode);if(href&&href.length<=2048)break;end--;}
-    if(end===at)return [];out.push({href,points:points.slice(at,end+1)});at=end;
-  }return out;
-}
-function vOverview(s){
-  const dates=tripDates(S.trip),date=dates.includes(s.date)?s.date:dates[S.day]||dates[0],mode=s.mode||'driving',routes=fullDayRoutes(date,mode),legs=dayRouteLinks(date);
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet overview-sheet" role="dialog" aria-modal="true" aria-label="เส้นทางทั้งวัน" data-stop="1"><div class="hd"><h2>เส้นทางทั้งวัน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>
-  <label class="fld">วัน<select id="overview-date">${dates.map((d,i)=>`<option value="${d}" ${d===date?'selected':''}>วันที่ ${i+1} · ${dShort(d)}</option>`).join('')}</select></label>
-  <div class="chips" role="group" aria-label="ภาพรวมเส้นทาง">${[['driving','รถยนต์ / แท็กซี่'],['walking','เดิน']].map(([k,v])=>`<button aria-pressed="${mode===k}" data-act="overview-mode" data-mode="${k}">${v}</button>`).join('')}</div>
-  <p class="muted small">เปิด Google Maps พร้อมสถานที่ตามลำดับของวันนี้ เป็นภาพรวมแบบ${mode==='walking'?'เดิน':'รถยนต์'}${routes.length>1?' · วันนี้มีหลายจุด จึงแบ่งเป็นช่วงต่อเนื่องเพื่อให้เปิดบนมือถือได้ครบ':''}</p>
-  ${routes.length?routes.map((r,i)=>`<a class="route-link" href="${esc(r.href)}" target="_blank" rel="noopener"><span class="grow"><b>${routes.length===1?'เปิดเส้นทางทั้งวันใน Google Maps':'เปิดช่วงที่ '+(i+1)+' ใน Google Maps'}</b><small>${r.points.map(p=>esc(briefName(p.name))).join(' → ')}</small></span>${ic('ext',18)}</a>`).join(''):'<p class="muted">เพิ่มสถานที่อย่างน้อยสองจุด หรือสถานที่พร้อมที่พัก เพื่อเปิดเส้นทาง</p>'}
-  ${legs.length?`<details><summary>รถไฟ / รถบัส หรือวิธีเดินทางตามแผน</summary><p class="muted small">Google Maps ไม่รองรับหลายจุดสำหรับเส้นทางขนส่งสาธารณะ เปิดแยกช่วงเพื่อใช้วิธีเดินทางเดิมได้</p><ol class="route-link-list">${legs.map((l,i)=>`<li><a class="route-link" href="${esc(l.href)}" target="_blank" rel="noopener"><span class="route-number">${i+1}</span><span class="grow"><b>${esc(l.title)}</b><small>${esc(l.mode)}</small></span>${ic('ext',18)}</a></li>`).join('')}</ol></details>`:''}</div></div>`;
-}
 
 /* ---------- day pages to keep or send: one picture per day, with a map ---------- */
 function loadScript(src){ return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("load")); document.head.appendChild(sc); }); }
@@ -2877,11 +2691,6 @@ function planNotes(dates){
     if(Object.keys(patch).length) out.push({it, patch, n:Object.keys(patch).length});
   }
   return out;
-}
-async function clearNotes(t, dates){
-  const list = planNotes(dates);
-  for(const x of list) await store.updateItem(t.id, x.it.id, {data:{...(x.it.data || {}), ...x.patch}});
-  return list.reduce((a, x) => a + x.n, 0);
 }
 /* clear this day's or the whole trip's places and travel legs; flights and stays stay */
 async function clearPlan(){
@@ -2950,32 +2759,6 @@ function exportEntries(d){
       : /disney|universal|สวนสนุก|theme park|amusement|fuji-q|legoland|sanrio puroland/i.test(it.title || "") ? "park" : "sight";
     return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
-}
-async function exportPlaces(days){
-  let cache = {}; try { cache = JSON.parse(localStorage.getItem("mytrip-geo") || "{}"); } catch(_){}
-  const need = [...new Set(days.flatMap(d => d.entries.flatMap(e => [e.q, ...(e.qs || [])]).filter(q => q && !(q in cache))))].slice(0, 60);
-  if(need.length && CONNECTED){ try { const res = await api("geocode", {q:need}); need.forEach((q, i) => cache[q] = res[i] || null); } catch(_){} }
-  try { localStorage.setItem("mytrip-geo", JSON.stringify(cache)); } catch(_){}
-  for(const d of days){
-    d.entries.forEach(e => { if(e.q && cache[e.q]){ e.lat = cache[e.q].lat; e.lon = cache[e.q].lon; } });
-    const others = d.entries.filter(e => e.lat != null && e.type !== "flight");
-    d.entries.forEach(e => {
-      const opts = (e.qs || []).map(q => cache[q]).filter(Boolean); if(!opts.length) return;
-      let best = opts[0];
-      if(others.length && opts.length > 1){
-        const dist = p => Math.min(...others.map(o => Math.hypot(o.lat - p.lat, o.lon - p.lon)));
-        best = opts.reduce((a, b) => dist(b) < dist(a) ? b : a);
-      }
-      e.lat = best.lat; e.lon = best.lon;
-    });
-    // a guess far from the rest of the day is probably a different place with the same name: leave it off the map
-    const pts = d.entries.filter(e => e.lat != null);
-    if(pts.length >= 3){
-      const mid = k => pts.map(e => e[k]).sort((a, b) => a - b)[Math.floor(pts.length / 2)];
-      const la = mid("lat"), lo = mid("lon");
-      pts.forEach(e => { if(Math.hypot(e.lat - la, (e.lon - lo) * Math.cos(la * Math.PI / 180)) > 0.8){ delete e.lat; delete e.lon; } });
-    }
-  }
 }
 /* ---------- the trip book: overview + one page per day ---------- */
 const exMin = m => { m = Math.round(m); if(!m) return ""; const h = Math.floor(m / 60), r = m % 60; return h ? `${h} ชม.${r ? ` ${r} นาที` : ""}` : `${r} นาที`; };
@@ -3163,7 +2946,6 @@ function addFromLink(url){
   fillFromLink(url);
 }
 function vSheet(){
-  if(S.sheet?.kind==='idea-add-choice')return vIdeaAddChoice();
   const s = S.sheet; if(!s) return "";
   if(s.kind === "doc") return vDoc(s);
   if(s.kind === "taxi") return vTaxi(s);
@@ -3172,7 +2954,6 @@ function vSheet(){
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "idea-recommend")return vIdeaRecommend(s);
   if(s.kind === "day-ideas") return "";
-  if(s.kind === "overview") return vOverview(s);
   if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
   if(s.kind === "trip-more") return vTripMore();
@@ -3414,10 +3195,6 @@ async function saveReview(auto){
   if(r.sourceText) base.sourceText = r.sourceText;
   const docs = [];
   const flightDoc = makeFlightDoc;
-  const _unused = f => ({type:"flight", date:f.date, time:f.depTime,
-    title:`บิน ${f.fromCity||f.from||"?"} → ${f.toCity||f.to||"?"}`,
-    sub:[`${f.airline} ${f.flightNo}`.trim(), f.arrTime ? `ถึง ${f.arrTime}` : ""].filter(Boolean).join(" · "),
-    data:{airline:f.airline, flightNo:f.flightNo, from:f.from, to:f.to, fromCity:f.fromCity, toCity:f.toCity, arrTime:f.arrTime, passengers:f.passengers, bookingRef:f.bookingRef}});
   const updates = [];
   const fresh = mergeFlights(r.flights.filter(f => f.from || f.to || f.flightNo || f.date)).out;
   for(const f of fresh){
@@ -3941,19 +3718,12 @@ document.addEventListener("click", async e => {
   if(el.dataset.act === "close-sheet" && Date.now() - sugPicked < 800) return;   // the tap that picked a suggestion must not close the sheet
   const a = el.dataset.act, t = S.trip;
   switch(a){
-    case "travel-results-back": if(S.sheet?.lookup)S.sheet.lookupSource='maps';render();break;
     case "travel-lookup": await lookupTravel(false);break;
-    case "travel-ai": await lookupTravel(true);break;
     case "travel-use": applyTravelChoice(false,+el.dataset.i);break;
-    case "travel-use-ai": applyTravelChoice(true);break;
     case "travel-leg": {const date=tripDates(t)[S.day],leg=manualTravelLegs(date).find(l=>l.key===el.dataset.key);if(leg)openTravelSheet(leg);break;}
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
-    case "map-page": S.sheet.mapPage=+el.dataset.page;render();break;
     case "overview-mode": S.sheet.mode=el.dataset.mode;render();break;
-    case "overview-open": S.catTab='';S.sheet={kind:'overview',date:tripDates(t)[S.day]||'all'};render();break;
-    case "overview-day": S.day=tripDates(t).indexOf(el.dataset.d);S.sheet=null;render();break;
-    case "history-open": historyOpen();break;
     case "history-confirm": S.sheet.confirm=el.dataset.id;render();break;
     case "history-restore": restoreHistory(el.dataset.id);break;
     case "home": go("home"); break;
@@ -3969,9 +3739,7 @@ document.addEventListener("click", async e => {
     case "cal-week": S.calWeek = Math.max(0, (S.calWeek ?? Math.floor((parseD(tripDates(t)[0]).getDay() + S.day) / 7)) + Number(el.dataset.d)); render(); break;
     case "cal-open": S.calOpen = !S.calOpen; S.calWeek = null; render(); break;
     case "day": S.calOpen = false; S.calWeek = null; if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
-    case "plan-nav": S.catTab="";S.sheet=null;S.dockHidden=false;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
-    case "lang-switch": setLang(LANG === "en" ? "th" : "en"); break;
     case "lang-toggle": el.classList.toggle("en"); setTimeout(() => setLang(LANG === "en" ? "th" : "en"), 220); break;
     case "tab": selectTab(el.dataset.k); break;
     case "help-pace": S.help.pace = el.dataset.k; render(); break;
@@ -3984,8 +3752,6 @@ document.addEventListener("click", async e => {
     case "help-like": { const h = S.help, v = el.dataset.v; h.interests = h.interests.includes(v) ? h.interests.filter(x => x !== v) : [...h.interests, v]; render(); break; }
     case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; selectTab(""); break; }
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
-    case "cat": { const was = S.catTab; S.catTab = was === el.dataset.k ? "" : el.dataset.k; S.dockAnim = !was && !!S.catTab; S.dockHidden = false;if(S.catTab)window.scrollTo(0,0);if(S.catTab==='planning')S.planner||={query:'',filter:''};render();break;}
-    case "cat-close": S.catTab = ""; render(); break;
     case "upload": S.upload = {kind:"auto", status:"idle"}; go("upload"); break;
 
     case "manual":
@@ -4005,16 +3771,10 @@ document.addEventListener("click", async e => {
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
-    case "paste-maps": {
-      let txt = ""; try { txt = await navigator.clipboard.readText(); } catch(_){}
-      const m = String(txt || "").match(MAPS_LINK);
-      if(!m){ toast("ยังไม่ได้คัดลอกลิงก์ Google Maps"); break; }
-      fillFromLink(m[0]); break; }
     case "day-ideas-open": S.sheet=null;S.catTab='planning';S.planner||={query:'',filter:''};S.dockHidden=false;render();break;
     case "planner-toggle": await togglePlannerIdea(el.dataset.id);break;
     case "ideas-filter": S.ideaFilter=el.dataset.k;render();break;
     case "ideas-search": S.ideaSearchOpen=!S.ideaSearchOpen;if(!S.ideaSearchOpen)S.ideaQuery='';render();if(S.ideaSearchOpen)document.getElementById('ideas-search')?.focus({preventScroll:true});break;
-    case "idea-add-open": S.sheet={kind:'idea-add-choice'};render();break;
     case "idea-add-manual": {const dates=tripDates(t);S.sheet={kind:'idea',title:'',date:dates[S.day]||dates[0],time:'',note:'',mode:'',from:'',to:'',ideaKind:'ที่เที่ยว'};render();break;}
     case "idea-suggest-open": openIdeaRecommend();break;
     case "idea-suggest-cat": {const s=S.sheet;if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
@@ -4026,22 +3786,12 @@ document.addEventListener("click", async e => {
     case "idea-suggest-save": await saveIdeaRecommendations();break;
     case "planner-filter": S.planner.filter=el.dataset.k;render();break;
     case "planner-search": {const s=S.planner;s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});break;}
-    case "day-idea-search": {const s=S.sheet;if(s?.kind==='day-ideas'&&!s.busy){s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});}break;}
-    case "day-idea-filter": if(S.sheet?.kind==='day-ideas'&&!S.sheet.busy){S.sheet.filter=el.dataset.k;render();}break;
-    case "day-idea-toggle": {const s=S.sheet,id=el.dataset.id;if(!s.busy)s.selected=s.selected.includes(id)?s.selected.filter(x=>x!==id):s.selected.concat(id);render();break;}
-    case "day-ideas-add": addDayIdeas();break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
-    case "export-scope": if(!S.sheet.busy){ S.sheet.scope = el.dataset.k; exportReset(S.sheet); render(); } break;
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
-    case "clear-no": S.clearAsk = null; render(); break;
-    case "clear-yes": {
-      const list = ownOn([el.dataset.d]); S.clearAsk = null;
-      for(const it of list) await store.deleteItem(t.id, it.id);
-      render(); toast(`ลบ ${list.length} รายการแล้ว`); break; }
     case "plan-idea": planIdea(); break;
     case "plan-day": if(S.sheet){ S.sheet.planDate = el.dataset.d; render(); } break;
     case "plan-goto": {
@@ -4056,7 +3806,6 @@ document.addEventListener("click", async e => {
     case "sos-doctor": S.sheet = {kind:"sos-doctor"}; render(); break;
     case "sos-edit": sosOpen(true); break;
     case "sos-view": sosOpen(false); break;
-    case "doc-zoom": docZoom(DOCS.zoom * (Number(el.dataset.d) > 0 ? 1.5 : 1 / 1.5)); break;
     case "doc-file": if(S.sheet && S.sheet.kind === "doc"){ S.sheet.i = Number(el.dataset.n) || 0; S.sheet.state = "loading"; render(); docShow(); } break;
     case "sheet-cancel": S.sheet = null; render(); break;
     case "rm-ask": S.rmAsk = el.dataset.id; render(); break;
@@ -4085,10 +3834,6 @@ document.addEventListener("click", async e => {
     case "show-source": S.sheet.showText = true; render(); break;
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
-    case "delete-item": {
-      const id = S.sheet.id; S.sheet = null;
-      try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); render(); }
-      break; }
     case "join-confirm": confirmJoin(); break;
     case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad();
       if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
@@ -4109,7 +3854,6 @@ document.addEventListener("click", async e => {
     }
     case "logout": logout(); break;
     case "trip-menu": S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:false}; render(); break;
-    case "trip-ask": S.swipeOpen = null; S.sheet = {kind:"trip-menu", id:el.dataset.id, confirm:true}; render(); break;
     case "menu-invite": openTrip(el.dataset.id, "invite"); break;
     case "trip-del-ask": S.delAsk = el.dataset.key; S.swipeOpen = el.dataset.key; render(); break;
     case "trip-delete": case "trip-leave": {
@@ -4192,7 +3936,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-names2";
+const BUILD = "2026-11-08-lean1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

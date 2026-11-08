@@ -1,12 +1,9 @@
-/* My Trip — day plan pages: one portrait page per day, a cozy timeline on warm paper (the app's fonts)
- * window.PlanExport.renderDay(day, opts) -> Promise<HTMLCanvasElement>
- *   day: {tripName, tone, dayNo, dayCount, dateLabel, entries:[{type, time, title, note, spot, ride, mode, minutes, night}]}
- *   opts: {icons: {name: svgInner}, tiles: true}
+/* My Trip — the trip book on A4: one overview page, then one page per day (photos, timeline, stay, travel, AI tips)
+ * window.PlanExport.renderOverview(o) / renderBookDay(day, opts) -> Promise<HTMLCanvasElement>
  */
 /* English: the app's translator swaps Thai labels drawn on the page (layout is measured on the swapped text too) */
 const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillText.bind(x), m = x.measureText.bind(x); x.fillText = (s, ...a) => f(T(String(s)), ...a); x.measureText = s => m(T(String(s))); return x; };
 (function(){
-  const W = 1080, H = 1920, M = 60;
   const DISPLAY = '"Mitr", "Prompt", sans-serif', BODY = '"Prompt", sans-serif';
   const C = {bg:"#FFFDF9", surface:"#FFFFFF", tile:"#F6F1EA", ink:"#2B211C", muted:"#6E6259", line:"#EFE9E0", accent:"#FFB020"};
   /* the app's category colours: deep / soft / mid */
@@ -19,20 +16,6 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
   const tone = k => TONES[k] || TONES["t-place"];
   const font = (w, px, fam = BODY) => `${w} ${Math.round(px)}px ${fam}`;
 
-  function rng(seed){ let s = 0; for(const ch of String(seed)) s = (s * 31 + ch.charCodeAt(0)) >>> 0; s = s || 1;
-    return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
-
-  /* warm page with a whisper of paper grain */
-  let paperCache = null;
-  function paper(){
-    if(paperCache) return paperCache;
-    const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = tr2d(c.getContext("2d")); x.fillStyle = C.bg; x.fillRect(0, 0, W, H);
-    const img = x.getImageData(0, 0, W, H), d = img.data, r = rng("paper");
-    for(let i = 0; i < d.length; i += 4){ const n = (r() - 0.5) * 7; d[i] += n; d[i+1] += n; d[i+2] += n; }
-    x.putImageData(img, 0, 0);
-    return paperCache = c;
-  }
   function rrect(x, X, Y, w, h, rad){ x.beginPath(); x.moveTo(X + rad, Y); x.arcTo(X + w, Y, X + w, Y + h, rad); x.arcTo(X + w, Y + h, X, Y + h, rad); x.arcTo(X, Y + h, X, Y, rad); x.arcTo(X, Y, X + w, Y, rad); x.closePath(); }
   function card(x, X, Y, w, h, rad, fill, shadow){
     x.save();
@@ -74,69 +57,8 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     return out;
   }
 
-  /* ---------- map ---------- */
-  /* map tiles are 256 px; they are drawn 1.5x so street names stay readable on a phone screen */
-  const TILE = 384, SRC = 256;
-  const tileUrls = (z, x, y) => [
-    `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
-    `https://tile.openstreetmap.org/${z}/${x}/${y}.png`];
-  const lon2x = (lon, z) => (lon + 180) / 360 * TILE * Math.pow(2, z);
-  const lat2y = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TILE * Math.pow(2, z); };
   function loadImg(src){ return new Promise(res => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; setTimeout(() => res(null), 12000); }); }
-  async function drawMap(x, box, pts, opts){
-    const {x:bx, y:by, w:bw, h:bh} = box, pad = 80;
-    // never closer than a neighbourhood view, so a lone stop still shows its surroundings
-    let z = 14;
-    if(pts.length > 1) for(z = 15; z > 2; z--){
-      const xs = pts.map(p => lon2x(p.lon, z)), ys = pts.map(p => lat2y(p.lat, z));
-      if(Math.max(...xs) - Math.min(...xs) <= bw - pad * 2 && Math.max(...ys) - Math.min(...ys) <= bh - pad * 2) break;
-    }
-    const xs = pts.map(p => lon2x(p.lon, z)), ys = pts.map(p => lat2y(p.lat, z));
-    const ox = (Math.max(...xs) + Math.min(...xs)) / 2 - bw / 2, oy = (Math.max(...ys) + Math.min(...ys)) / 2 - bh / 2;
-    x.save(); rrect(x, bx, by, bw, bh, 44); x.clip();
-    x.fillStyle = "#F2EEE6"; x.fillRect(bx, by, bw, bh);
-    let tilesOk = 0, usedOsm = false;
-    if(opts.tiles !== false){
-      const n = Math.pow(2, z), jobs = [];
-      for(let tx = Math.floor(ox / TILE); tx <= Math.floor((ox + bw) / TILE); tx++) for(let ty = Math.floor(oy / TILE); ty <= Math.floor((oy + bh) / TILE); ty++){
-        if(ty < 0 || ty >= n) continue;
-        const wx = ((tx % n) + n) % n;
-        const [main, spare] = tileUrls(z, wx, ty);
-        jobs.push(loadImg(main).then(img => img || loadImg(spare).then(i2 => { if(i2) usedOsm = true; return i2; })).then(img => {
-          if(img){ x.imageSmoothingQuality = "high"; x.drawImage(img, 0, 0, SRC, SRC, bx + tx * TILE - ox, by + ty * TILE - oy, TILE, TILE); tilesOk++; } }));
-      }
-      await Promise.all(jobs);
-    }
-    // a touch warmer and calmer than a normal map, so the stops stand out
-    x.globalCompositeOperation = "saturation"; x.fillStyle = "rgba(128,128,128,0.3)"; x.fillRect(bx, by, bw, bh);
-    x.globalCompositeOperation = "multiply"; x.fillStyle = "#FFF7EA"; x.fillRect(bx, by, bw, bh);
-    x.globalCompositeOperation = "source-over";
-    if(!tilesOk){
-      x.strokeStyle = "rgba(160,140,115,0.18)"; x.lineWidth = 2;
-      for(let gx = bx; gx < bx + bw; gx += 80){ x.beginPath(); x.moveTo(gx, by); x.lineTo(gx, by + bh); x.stroke(); }
-      for(let gy = by; gy < by + bh; gy += 80){ x.beginPath(); x.moveTo(bx, gy); x.lineTo(bx + bw, gy); x.stroke(); }
-    }
-    const scr = pts.map(p => [bx + lon2x(p.lon, z) - ox, by + lat2y(p.lat, z) - oy]);
-    for(let i = 0; i < scr.length; i++) for(let j = 0; j < i; j++){
-      const dx = scr[i][0] - scr[j][0], dy = scr[i][1] - scr[j][1];
-      if(Math.hypot(dx, dy) < 60){ const a = Math.atan2(dy, dx) || i * 2.4; scr[i] = [scr[j][0] + Math.cos(a) * 62, scr[j][1] + Math.sin(a) * 62]; }
-    }
-    if(scr.length > 1){
-      x.save(); x.strokeStyle = "rgba(43,33,28,0.55)"; x.lineWidth = 6; x.lineCap = "round"; x.lineJoin = "round"; x.setLineDash([2, 16]);
-      x.beginPath(); scr.forEach((q, i) => i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1])); x.stroke(); x.restore();
-    }
-    scr.forEach((q, i) => {
-      x.save(); x.shadowColor = "rgba(43,33,28,0.25)"; x.shadowBlur = 10; x.shadowOffsetY = 3;
-      x.beginPath(); x.arc(q[0], q[1], 31, 0, Math.PI * 2); x.fillStyle = "#FFFFFF"; x.fill(); x.restore();
-      x.beginPath(); x.arc(q[0], q[1], 25, 0, Math.PI * 2); x.fillStyle = tone(pts[i].tone)[2]; x.fill();
-      x.fillStyle = "#FFFFFF"; x.font = font(600, 28, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(pts[i].n), q[0], q[1] + 1);
-    });
-    x.restore();
-    x.save(); rrect(x, bx, by, bw, bh, 44); x.strokeStyle = C.line; x.lineWidth = 3; x.stroke(); x.restore();
-    if(tilesOk){ x.fillStyle = "rgba(90,80,70,0.75)"; x.font = font(400, 17); x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillText(usedOsm ? "© OpenStreetMap contributors" : "© Esri · OpenStreetMap", bx + bw - 26, by + bh - 18); }
-  }
 
-  /* ---------- the cozy page: warm paper, one soft card, a line of stops joined by a winding dashed path ---------- */
   const fmtMin = m => { m = Math.round(m); if(!m) return ""; const h = Math.floor(m / 60), r = m % 60; return h ? `${h} ชม.${r ? ` ${r} น.` : ""}` : `${r} นาที`; };
   const Z = {bg:"#F7F1E6", card:"#FFFCF6", ink:"#3B2F28", head:"#4A3527", muted:"#8A7B6E", sub:"#7A6A5C", time:"#A9692A", path:"#D2B48C", hill1:"#E9DFCC", hill2:"#DED0B6", sun:"#E6B565", ridge:"#B9A48C"};
   /* soft circle colour and line colour for each kind of stop / ride */
@@ -145,15 +67,6 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
   const PLANE = "M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z";
 
   let cozyPaper = null;
-  function cozyBg(){
-    if(cozyPaper) return cozyPaper;
-    const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = tr2d(c.getContext("2d")); x.fillStyle = Z.bg; x.fillRect(0, 0, W, H);
-    const img = x.getImageData(0, 0, W, H), d = img.data, r = rng("cozy");
-    for(let i = 0; i < d.length; i += 4){ const n = (r() - 0.5) * 6; d[i] += n; d[i+1] += n; d[i+2] += n; }
-    x.putImageData(img, 0, 0);
-    return cozyPaper = c;
-  }
   /* an svg-style path string drawn at (X, Y), scaled by k */
   function strokeD(x, d, X, Y, k, color, w, fill){
     x.save(); x.translate(X, Y); x.scale(k, k);
@@ -192,107 +105,6 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     }
   }
 
-  async function renderDay(day, opts = {}){
-    const icons = opts.icons || {};
-    if(document.fonts && document.fonts.load){
-      try{ await Promise.all([document.fonts.load(font(500, 40, DISPLAY), "วันที่ 1"), document.fonts.load(font(500, 40), "ก A"), document.fonts.load(font(400, 40), "ก A")]); } catch(_){}
-    }
-    const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = tr2d(c.getContext("2d"));
-    x.drawImage(cozyBg(), 0, 0);
-
-    // hills along the bottom, and a line-drawn mountain with its sun in the top corner
-    x.save(); x.globalAlpha = 0.55;
-    x.fillStyle = Z.hill1; x.fill(new Path2D("M-20 1800 C 220 1692, 420 1744, 580 1772 C 740 1724, 920 1684, 1120 1744 V1960 H-20 Z"));
-    x.fillStyle = Z.hill2; x.fill(new Path2D("M-20 1860 C 260 1792, 540 1836, 700 1856 C 860 1820, 980 1808, 1120 1828 V1960 H-20 Z"));
-    x.restore();
-    x.save(); x.globalAlpha = 0.9;
-    x.beginPath(); x.arc(904, 144, 30, 0, Math.PI * 2); x.fillStyle = Z.sun; x.fill();
-    strokeD(x, "M352 150 L404 98 L438 132 L462 110 L506 150 M392 110 L404 98 L414 108", 0, 0, 2, Z.ridge, 2.5);
-    x.restore();
-
-    // heading
-    const L0 = 72;
-    x.textAlign = "left"; x.textBaseline = "alphabetic";
-    x.fillStyle = Z.muted; x.font = font(400, 28);
-    x.fillText([day.tripName, day.dayCount ? `วันที่ ${day.dayNo} จาก ${day.dayCount}` : ""].filter(Boolean).join(" · "), L0, 128);
-    x.fillStyle = Z.head; x.font = font(500, 104, DISPLAY); x.fillText(`วันที่ ${day.dayNo}`, L0, 246);
-    x.fillStyle = Z.sub; x.font = font(400, 34); x.fillText(day.dateLabel || "", L0, 304);
-
-    const entries = day.entries || [];
-    const CX = 72, CY = 364, CW = W - 144, PT = 44, PL = 28, PR = 40;
-    const foot = H - 100;
-    const rowsOf = s => {
-      const timeW = 124 * s, iconW = 104 * s, gap = 24 * s, textX = timeW + iconW + gap * 2, textW = CW - PL - PR - textX;
-      return entries.map(e => {
-        if(e.type === "move"){
-          x.font = font(400, 28 * s);
-          const label = [e.mode, e.minutes ? fmtMin(e.minutes) : ""].filter(Boolean).join(" ") || e.title;
-          return {e, h:108 * s, line:wrap(x, label, textW - 100 * s, 1)[0] || "", timeW, iconW, gap, textX, textW};
-        }
-        x.font = font(500, 36 * s); const tl = wrap(x, e.title, textW, 2);
-        x.font = font(400, 28 * s); const nl = e.note ? wrap(x, e.note, textW, 2) : [];
-        const th = tl.length * 50 * s + nl.length * 40 * s;
-        return {e, h:Math.max(104 * s, th) + 28 * s, tl, nl, th, timeW, iconW, gap, textX, textW};
-      });
-    };
-    let s = 1, rows = rowsOf(s);
-    const cardH = () => rows.reduce((a, r) => a + r.h, 0) + PT * 2;
-    while(CY + cardH() > foot - 40 && s > 0.6){ s -= 0.03; rows = rowsOf(s); }
-
-    if(entries.length){
-      const h = Math.min(foot - 40 - CY, cardH());
-      card(x, CX, CY, CW, h, 52, Z.card, true);
-      x.save(); rrect(x, CX, CY, CW, h, 52); x.clip();
-      let y = CY + PT, flip = false;
-      // stops that follow each other with no travel leg between them get a soft solid line
-      { let yy = CY + PT; const ic0 = CX + PL + rows[0].timeW + rows[0].gap + rows[0].iconW / 2;
-        rows.forEach((r, i) => { const nx = rows[i + 1];
-          if(nx && r.e.type !== "move" && nx.e.type !== "move"){
-            x.save(); x.strokeStyle = "#EADFCF"; x.lineWidth = 5 * s; x.lineCap = "round";
-            x.beginPath(); x.moveTo(ic0, yy + r.h / 2 + 52 * s); x.lineTo(ic0, yy + r.h + nx.h / 2 - 52 * s); x.stroke(); x.restore(); }
-          yy += r.h; }); }
-      rows.forEach(r => {
-        const e = r.e, L = CX + PL, ic = L + r.timeW + r.gap + r.iconW / 2, cy = y + r.h / 2;
-        if(e.type === "move"){
-          // a winding dashed path, bending the other way on each leg
-          const dir = (flip = !flip) ? -1 : 1, top = y - 4 * s, bot = y + r.h + 4 * s, q = r.h / 3;
-          x.save(); x.strokeStyle = Z.path; x.lineWidth = 5 * s; x.lineCap = "round"; x.setLineDash([3 * s, 14 * s]);
-          x.beginPath(); x.moveTo(ic, top); x.bezierCurveTo(ic + dir * 28 * s, top + q, ic - dir * 28 * s, bot - q, ic, bot); x.stroke(); x.restore();
-          const k = 1.5 * s, vx = L + r.textX, vy = cy - 15 * k;
-          ride(x, e.ride || "car", vx, vy, k, icons);
-          const line = (RIDE[e.ride] || RIDE.car)[1];
-          x.fillStyle = line; x.font = font(400, 28 * s); x.textBaseline = "middle"; x.textAlign = "left";
-          x.fillText(r.line, vx + 46 * k + 16 * s, cy + 1);
-          if(e.time){ x.fillStyle = Z.muted; x.font = font(400, 26 * s, DISPLAY); x.textAlign = "right"; x.fillText(e.time, L + r.timeW, cy + 1); }
-        } else {
-          spot(x, e.spot || "sight", ic, cy, 48 * s, icons);
-          x.textBaseline = "middle"; x.textAlign = "right";
-          if(e.night){ x.fillStyle = SPOT.night[1]; x.font = font(500, 32 * s, DISPLAY); x.fillText("คืนนี้", L + r.timeW, cy + 1); }
-          else if(e.time){ x.fillStyle = Z.time; x.font = font(500, 38 * s, DISPLAY); x.fillText(e.time, L + r.timeW, cy + 1); }
-          x.textAlign = "left"; x.textBaseline = "alphabetic";
-          let ty = cy - r.th / 2 + 38 * s;
-          x.fillStyle = Z.ink; x.font = font(500, 36 * s);
-          r.tl.forEach(l => { x.fillText(l, L + r.textX, ty); ty += 50 * s; });
-          x.fillStyle = Z.muted; x.font = font(400, 28 * s);
-          r.nl.forEach(l => { x.fillText(l, L + r.textX, ty - 6 * s); ty += 40 * s; });
-        }
-        y += r.h;
-      });
-      x.restore();
-    } else {
-      card(x, CX, CY, CW, 200, 52, Z.card, true);
-      x.fillStyle = Z.muted; x.font = font(400, 34); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("ยังไม่มีแผนสำหรับวันนี้", W / 2, CY + 100);
-    }
-
-    // footer: the app's name with its little mark
-    x.textAlign = "left"; x.textBaseline = "alphabetic"; x.font = font(500, 28, DISPLAY);
-    const label = "My Trip", lw = x.measureText(label).width, fx = (W - lw - 54) / 2, fy = H - 54;
-    x.save(); x.strokeStyle = "#5C3B22"; x.lineWidth = 4; x.lineCap = "round"; x.lineJoin = "round";
-    x.beginPath(); x.moveTo(fx, fy); x.lineTo(fx + 12, fy - 13); x.lineTo(fx + 20, fy - 6); x.lineTo(fx + 28, fy - 15); x.lineTo(fx + 40, fy); x.stroke(); x.restore();
-    x.fillStyle = Z.sub; x.fillText(label, fx + 54, fy);
-    return c;
-  }
 
   /* ---------- A4 trip book: one overview page, then one page per day (photos, timeline, AI tips) ---------- */
   const PW = 1588, PH = 2246, PM = 104;                       // A4 at 2x (794 x 1123 css px)
@@ -472,5 +284,5 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     return c;
   }
 
-  window.PlanExport = { renderDay, renderOverview, renderBookDay, W, H, PW, PH };
+  window.PlanExport = { renderOverview, renderBookDay, PW, PH };
 })();
