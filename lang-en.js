@@ -9,7 +9,7 @@ window.MYTRIP_EN = {
 "แชร์สถานที่ / ตั๋วจากแอปอื่นเข้าทริป": "Share places / tickets from other apps into the trip",
 "พร้อมใช้ตอนไม่มีเน็ต": "Ready without internet",
 "แผนและใบจองอยู่ในเครื่องแล้ว": "Plan and bookings are on this phone",
-"กำลังเก็บใบจอง {0}/{1} ไฟล์ · เปิดแอปค้างไว้สักครู่": "Saving bookings {0}/{1} files · keep the app open a moment",
+"ใบจอง {0}/{1} ไฟล์ · เปิดทริปตอนมีเน็ตสักครู่": "Bookings {0}/{1} files · open the trip while online for a moment",
 "ข้ามไปก่อน": "Skip for now",
 "เพิ่มไว้หน้าจอ": "Add to home screen",
 "อยู่แถบล่างของ Safari": "At the bottom of Safari",

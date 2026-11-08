@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=18"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=19"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -1178,6 +1178,7 @@ function vHome(){
     <span class="grow"><span class="t-name">${esc(t.name)}</span><br><span class="muted small">${esc(rangeLabel(t))}</span></span>${ic("chev")}</button>`, "small");
   return `<main class="screen">
     <header class="home-top"><h1>ทริปของฉัน</h1><span style="display:flex;gap:8px;align-items:center"><button class="new-btn" data-act="new">${ic("plus",18)}สร้างทริป</button><button class="me-btn" data-act="account" aria-label="บัญชี ${esc(S.myName)}">${S.user && S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" referrerpolicy="no-referrer">` : esc((S.myName||"?").slice(0,1))}</button></span></header>
+    ${S.tripsReady ? vStart(next && next.id) : ""}
     ${!S.tripsReady ? `<p class="muted">กำลังโหลดทริป…</p>` :
       S.trips.length === 0 ? `<div class="card empty">${MOUNTAINS}
         <p class="muted">ยังไม่มีทริป</p></div>` :
@@ -2076,7 +2077,6 @@ function vTrip(){
     page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-place" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
-      ${vStart()}
       ${vSync()}
       ${isToday && next ? vNext(next) : ""}
       ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
@@ -3450,14 +3450,15 @@ window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); INSTAL
 window.addEventListener("appinstalled", () => { INSTALL.done = true; INSTALL.prompt = null; });
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const onHomeScreen = () => INSTALL.done || navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
-function vStart(){
+function vStart(tripId){
   let off = false, shared = false; try { off = !!localStorage.getItem("mytrip-start-off"); shared = !!localStorage.getItem("mytrip-share-on"); } catch(_){}
-  if(off || !S.trip) return "";
-  const files = [...new Set(S.items.flatMap(itemFiles))], got = files.filter(f => DOCS.have.has(f)).length;
+  if(off) return "";
+  if(!DOCS.keysRead){ DOCS.keysRead = true; docKeys().then(k => { if(k.length){ k.forEach(x => DOCS.have.add(x)); render(); } }); }
+  const files = tripId ? [...new Set(itemList(tripId).flatMap(itemFiles))] : [], got = files.filter(f => DOCS.have.has(f)).length;
   const steps = [
     {done: onHomeScreen(), title: "เพิ่ม My Trip ไว้หน้าจอ", sub: "เปิดเร็วเหมือนแอป ใช้ได้แม้ไม่มีเน็ต", act: "start-install", btn: INSTALL.prompt ? "ติดตั้ง" : "ดูวิธี"},
     {done: shared, title: "เชื่อมปุ่มแชร์", sub: "แชร์สถานที่ / ตั๋วจากแอปอื่นเข้าทริป", act: "start-share", btn: "เชื่อมต่อ"},
-    {done: got >= files.length, title: "พร้อมใช้ตอนไม่มีเน็ต", sub: got >= files.length ? "แผนและใบจองอยู่ในเครื่องแล้ว" : `กำลังเก็บใบจอง ${got}/${files.length} ไฟล์ · เปิดแอปค้างไว้สักครู่`, act: "", btn: ""}
+    {done: got >= files.length, title: "พร้อมใช้ตอนไม่มีเน็ต", sub: got >= files.length ? "แผนและใบจองอยู่ในเครื่องแล้ว" : `ใบจอง ${got}/${files.length} ไฟล์ · เปิดทริปตอนมีเน็ตสักครู่`, act: "", btn: ""}
   ];
   const n = steps.filter(x => x.done).length;
   if(n === steps.length) return "";
@@ -3997,7 +3998,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-start1";
+const BUILD = "2026-11-08-start2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
