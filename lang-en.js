@@ -1,5 +1,7 @@
 /* My Trip in English: the app's Thai text -> English. {0}, {1}… stand for the parts filled in at run time. */
 window.MYTRIP_EN = {
+"ซ่อนแล้ว · เปิดอีกทีได้ที่รูปโปรไฟล์ มุมขวาบน": "Hidden · bring it back from your profile picture, top right",
+"แสดงอีกครั้ง": "Show again",
 "เริ่มใช้งาน My Trip": "Get started with My Trip",
 "เพิ่ม My Trip ไว้หน้าจอ": "Add My Trip to your home screen",
 "เปิดเร็วเหมือนแอป ใช้ได้แม้ไม่มีเน็ต": "Opens like an app, works without internet",

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <title>My Trip</title>
-<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=19"><\/script>');}}catch(_){}</script>
+<script>try{if(localStorage.getItem("mytrip-lang")==="en"){document.documentElement.lang="en";document.write('<script src="lang-en.js?v=20"><\/script>');}}catch(_){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap">
 <style>
@@ -297,6 +297,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .start-ck{width:22px;height:22px;border-radius:999px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center}
 .start-row.done .start-ck{background:#3E9B3C;border-color:#3E9B3C;color:#fff}.start-row.done b{color:var(--muted);text-decoration:line-through}
 .start-go{border:0;background:var(--tile);color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;flex:none}
+.start-back{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;font:inherit;color:inherit;text-align:left}
 .start-skip{display:block;margin:2px auto 0;font-size:12.5px;color:var(--muted)}
 .acc-ai{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;padding:6px 0 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.acc-ai>span:first-child{display:flex;align-items:center;gap:8px;font-weight:500}.acc-ai small{grid-column:1/-1;padding-left:26px}.ai-badge{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px}.ai-badge.ok{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.ai-badge.full{background:#FDE7E4;color:#A62219}
 .sc-ask{margin:4px 0 6px}.sc-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sc-tabs button{min-height:44px;border-radius:999px;border:1.5px solid var(--line,var(--tile));background:var(--surface);color:var(--ink);font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}.sc-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
@@ -2218,6 +2219,7 @@ function vAccount(){
     </div>
     ${aiStatusRow()}
     ${offlineRow()}
+    ${(() => { try { return localStorage.getItem("mytrip-start-off"); } catch(_){ return null; } })() ? `<button class="acc-ai start-back" data-act="start-back"><span>${ic("check",18)}เริ่มใช้งาน My Trip</span><span class="start-go">แสดงอีกครั้ง</span></button>` : ""}
     <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
   </div></div>`;
@@ -3896,7 +3898,8 @@ document.addEventListener("click", async e => {
     case "join-confirm": confirmJoin(); break;
     case "start-install": if(INSTALL.prompt){ INSTALL.prompt.prompt(); INSTALL.prompt.userChoice.then(c => { if(c && c.outcome === "accepted"){ INSTALL.prompt = null; INSTALL.done = true; render(); } }).catch(() => {}); } else { S.sheet = {kind:"install"}; render(); } break;
     case "start-share": S.scOpen = true; S.sheet = {kind:"account"}; render(); aiStatusLoad(); break;
-    case "start-skip": try { localStorage.setItem("mytrip-start-off", "1"); } catch(_){} render(); break;
+    case "start-skip": try { localStorage.setItem("mytrip-start-off", "1"); } catch(_){} render(); toast("ซ่อนแล้ว · เปิดอีกทีได้ที่รูปโปรไฟล์ มุมขวาบน"); break;
+    case "start-back": try { localStorage.removeItem("mytrip-start-off"); } catch(_){} S.sheet = null; render(); break;
     case "account": S.sheet = {kind:"account"}; render(); aiStatusLoad(); docKeys().then(k => { k.forEach(x => DOCS.have.add(x)); if(S.sheet && S.sheet.kind === "account") render(); });
       if(S.shareKey === undefined) api("shareKey", {peek:true}).then(r => { S.shareKey = r && r.key || null; render(); }).catch(() => {});
       break;
@@ -3998,7 +4001,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-start2";
+const BUILD = "2026-11-08-start3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
