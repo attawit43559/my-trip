@@ -1277,7 +1277,7 @@ function dayOrderPending(date){return S.items.some(i=>i.type==='place'&&i.date==
 function dayEntryKey(e){return JSON.stringify([e.it.id,e.phase||'']);}
 function saveDayRowOrder(date,keys,tripId){
   if(S.trip?.id!==tripId||S.directSaving)return false;
-  const rows=dayEntries(date).filter(e=>!e.night),current=rows.map(dayEntryKey),known=new Set(current);
+  const rows=dayEntries(date).filter(e=>!e.night&&!e.start),current=rows.map(dayEntryKey),known=new Set(current);   // the 'leaving the hotel' row is not dragged
   if(keys.length!==current.length||new Set(keys).size!==keys.length||keys.some(k=>!known.has(k))){toast('รายการเปลี่ยนไปแล้ว ลองเรียงใหม่อีกครั้ง');render();return false;}
   if(keys.every((k,n)=>k===current[n])){render();return true;}
   const patch={dayRowOrder:{[date]:keys.slice()}};
@@ -2412,7 +2412,7 @@ async function saveTravelLeg(){
     const patch={type:'move',date:s.date,time:s.approximateRoutes?(s.departTime||''):(s.time||''),title:moveTitle(leg.from,leg.to),sub:s_(s.note),data,source:'manual'};
     if(id)await store.updateItem(t.id,id,patch);else id=await store.addItem(t.id,{...patch,createdBy:S.me,createdAt:Date.now()});
     if(S.trip?.id===t.id){
-      const entries=dayEntries(s.date).filter(e=>!e.night),move=entries.find(e=>e.it.id===id),keys=entries.filter(e=>e.it.id!==id).map(dayEntryKey);
+      const entries=dayEntries(s.date).filter(e=>!e.night&&!e.start),move=entries.find(e=>e.it.id===id),keys=entries.filter(e=>e.it.id!==id).map(dayEntryKey);
       if(move){const before=keys.indexOf(leg.beforeKey),after=keys.indexOf(leg.afterKey),at=before>=0?before:after>=0?after+1:keys.length;keys.splice(at,0,dayEntryKey(move));saveDayRowOrder(s.date,keys,t.id);}
       if(S.sheet===s)S.sheet=null;toast('บันทึกการเดินทางแล้ว');
     }
@@ -3936,7 +3936,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-lean1";
+const BUILD = "2026-11-08-order1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
