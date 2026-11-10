@@ -861,7 +861,7 @@ function recommendIdeasRun_(req) {
       : 'List the ' + count + ' best ' + C.what + ' for this day: on the way between the day_plan places or within about 10 minutes of one of them (or of the stay), well-reviewed and popular, matching the likes and wishes when given. If day_plan is empty, pick for the city.')
       : 'List the 10 most popular, well-known ' + C.what + ' in the city or cities named, most popular first, matching the likes and wishes when given.',
     'Never include anything in already_have (or the same place under another name). Only real, established places; never invent one.',
-    'title: the name exactly as written on Google Maps (Latin script for Japan, Korea, China and similar). area: the neighbourhood, a few words. reason: ONE short Thai sentence (max 60 characters) on why people go' + (day ? ', or which planned place it is near.' : '.'),
+    'title: the name exactly as written on Google Maps (Latin script for Japan, Korea, China and similar). area: the neighbourhood, a few words. reason: a very short Thai phrase, max 30 characters' + (day ? ', e.g. which planned place it is near ("ใกล้ Tokyo Tower").' : ' on why people go.'),
     'kind: ' + C.kinds.map(k => '"' + k + '"').join(' or ') + '.',
     'Reply only JSON: {"places":[{"title":"","area":"","kind":"","reason":""}]}'
   ].join('\n');
@@ -872,7 +872,7 @@ function recommendIdeasRun_(req) {
     const title = t(x.title).slice(0, 100), key = norm(title);
     if (!title || seen[key] || skip[key]) return null; seen[key] = true;
     const kind = C.kinds.indexOf(t(x.kind)) >= 0 ? t(x.kind) : C.kinds[0];
-    return { category: cat, kind, title, area: t(x.area).slice(0, 60), reason: t(x.reason).slice(0, 90) };
+    return { category: cat, kind, title, area: t(x.area).slice(0, 60), reason: t(x.reason).slice(0, day ? 40 : 90) };
   }).filter(Boolean).slice(0, count);
   if (!places.length && !(Array.isArray(raw.places) && raw.places.length)) throw new Error('invalid_json');
   return { city, category: cat, places };
