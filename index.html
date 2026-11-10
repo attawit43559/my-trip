@@ -2567,6 +2567,9 @@ function keepScroll(sel, fn){ const y = document.querySelector(sel)?.scrollTop |
 function recS(){return S.sheet?.kind==='idea-recommend'?S.sheet:(S.aiRec&&S.aiRec.tripId===S.tripId&&S.catTab==='help'?S.aiRec:null);}
 async function runIdeaRecommend(more){
   const s=recS(),t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||s.more||!t)return;
+  if(s===S.aiRec&&!s_(s.city)){   // the AI tab never asks for a city: take it from the trip, or from the places/stays in the plan
+    const d=s.scope&&s.scope!=='all'?s.scope:'',from=S.items.filter(i=>(i.type==='place'||i.type==='stay')&&(!d||i.date===d||i.type==='stay'&&i.date<=d&&d<(i.endDate||i.date)));
+    s.city=s_(t.destination)||from.map(i=>s_((i.data||{}).address)).find(Boolean)||from.map(i=>s_(i.title)).find(Boolean)||s_(t.name);}
   s.city=s_(s.city);if(!s.city){s.err='ใส่เมืองก่อนครับ';render();return;}
   if(!more){s.places=[];s.selected=new Set();}
   // never suggest what is already in the trip, or what was just shown
@@ -4133,7 +4136,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-ai5";
+const BUILD = "2026-11-10-ai6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
