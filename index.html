@@ -2018,11 +2018,11 @@ async function helpFix(di,ti,fi){
 
 function vAiPage(){
   const mode = S.aiMode || "rec";
-  const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("pin",15)}แนะนำที่เที่ยว</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",15)}รีวิวแผน</button></div>`;
+  const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("spark",15)}แนะนำ</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",15)}รีวิว</button></div>`;
   if(mode === "review") return seg + vHelpPage();
   if(!S.aiRec || S.aiRec.tripId !== S.tripId){ let city = ""; try { city = localStorage.getItem(suggestCityKey()) || ""; } catch(_){}
     S.aiRec = {kind:"idea-recommend", tripId:S.tripId, step:"form", cat:"sight", city:city || S.trip.destination || "", likes:{sight:[],food:[],cafe:[]}, note:"", places:[], selected:new Set(), busy:false}; }
-  const d = tripDates(S.trip)[S.day] || ""; if(S.aiRec.step === "results" && S.aiRec.date && S.aiRec.date !== d){ S.aiRec.step = "form"; S.aiRec.places = []; S.aiRec.selected = new Set(); }
+  const d = tripDates(S.trip)[S.day] || ""; if(S.aiRec.step === "results" && S.aiRec.date && S.aiRec.date !== "all" && S.aiRec.date !== d){ S.aiRec.step = "form"; S.aiRec.places = []; S.aiRec.selected = new Set(); }
   return seg + vIdeaRecommend(S.aiRec, true);
 }
 function vHelpPage(){
@@ -2052,7 +2052,7 @@ function vHelpPage(){
     ${date ? `<textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>${helpButtons(h, date)}` : `<p class="muted small">ตั้งวันเที่ยวก่อน</p>`}`);
 }
 function helpButtons(h, date){
-  return `<div class="help-actions"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}รีวิววันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("calendar",16)}รีวิวทั้งหมด</button></div>`;
+  return `<div class="help-actions"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("calendar",16)}ทั้งหมด</button></div>`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 /* trip days laid out as a Sunday-first calendar, 7 per row.
@@ -2552,10 +2552,11 @@ function vIdeaRecommend(s, inline){
     <form class="stack idea-compose-body" data-form="idea-recommend">
       <div class="chips t-idea suggest-cats">${Object.entries(SUGGEST_CATS).map(([k,c])=>`<button type="button" class="${IDEA_TONE[c.kind]}" aria-pressed="${s.cat===k}" data-act="idea-suggest-cat" data-k="${k}">${ic(IDEA_ICON[c.kind],18)}${esc(c.label)}</button>`).join('')}</div>
       ${inline ? "" : `<label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="${bind}:city"></label>`}
-      <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
-      <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>
+      ${inline ? "" : `<div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>`}
+      ${inline ? `<textarea class="grow-area help-note" rows="2" maxlength="1000" placeholder="โน้ตถึง AI เช่น มีเด็กเล็กไปด้วย ไม่อยากต่อคิวนาน" data-bind="${bind}:note" aria-label="โน้ตถึง AI">${esc(s.note)}</textarea>` : `<label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>`}
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}${inline&&tripDates(S.trip)[S.day]?`แนะนำ 3 ที่ สำหรับวันที่ ${parseD(tripDates(S.trip)[S.day]).getDate()}`:'เริ่ม'}</button>
+      ${inline && tripDates(S.trip).length ? `<div class="help-actions"><button type="button" class="soft-btn" data-act="ai-rec-run" data-d="${esc(tripDates(S.trip)[S.day] || "")}" ${s.busy ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(tripDates(S.trip)[S.day] || tripDates(S.trip)[0]).getDate()}</button><button type="button" class="soft-btn help-again" data-act="ai-rec-run" data-d="all" ${s.busy ? "disabled" : ""}>${ic("calendar",16)}ทั้งหมด</button></div>`
+        : `<button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}เริ่ม</button>`}
     </form>`);
 }
 /* redraw without the list jumping back to the top */
@@ -2570,10 +2571,10 @@ async function runIdeaRecommend(more){
   if(more)s.more=true;else{s.busy=true;s.step='loading';}
   s.err='';s.ctl=new AbortController();if(more)keepScroll(".idea-suggest-results",render);else render();
   try{
-    if(s===S.aiRec)s.date=tripDates(t)[S.day]||'';
+    if(s===S.aiRec)s.date=s.scope||tripDates(t)[S.day]||'';
     const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude,...(s===S.aiRec&&s.date?{date:s.date}:{})}},()=>recS()===s&&S.trip?.id===t.id);
     if(recS()!==s||S.trip?.id!==t.id)return;
-    const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title))).slice(0,s===S.aiRec?3:10);
+    const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title))).slice(0,s===S.aiRec?(s.date==='all'?5:3):10);
     const base=s.places.length;s.places=s.places.concat(fresh.map((p,i)=>({...p,_id:'p'+(base+i)})));s.step='results';
     if(more&&!fresh.length)s.err='ไม่มีที่ใหม่เพิ่มแล้ว ลองปรับคำขอดูครับ';
   }catch(e){if(recS()!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
@@ -3959,7 +3960,8 @@ document.addEventListener("click", async e => {
     case "ideas-search": S.ideaSearchOpen=!S.ideaSearchOpen;if(!S.ideaSearchOpen)S.ideaQuery='';render();if(S.ideaSearchOpen)document.getElementById('ideas-search')?.focus({preventScroll:true});break;
     case "idea-add-manual": {const dates=tripDates(t);S.sheet={kind:'idea',title:'',date:dates[S.day]||dates[0],time:'',note:'',mode:'',from:'',to:'',ideaKind:'ที่เที่ยว'};render();break;}
     case "idea-suggest-open": openIdeaRecommend();break;
-    case "ai-mode": S.aiMode = el.dataset.k; render(); break;
+    case "ai-mode": { const g = el.closest(".ai-seg"); if(g){ g.style.setProperty("--i", el.dataset.k === "rec" ? 0 : 1); g.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b === el)); } S.aiMode = el.dataset.k; setTimeout(render, 300); break; }
+    case "ai-rec-run": { const s = recS(); if(s){ s.scope = el.dataset.d; await runIdeaRecommend(); } break; }
     case "idea-suggest-cat": {const s=recS();if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
     case "idea-suggest-like": {const s=recS();if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
     case "idea-suggest-more": await runIdeaRecommend(true,true);break;
@@ -4128,7 +4130,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-ai3";
+const BUILD = "2026-11-10-ai4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
