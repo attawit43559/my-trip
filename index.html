@@ -335,10 +335,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .ai-seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
 .ai-seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:14.5px;font-weight:500;color:var(--muted);min-height:42px;display:flex;align-items:center;justify-content:center;gap:6px}
 .ai-seg button[aria-selected="true"]{color:var(--ink);font-weight:600}
-.ai-rec{display:flex;flex-direction:column;gap:10px}
-.ai-rec-card{display:flex;align-items:center;gap:12px;border:0;border-radius:20px;background:var(--surface);box-shadow:var(--lift);padding:14px;text-align:left;font:inherit;color:var(--ink)}
-.ai-rec-card .grow{display:flex;flex-direction:column;min-width:0}.ai-rec-card b{font-size:16px}
-.ai-rec-ic{width:44px;height:44px;border-radius:14px;background:var(--soft);color:var(--deep);display:flex;align-items:center;justify-content:center;flex:none}
+.ai-rec-inline .idea-compose-body{overflow:visible;max-height:none;padding:0}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -1980,7 +1977,7 @@ function helpRows(date){
 async function helpRun(oneDay){
   const h = helpState(), t = S.trip; if(!t || h.step === "loading" || h.busyDay) return;
   try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests, likeNote:s_(h.likeNote)})); } catch(_){}
-  const dates = oneDay && h.result ? [oneDay] : tripDates(t), note = oneDay ? s_((h.notes || {})[oneDay]) : "";
+  const dates = oneDay ? [oneDay] : tripDates(t), note = oneDay ? s_((h.notes || {})[oneDay]) : "";
   if(oneDay && h.result) h.busyDay = oneDay; else h.step = "loading";
   h.err = ""; h.ctl = new AbortController(); render();
   try {
@@ -2023,8 +2020,9 @@ function vAiPage(){
   const mode = S.aiMode || "rec";
   const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("pin",17)}แนะนำที่เที่ยว</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",17)}รีวิวแผน</button></div>`;
   if(mode === "review") return seg + vHelpPage();
-  const cards = [["sight","ที่เที่ยว","k-sight","pin"],["food","ร้านอาหาร","k-food","food"],["cafe","คาเฟ่","k-cafe","coffee"]];
-  return `${seg}<div class="ai-rec">${cards.map(([k,l,tone,icn]) => `<button type="button" class="ai-rec-card ${tone}" data-act="ai-rec" data-k="${k}"><span class="ai-rec-ic">${ic(icn,22)}</span><span class="grow"><b>${l}</b></span>${ic("chev",18)}</button>`).join("")}</div>`;
+  if(!S.aiRec || S.aiRec.tripId !== S.tripId){ let city = ""; try { city = localStorage.getItem(suggestCityKey()) || ""; } catch(_){}
+    S.aiRec = {kind:"idea-recommend", tripId:S.tripId, step:"form", cat:"sight", city:city || S.trip.destination || "", likes:{sight:[],food:[],cafe:[]}, note:"", places:[], selected:new Set(), busy:false}; }
+  return seg + vIdeaRecommend(S.aiRec, true);
 }
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
@@ -2046,16 +2044,14 @@ function vHelpPage(){
     return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
       <section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(date)}"><b>วันที่ ${S.day + 1} · ${esc(dShort(date))}</b>${ic("chev",16)}</button>${day && day.summary && !busy ? `<span class="help-sum">${esc(day.summary)}</span>` : ""}</div>${body}</section>
       <textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>
-      <div class="help-actions"><button type="button" class="soft-btn help-again" data-act="help-ask">ปรับสไตล์ทริป</button><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay ? "disabled" : ""}>${ic("spark",16)}ดูแผนอีกรอบ</button></div>`);
+      ${helpButtons(h, date)}`);
   }
-  const counter = (k, label) => `<div class="ai-n"><span>${label}</span><div><button type="button" data-act="help-num" data-k="${k}" data-d="-1" aria-label="ลด${label}">${ic("minus",14)}</button><output>${h[k]}</output><button type="button" data-act="help-num" data-k="${k}" data-d="1" aria-label="เพิ่ม${label}">${ic("plus",14)}</button></div></div>`;
+  const date = dates[S.day] || dates[0] || "";
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-    <p class="muted small" style="margin:-4px 0 0">AI จะอ่านแผนทุกวัน แล้วบอกจุดที่ควรปรับ</p>
-    <div class="help-q"><b>สไตล์เที่ยว</b><div class="help-pace">${HELP_PACE.map(([k,l]) => `<button type="button" data-act="help-pace" data-k="${k}" aria-pressed="${h.pace === k}">${l}</button>`).join("")}</div></div>
-    <div class="help-q"><b>ชอบเที่ยวแนวไหน</b><div class="help-likes">${HELP_LIKES.map(v => `<button type="button" aria-pressed="${h.interests.includes(v)}" data-act="help-like" data-v="${esc(v)}">${esc(v)}</button>`).join("")}
-      <input class="help-like-in" type="text" maxlength="80" placeholder="อื่นๆ" value="${esc(h.likeNote || "")}" data-bind="help:likeNote" aria-label="แนวเที่ยวอื่นๆ"></div></div>
-    <div class="help-q"><b>ใครไปบ้าง</b><div class="ai-ns">${counter("adults","ผู้ใหญ่")}${counter("children","เด็ก")}${counter("elders","สูงอายุ")}</div></div>
-    <button type="button" class="soft-btn help-start" data-act="help-run" ${dates.length ? "" : "disabled"}>${ic("spark",18)}เริ่ม</button>`);
+    ${date ? `<textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>${helpButtons(h, date)}` : `<p class="muted small">ตั้งวันเที่ยวก่อน</p>`}`);
+}
+function helpButtons(h, date){
+  return `<div class="help-actions"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}รีวิววันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("calendar",16)}รีวิวทั้งหมด</button></div>`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 /* trip days laid out as a Sunday-first calendar, 7 per row.
@@ -2101,7 +2097,7 @@ function vTrip(){
   const isToday = d === today(), next = isToday ? nextEntry(entries) : null;
   let page;
   // the trip name and the day calendar stay put at the top while the page scrolls under them
-  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.aiMode === "review" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
+  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.aiMode === "review")) ? calendar(dates) : "";
   if(tab === "planning") page = dates.length
     ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
     : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
@@ -2536,34 +2532,36 @@ function openIdeaRecommend(){
   S.sheet={kind:'idea-recommend',step:'form',cat:'sight',city:city||t.destination||'',likes:{sight:[],food:[],cafe:[]},note:'',places:[],selected:new Set(),busy:false};
   render();
 }
-function vIdeaRecommend(s){
+function vIdeaRecommend(s, inline){
+  const bind = inline ? "aiRec" : "sheet", box = (label, cls, inner) => inline ? `<section class="ai-rec-inline" aria-label="${label}">${inner}</section>` : `<div class="scrim${cls.includes("steady") ? " still" : ""}" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet${cls}" role="dialog" aria-modal="true" aria-label="${label}" data-stop="1">${head}${inner}</div></div>`;
   const C=SUGGEST_CATS[s.cat]||SUGGEST_CATS.sight;
-  const head=`<div class="hd"><h2>${s.step==='results'?`${esc(C.label)} ที่น่าไป`:'หาไอเดีย'}</h2><button type="button" class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>`;
+  const head=inline?'':`<div class="hd"><h2>${s.step==='results'?`${esc(C.label)} ที่น่าไป`:'หาไอเดีย'}</h2><button type="button" class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div>`;
   if(s.step==='results'){
     const rows=s.places.map(p=>{const id=p._id,chosen=s.selected.has(id),exists=inTrip(p.title);return `<button type="button" class="picker-choice idea-suggest-row" data-act="idea-suggest-toggle" data-id="${esc(id)}" aria-pressed="${chosen}" ${exists?'disabled':''}><span class="thumb-sm ${IDEA_TONE[p.kind]||'k-sight'}" aria-hidden="true">${ic(IDEA_ICON[p.kind]||'pin',16)}</span><span class="grow"><b>${esc(p.title)}</b><span class="muted small">${esc(exists?'อยู่ในทริปแล้ว':[p.area,p.reason].filter(Boolean).join(' · '))}</span></span><span aria-hidden="true">${exists||chosen?'✓':'+'}</span></button>`;}).join('');
-    return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="เลือกไอเดีย" data-stop="1">${head}
+    return box("เลือกไอเดีย", "", `
       <div class="stack idea-compose-body idea-suggest-results">
       ${rows}
       ${s.more?`<div class="ai-wait small-wait"><div class="spinner" role="status" aria-label="กำลังหาเพิ่ม"></div></div>`:`<button type="button" class="soft-btn help-start suggest-btn" data-act="idea-suggest-more">${ic('spark',16)}หาเพิ่ม</button>`}
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ย้อนกลับ</button><button type="button" class="soft-btn suggest-ok" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`ตกลง (${s.selected.size})`:'ตกลง'}</button></div></div></div></div>`;
+      <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ย้อนกลับ</button><button type="button" class="soft-btn suggest-ok" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`ตกลง (${s.selected.size})`:'ตกลง'}</button></div></div>`);
   }
-  if(s.step==='loading')return `<div class="scrim" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet" role="dialog" aria-modal="true" aria-label="กำลังหาไอเดีย" data-stop="1">${head}<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ยอดนิยม 10 ที่…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div></div></div>`;
+  if(s.step==='loading')return box("กำลังหาไอเดีย", "", `<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ยอดนิยม 10 ที่…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div>`);
   const likes=s.likes[s.cat]||[];
-  return `<div class="scrim still" data-act="close-sheet"><div class="sheet compose-sheet idea-compose-sheet steady" role="dialog" aria-modal="true" aria-label="หาไอเดีย" data-stop="1">${head}
+  return box("หาไอเดีย", " steady", `
     <form class="stack idea-compose-body" data-form="idea-recommend">
       <div class="chips t-idea suggest-cats">${Object.entries(SUGGEST_CATS).map(([k,c])=>`<button type="button" class="${IDEA_TONE[c.kind]}" aria-pressed="${s.cat===k}" data-act="idea-suggest-cat" data-k="${k}">${ic(IDEA_ICON[c.kind],18)}${esc(c.label)}</button>`).join('')}</div>
-      <label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="sheet:city"></label>
+      <label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="${bind}:city"></label>
       <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
-      <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="sheet:note">${esc(s.note)}</textarea></label>
+      <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
       <button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}เริ่ม</button>
-    </form></div></div>`;
+    </form>`);
 }
 /* redraw without the list jumping back to the top */
 function keepScroll(sel, fn){ const y = document.querySelector(sel)?.scrollTop || 0; fn(); const el = document.querySelector(sel); if(el) el.scrollTop = y; }
+function recS(){return S.sheet?.kind==='idea-recommend'?S.sheet:(S.aiRec&&S.aiRec.tripId===S.tripId&&S.catTab==='help'?S.aiRec:null);}
 async function runIdeaRecommend(more){
-  const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||s.more||!t)return;
+  const s=recS(),t=S.trip;if(!s||s.kind!=='idea-recommend'||s.busy||s.more||!t)return;
   s.city=s_(s.city);if(!s.city){s.err='ใส่เมืองก่อนครับ';render();return;}
   if(!more){s.places=[];s.selected=new Set();}
   // never suggest what is already in the trip, or what was just shown
@@ -2571,26 +2569,26 @@ async function runIdeaRecommend(more){
   if(more)s.more=true;else{s.busy=true;s.step='loading';}
   s.err='';s.ctl=new AbortController();if(more)keepScroll(".idea-suggest-results",render);else render();
   try{
-    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude}},()=>S.sheet===s&&S.trip?.id===t.id);
-    if(S.sheet!==s||S.trip?.id!==t.id)return;
+    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude}},()=>recS()===s&&S.trip?.id===t.id);
+    if(recS()!==s||S.trip?.id!==t.id)return;
     const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title)));
     const base=s.places.length;s.places=s.places.concat(fresh.map((p,i)=>({...p,_id:'p'+(base+i)})));s.step='results';
     if(more&&!fresh.length)s.err='ไม่มีที่ใหม่เพิ่มแล้ว ลองปรับคำขอดูครับ';
-  }catch(e){if(S.sheet!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
-  finally{if(S.sheet===s){s.busy=false;s.more=false;more?keepScroll(".idea-suggest-results",render):render();}}
+  }catch(e){if(recS()!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
+  finally{if(recS()===s){s.busy=false;s.more=false;more?keepScroll(".idea-suggest-results",render):render();}}
 }
 async function saveIdeaRecommendations(){
-  const s=S.sheet,t=S.trip;if(!s||s.kind!=='idea-recommend'||s.step!=='results'||s.busy||!t)return;
+  const s=recS(),t=S.trip;if(!s||s.kind!=='idea-recommend'||s.step!=='results'||s.busy||!t)return;
   const chosen=s.places.filter(p=>s.selected.has(p._id)&&!inTrip(p.title));
   if(!chosen.length)return;s.busy=true;render();
   try{
     let missing=0;
-    for(const p of chosen){if(S.trip?.id!==t.id||S.sheet!==s)throw {code:'cancelled'};
+    for(const p of chosen){if(S.trip?.id!==t.id||recS()!==s)throw {code:'cancelled'};
       const g=await gmapsPlace([p.title,p.area,s.city].filter(Boolean).join(', '));if(!g)missing++;   // the real Google place, so the map pin and "open in Google Maps" are right
       await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:s_(p.area).slice(0,120),
         data:{kind:(g&&g.kind&&(s.cat!=='sight'||g.kind==='ที่เที่ยว'||g.kind==='ช้อปปิ้ง'))?g.kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',gchecked:g?1:0,address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
-    if(S.sheet===s){S.sheet=null;S.catTab='planning';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
-  }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(S.sheet===s){s.busy=false;render();}}
+    if(recS()===s){if(S.sheet===s)S.sheet=null;else{s.step='form';s.places=[];s.selected=new Set();}S.catTab='planning';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
+  }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(recS()===s){s.busy=false;render();}}
 }
 window.addEventListener('resize',fitPlannerPanel);
 window.addEventListener('scroll',fitPlannerPanel,{passive:true});
@@ -3307,7 +3305,7 @@ document.addEventListener("input", e => {
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); if(!e.target.closest(".steady")) e.target.scrollIntoView({block:"nearest"}); }
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&path==='departTime'){S.sheet.time=S.sheet.departTime||'09:00';S.sheet.lookup=null;}
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&['time','timezone','mode'].includes(path)){S.sheet.lookup=null;S.sheet.lookupError='';S.sheet.travelSource='';S.sheet.travelCheckedAt='';}
-  if(root==='sheet'&&S.sheet?.kind==='idea-recommend'&&path==='city'){try{localStorage.setItem(suggestCityKey(),e.target.value);}catch(_){}}
+  if((root==='aiRec'||root==='sheet'&&S.sheet?.kind==='idea-recommend')&&path==='city'){try{localStorage.setItem(suggestCityKey(),e.target.value);}catch(_){}}
   if(e.target.dataset.rerender) render();
   if(e.target.dataset.suggest !== undefined && e.isTrusted) suggestSoon(e.target);
 });
@@ -3960,13 +3958,12 @@ document.addEventListener("click", async e => {
     case "idea-add-manual": {const dates=tripDates(t);S.sheet={kind:'idea',title:'',date:dates[S.day]||dates[0],time:'',note:'',mode:'',from:'',to:'',ideaKind:'ที่เที่ยว'};render();break;}
     case "idea-suggest-open": openIdeaRecommend();break;
     case "ai-mode": S.aiMode = el.dataset.k; render(); break;
-    case "ai-rec": openIdeaRecommend(); if(S.sheet && S.sheet.kind === "idea-recommend"){ S.sheet.cat = el.dataset.k; render(); } break;
-    case "idea-suggest-cat": {const s=S.sheet;if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
-    case "idea-suggest-like": {const s=S.sheet;if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
+    case "idea-suggest-cat": {const s=recS();if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
+    case "idea-suggest-like": {const s=recS();if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
     case "idea-suggest-more": await runIdeaRecommend(true,true);break;
-    case "idea-suggest-toggle": {const s=S.sheet;if(s?.kind==='idea-recommend'&&s.step==='results'){const id=el.dataset.id;s.selected.has(id)?s.selected.delete(id):s.selected.add(id);keepScroll(".idea-suggest-results",render);}break;}
-    case "idea-suggest-edit": if(S.sheet?.kind==='idea-recommend'){S.sheet.step='form';render();}break;
-    case "idea-suggest-cancel": S.sheet?.ctl?.abort();if(S.sheet?.kind==='idea-recommend'){S.sheet.busy=false;S.sheet.step='form';}render();break;
+    case "idea-suggest-toggle": {const s=recS();if(s?.kind==='idea-recommend'&&s.step==='results'){const id=el.dataset.id;s.selected.has(id)?s.selected.delete(id):s.selected.add(id);keepScroll(".idea-suggest-results",render);}break;}
+    case "idea-suggest-edit": if(recS()){recS().step='form';render();}break;
+    case "idea-suggest-cancel": {const s=recS();s?.ctl?.abort();if(s){s.busy=false;s.step='form';}render();break;}
     case "idea-suggest-save": await saveIdeaRecommendations();break;
     case "planner-filter": S.planner.filter=el.dataset.k;render();break;
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
@@ -4129,7 +4126,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-ai1";
+const BUILD = "2026-11-10-ai2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
