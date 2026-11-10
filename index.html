@@ -3038,10 +3038,15 @@ function vSheet(){
 
 /* ---------- render ---------- */
 let overlayScrollY=null;
+let pinShift=0;   // the pinned trip header stops sticking while the page is held still, so hold it where it was
+function holdPin(){const tt=document.querySelector('.trip-top');if(tt&&pinShift){tt.style.position='relative';tt.style.top=pinShift+'px';}}
 function lockOverlayPage(locked){
   const body=document.body;
-  if(locked&&overlayScrollY===null){overlayScrollY=window.scrollY;body.style.position='fixed';body.style.top=-overlayScrollY+'px';body.style.left='0';body.style.right='0';body.style.width='100%';}
-  else if(!locked&&overlayScrollY!==null){const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
+  if(locked&&overlayScrollY===null){const tt=document.querySelector('.trip-top'),was=tt?tt.getBoundingClientRect().top:0;
+    overlayScrollY=window.scrollY;body.style.position='fixed';body.style.top=-overlayScrollY+'px';body.style.left='0';body.style.right='0';body.style.width='100%';
+    pinShift=0;if(tt){const fix=n=>requestAnimationFrame(()=>{const t=document.querySelector('.trip-top');if(!t||overlayScrollY===null)return;const d=Math.round(was-t.getBoundingClientRect().top);if(Math.abs(d)>1){pinShift+=d;holdPin();}if(n)fix(n-1);});fix(2);}}
+  else if(locked)holdPin();
+  else if(!locked&&overlayScrollY!==null){pinShift=0;const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
 }
 function render(){
   const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
@@ -3057,9 +3062,9 @@ function render(){
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
   if(pageY && Math.abs(window.scrollY - pageY) > 2) window.scrollTo({top: pageY, behavior: "instant"});
   const modalSheet=S.view==="upload"||(S.sheet&&S.sheet.kind!=="day-ideas");
-  document.body.style.overflow = modalSheet ? "hidden" : "";
   const overlayLocked=!!modalSheet;
-  document.documentElement.classList.toggle("lock",overlayLocked);lockOverlayPage(overlayLocked);
+  lockOverlayPage(overlayLocked);document.documentElement.classList.toggle("lock",overlayLocked);   // measure the pinned header before anything stops the page scrolling
+  document.body.style.overflow = modalSheet ? "hidden" : "";
   if(S.sheet && S.sheet.kind === "doc") docMount();
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
@@ -4106,7 +4111,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-plan3";
+const BUILD = "2026-11-10-plan5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
