@@ -293,10 +293,10 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-sheet{max-height:calc(var(--vvh,100dvh) - 24px);overflow-y:auto}
 .exp-total{background:var(--idea-soft);border-radius:22px;padding:18px 20px 16px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:6px}
 .exp-total>small{color:var(--idea);font-size:13px}.exp-total>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15;letter-spacing:-.3px}
-.exp-total-top{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}.exp-total-top small{font-size:13px;color:var(--idea)}.exp-rate-note{font-size:12px;color:var(--idea)}
-.exp-total .exp-seg{background:rgba(255,255,255,.55);border:1px solid rgba(138,83,0,.18)}
+.exp-total-row{display:flex;align-items:center;gap:10px;margin-top:8px}.exp-total-row small{font-size:12px;color:var(--idea)}
+.exp-total .exp-seg{background:rgba(255,255,255,.75);border:1px solid rgba(138,83,0,.15)}
 .exp-total .exp-seg button{color:#8A5300;font-size:14px;padding:5px 14px;min-height:36px}
-.exp-total .exp-seg button.on{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 0 0 1.5px #E39400,0 2px 6px rgba(43,33,28,.12)}
+.exp-total .exp-seg button.on{background:var(--accent);color:var(--on-accent);font-weight:700;box-shadow:0 2px 6px rgba(227,148,0,.35)}
 .exp-by{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;font-size:13px;color:var(--idea)}.exp-by b{color:var(--ink);font-weight:600}
 .exp-seg{display:inline-flex;background:var(--tile);border-radius:999px;padding:3px;gap:2px}.exp-total .exp-seg{background:var(--bg)}
 .exp-seg button{border:0;background:none;border-radius:999px;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);padding:4px 14px;min-height:32px;white-space:nowrap}
@@ -3536,8 +3536,8 @@ function vExpPage(){
   list.forEach(i => { const d = i.data || {}, k = d.by || "?"; (by[k] ||= {name: expName(d.by), t:{}}).t[d.cur] = (by[k].t[d.cur] || 0) + (+d.amount || 0); });
   const view = expViewCur(), loc = expLocal(), r = fxRate(loc);
   return `<section class="exp-page">
-    <div class="exp-total"><div class="exp-total-top"><small>รวมทั้งทริป · แสดงเป็น</small>${expCurSeg(view, "exp-view")}</div><b>${esc(expOne(t, view))}</b>
-      ${loc !== "THB" && r ? `<small class="exp-rate-note">เรท 1 ${esc((CUR_SIGN[loc] || loc).trim())} = ${r} ฿</small>` : ""}
+    <div class="exp-total"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b>
+      <div class="exp-total-row">${expCurSeg(view, "exp-view")}${loc !== "THB" && r ? `<small>1 ${esc((CUR_SIGN[loc] || loc).trim())} = ${r} ฿</small>` : ""}</div>
       ${Object.keys(by).length ? `<div class="exp-by">${Object.values(by).map(p => `<span>${esc(p.name)} จ่าย <b>${esc(expOne(p.t, view))}</b></span>`).join("")}</div>` : ""}</div>
     ${list.length ? `<ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul><p class="muted small exp-tip">แตะรายการเพื่อเลือกคนหาร · เลื่อนซ้ายเพื่อแก้หรือลบ</p>` : `<p class="muted small" style="text-align:center;padding:24px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
     <div class="exp-actions"><button type="button" class="exp-btn exp-btn-split" data-act="exp-split" ${list.length ? "" : "disabled"}>${ic("people",19)}หารเงิน</button><button type="button" class="exp-btn exp-btn-add" data-act="exp-add">${ic("edit",19)}จด</button></div>
@@ -4155,7 +4155,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet5";
+const BUILD = "2026-11-10-wallet6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
