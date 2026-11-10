@@ -22,6 +22,7 @@ const ITEMS = 'items';
 const SESSIONS = 'sessions';
 const SHARE_KEYS = 'sharekeys';
 const OPEN_ACTIONS = { ping: true, login: true, shareAdd: true, shareFile: true, shareTrips: true, shareAny: true };
+const GEMINI_LITE = 'gemini-3.5-flash-lite';
 const FOLDER_NAME = 'My Trip – booking files';
 
 /* ---------------- HTTP entry points ---------------- */
@@ -1175,7 +1176,8 @@ function callGemini_(props, prompt, files, opts) {
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('missing_GEMINI_API_KEY');
   // Keep the selected model explicit; do not silently downgrade planning quality.
-  const models = (opts.models || [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash']).concat(opts.fallback || []);
+  // last resort when the free daily quota of the bigger models is used up: the lite model has its own quota
+  const models = (opts.models || [props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash']).concat(opts.fallback || [], opts.noLite ? [] : [GEMINI_LITE]);
   const parts = [{ text: prompt }].concat([].concat.apply([], files.map((f, i) => [{ text: '[File ' + i + ']' }, { inline_data: { mime_type: f.mime, data: f.data } }])));
   let lastErr;
   // the model is sometimes busy (503/429): wait and ask the same model again rather than give up
