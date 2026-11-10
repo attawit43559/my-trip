@@ -295,7 +295,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-total-sum{display:flex;flex-direction:column;min-width:0}.exp-total-sum small{color:var(--idea);font-size:12px}.exp-total-sum b{font-family:var(--display);font-size:28px;font-weight:500;line-height:1.2}
 .exp-total-row{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
 .exp-total .exp-seg{background:rgba(255,255,255,.75)}
-.exp-total .exp-seg{padding:3px}
+.exp-total .exp-seg{padding:3px;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
 .exp-total .exp-seg button{color:#8A5300;font-size:13.5px;padding:2px 14px;min-height:32px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
 .exp-rate{font-size:11px;color:var(--idea);opacity:.85}
@@ -3830,6 +3830,12 @@ document.addEventListener("pointerup", endSwipe);
 document.addEventListener("pointercancel", endSwipe);
 document.addEventListener("click", e => { if(SW.suppress && e.target.closest(".trow-slide")){ e.preventDefault(); e.stopImmediatePropagation(); SW.suppress = false; } }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S.sheet.ctl?.abort();S.sheet = null; render(); } });
+{ let sx = null, sg = null;
+  document.addEventListener("pointerdown", e => { sg = e.target.closest && e.target.closest(".exp-total .exp-seg"); sx = sg ? e.clientX : null; });
+  document.addEventListener("pointerup", e => { if(!sg || sx == null) return; const dx = e.clientX - sx, g = sg; sg = null; sx = null; if(Math.abs(dx) < 12) return;
+    const bs = [...g.querySelectorAll("button")], cur = bs.findIndex(b => b.classList.contains("on")), to = Math.max(0, Math.min(bs.length - 1, cur + (dx > 0 ? 1 : -1)));
+    S.segSwiped = true; setTimeout(() => { S.segSwiped = false; }, 400); if(to === cur) return; const b = bs[to];
+    try { localStorage.setItem("mytrip-exp-view", b.dataset.cur); } catch(_){} segSlide(b); setTimeout(render, 280); }); }
 document.addEventListener("change", e => { const x = e.target.closest && e.target.closest("[data-fx]"); if(!x || !S.trip) return; const v = parseFloat(x.value); const fx = {...(S.trip.fx || {})}; if(v > 0) fx[x.dataset.fx] = v; else delete fx[x.dataset.fx]; store.updateTrip(S.trip.id, {fx}); render(); });
 document.addEventListener("submit", async e => {
   if(e.target.dataset.form==='travel-leg'){e.preventDefault();await saveTravelLeg();return;}
@@ -4016,7 +4022,7 @@ document.addEventListener("click", async e => {
     case "exp-open": S.sheet = null; selectTab("money"); break;
     case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
     case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = el.dataset.cur; f.elements.amount.focus(); break; }
-    case "exp-view": try { localStorage.setItem("mytrip-exp-view", el.dataset.cur); } catch(_){} segSlide(el); setTimeout(render, 280); break;
+    case "exp-view": { if(S.segSwiped){ S.segSwiped = false; break; } let b = el; if(b.classList.contains("on")){ const o = [...b.parentNode.querySelectorAll("button")].find(x => x !== b); if(o) b = o; } try { localStorage.setItem("mytrip-exp-view", b.dataset.cur); } catch(_){} segSlide(b); setTimeout(render, 280); break; }
     case "exp-del": if(S.sheet && S.sheet.id){ await store.deleteItem(S.trip.id, S.sheet.id); S.sheet = null; render(); toast("ลบแล้ว"); } break;
     case "exp-pick": { const o = (S.expUI ||= {pick:""}); o.pick = o.pick === el.dataset.id ? "" : el.dataset.id; render(); break; }
     case "exp-who": { const o = (S.expUI || {}); const it = S.items.find(i => i.id === o.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
@@ -4129,7 +4135,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet15";
+const BUILD = "2026-11-10-wallet16";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
