@@ -436,7 +436,7 @@ html{overflow-x:hidden}body{overflow-x:clip}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{font-size:14px}
 input,select,textarea{font-size:16px!important}
-.help-page .help-note,.ai-rec-inline .help-note{font-size:14px!important}
+.help-page .help-note,.ai-rec-inline .help-note,.travel-memo{font-size:14px!important}
 .screen{padding-block:12px 28px;gap:14px}
 .top{gap:10px;min-height:40px}
 .top h1{font-size:19px}
@@ -578,6 +578,7 @@ html.lock,html.lock body{overflow:hidden}
 .travel-gap .gap-dot{display:flex;align-items:center;flex:none}
 .day-list .now-line{position:relative}.day-list .now-line::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.travel-result>summary{cursor:pointer;list-style:revert}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}
+.travel-memo{margin-top:4px}.entry-move .entry-copy{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.move-memo{display:block;font-size:12px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
 
@@ -1446,7 +1447,7 @@ function entryHtml(e){
     e={...e,sub:''};if(!e.time&&n)e.dur=n>=60?[Math.floor(n/60)+(n%60?':'+String(n%60).padStart(2,'0'):''),'ชม.']:[String(n),'นาที'];}
   if(e.it.type==='move'&&!e.night){
     const how=[s_(d.mode)||'ขนส่งสาธารณะ',e.dur?e.dur.join(' '):'',e.time?'ออก '+e.time:''].filter(Boolean).join(' · ');
-    return swipeItem(e.it, e.it.id + "::" + (e.time||""), `<button class="entry entry-move${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}"`:""} data-act="item" data-id="${esc(e.it.id)}" aria-label="${esc(how+' · '+title)}"><span class="time"></span><span class="move-rail" aria-hidden="true"></span><span class="move-ic" aria-hidden="true">${ic(itemIcon(e.it),15)}</span><span class="grow entry-copy"><span class="ttl">${esc(how)}</span></span></button>`);
+    return swipeItem(e.it, e.it.id + "::" + (e.time||""), `<button class="entry entry-move${sortable?' reorderable-entry':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}"`:""} data-act="item" data-id="${esc(e.it.id)}" aria-label="${esc(how+' · '+title)}"><span class="time"></span><span class="move-rail" aria-hidden="true"></span><span class="move-ic" aria-hidden="true">${ic(itemIcon(e.it),15)}</span><span class="grow entry-copy"><span class="ttl">${esc(how)}</span>${s_(d.memo)?`<span class="move-memo">${esc(d.memo)}</span>`:''}</span></button>`);
   }
   return swipeItem(e.it, e.it.id + ":" + (e.phase||"") + ":" + (e.time||""), `<button class="entry${sortable?' reorderable-entry':''}${e.it.type==='move'&&!e.night?' entry-move':''}" ${sortable?`data-place-drag="${esc(dayEntryKey(e))}" title="กดค้างเพื่อลากเรียง · Alt + ลูกศรเพื่อเรียงด้วยคีย์บอร์ด"`:""} data-act="item" data-id="${esc(e.it.id)}"><span class="time${e.dur?' dur':''}${e.it.type==='flight'||e.it.type==='move'?' fixed':''}">${e.night ? "" : e.dur ? `<b>${esc(e.dur[0])}</b><small>${esc(e.dur[1])}</small>` : esc(e.it.source==='ai'&&['place','move'].includes(e.it.type)?aiClock(e.time,!!d.timeLocked):(e.time||"--:--"))}</span>
     ${e.night ? `<span class="thumb night t-stay" role="img" aria-label="คืนนี้">${ic("moon",20)}</span>` : `<span class="thumb tc ${toneOf(e.it)}">${ic(itemIcon(e.it),20)}</span>`}<span class="grow entry-copy"><span class="ttl">${esc(title)}</span>${e.sub?`<span class="muted small entry-sub">${esc(e.sub)}</span>`:""}</span></button>${!e.night&&(e.it.type==='place'||(e.it.type==='stay'&&(e.phase==='in'||e.phase==='out'||e.start)))?`<input type="time" class="time-pick" data-time-id="${esc(e.it.id)}" data-time-field="${e.start?'leave:'+e.dayDate:e.phase==='out'?'endTime':'time'}" value="${esc(/^\d\d:\d\d$/.test(e.time||'')?e.time:'')}" aria-label="ตั้งเวลา ${esc(title)}">`:''}${!e.night&&itemFiles(e.it).length?`<button type="button" class="entry-doc" data-act="doc-open" data-id="${esc(e.it.id)}" aria-label="เปิดตั๋ว / ใบจอง ${esc(title)}">${ic("ticket",19)}</button>`:''}`);
@@ -2449,23 +2450,23 @@ function applyTravelChoice(ai,index){
 }
 
 function openTravelSheet(leg){
-  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||travelDepartureHint(leg),note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||'',chosen:!!leg.saved,approximateRoutes:true,departTime:leg.saved?.time||'',cacheKey:travelCacheKey(leg)};const cached=travelResultsCache.get(S.sheet.cacheKey);if(cached){S.sheet.lookup=cached.result;S.sheet.time=cached.result.time;S.sheet.lookupKey=travelQueryKey(S.sheet);if(cached.selectedIndex>=0)applyTravelChoice(false,cached.selectedIndex);else render();}else{render();lookupTravel();}
+  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,memo:d.memo||'',mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||travelDepartureHint(leg),note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||'',chosen:!!leg.saved,approximateRoutes:true,departTime:leg.saved?.time||'',cacheKey:travelCacheKey(leg)};const cached=travelResultsCache.get(S.sheet.cacheKey);if(cached){S.sheet.lookup=cached.result;S.sheet.time=cached.result.time;S.sheet.lookupKey=travelQueryKey(S.sheet);if(cached.selectedIndex>=0)applyTravelChoice(false,cached.selectedIndex);else render();}else{render();lookupTravel();}
 }
 function editManualTravel(it){
   if(!it?.data?.legKey)return false;const leg=manualTravelLegs(it.date).find(l=>l.saved?.id===it.id);if(!leg)return false;openTravelSheet(leg);return true;
 }
 function vTravelLeg(s){
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return `<div class="scrim" data-act="close-sheet"><div class="sheet"><p>ลำดับสถานที่เปลี่ยนแล้ว</p><button class="btn ghost" data-act="close-sheet">ปิด</button></div></div>`;
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet lean-travel" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2 class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><form class="stack" data-form="travel-leg" id="travel-leg-form"><small class="muted">${esc(dLong(s.date))}</small>${vTravelResults(s)}${s.chosen&&!s.lookup&&!s.lookupBusy?`<div class="travel-chosen"><b>${esc(s.mode)}${s.minutes?' · '+esc(s.minutes)+' นาที':''}</b>${s.note?`<small>${esc(s.note)}</small>`:''}</div>`:''}</form><div class="travel-actions"><button class="btn primary travel-save" type="submit" form="travel-leg-form" ${!s.chosen||s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}).replace('&dir_action=navigate',''))}" target="_blank" rel="noopener">เปิด Google Maps${ic('ext',16)}</a></div></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet lean-travel" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2 class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><form class="stack" data-form="travel-leg" id="travel-leg-form"><small class="muted">${esc(dLong(s.date))}</small>${vTravelResults(s)}${s.chosen&&!s.lookup&&!s.lookupBusy?`<div class="travel-chosen"><b>${esc(s.mode)}${s.minutes?' · '+esc(s.minutes)+' นาที':''}</b>${s.note?`<small>${esc(s.note)}</small>`:''}</div>`:''}<textarea class="grow-area help-note travel-memo" id="travel-memo" rows="1" maxlength="200" placeholder="โน้ต เช่น Hikari 507 · ออก 10:03 · รถ 7 ที่ 12A" data-bind="sheet:memo" aria-label="โน้ตการเดินทาง">${esc(s.memo||'')}</textarea></form><div class="travel-actions"><button class="btn primary travel-save" type="submit" form="travel-leg-form" ${(!s.chosen&&!s_(s.memo))||s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}).replace('&dir_action=navigate',''))}" target="_blank" rel="noopener">เปิด Google Maps${ic('ext',16)}</a></div></div></div>`;
 }
 
 async function saveTravelLeg(){
   const s=S.sheet,t=S.trip;if(s?.kind!=='travel-leg'||s.busy||t?.id!==s.tripId)return;
-  if(!s.chosen&&!s.manualOpen){toast('เลือกเส้นทางหรือกรอกเองก่อน');return;}
+  if(!s.chosen&&!s.manualOpen&&!s_(s.memo)){toast('เลือกเส้นทางหรือใส่โน้ตก่อน');return;}
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg){toast('ลำดับสถานที่เปลี่ยนแล้ว');return;}
   const minutes=s_(s.minutes)===''?null:Number(s.minutes);
   if(minutes!==null&&(!Number.isInteger(minutes)||minutes<1||minutes>1440)){toast('ระบุเวลาระหว่าง 1–1440 นาที');return;}
-  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId,timezone:s.timezone||'',travelSource:s.travelSource||'',travelCheckedAt:s.travelCheckedAt||''};
+  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId,timezone:s.timezone||'',travelSource:s.travelSource||'',travelCheckedAt:s.travelCheckedAt||'',memo:s_(s.memo)};
   s.busy=true;render();
   try{
     let id=leg.saved?.id;
@@ -3314,6 +3315,7 @@ document.addEventListener("input", e => {
   const [root, path] = b.split(":");
   if(root === "root") S[path] = (e.target.type === "checkbox" ? e.target.checked : e.target.value); else if(S[root]) setPath(S[root], path, e.target.type === "checkbox" ? e.target.checked : e.target.value);
   if(e.target.classList.contains("grow-area")){ fitAreas(e.target); if(!e.target.closest(".steady")) e.target.scrollIntoView({block:"nearest"}); }
+  if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&path==='memo'){const b=document.querySelector('.travel-save');if(b&&!S.sheet.busy)b.disabled=!S.sheet.chosen&&!s_(S.sheet.memo);}
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&path==='departTime'){S.sheet.time=S.sheet.departTime||'09:00';S.sheet.lookup=null;}
   if(root==='sheet'&&S.sheet?.kind==='travel-leg'&&['time','timezone','mode'].includes(path)){S.sheet.lookup=null;S.sheet.lookupError='';S.sheet.travelSource='';S.sheet.travelCheckedAt='';}
   if((root==='aiRec'||root==='sheet'&&S.sheet?.kind==='idea-recommend')&&path==='city'){try{localStorage.setItem(suggestCityKey(),e.target.value);}catch(_){}}
@@ -4136,7 +4138,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet18";
+const BUILD = "2026-11-10-travel2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
