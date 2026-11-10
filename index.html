@@ -322,13 +322,13 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-rate{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--place);margin-top:4px}.exp-rate input{width:76px;border:0!important;border-radius:999px;background:var(--surface);box-shadow:none;font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:2px 0}
 .exp-copy{margin-top:12px;min-height:44px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;font-weight:500;padding:0 20px;display:flex;align-items:center;gap:8px}
 .exp-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:4px 2px 8px;font-size:13px}.exp-h small{font-size:12px}
-.pick-day{background:var(--place-soft);border-radius:22px;padding:4px 4px 4px 14px;margin-bottom:6px}
-.pick-row{display:flex;align-items:center;gap:6px;min-height:52px}.pick-rest .pick-row{padding:0 4px 0 14px}
-.pick-name{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:0;background:none;font:inherit;color:var(--ink);text-align:left;padding:8px 0;font-size:15.5px}
+.pick-day{background:var(--surface);border-radius:18px;padding:4px 4px 4px 8px;margin-bottom:4px;box-shadow:var(--lift)}
+.pick-row{display:flex;align-items:center;gap:6px;min-height:46px}.pick-rest .pick-row{padding:0 4px 0 8px}
+.pick-name{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;color:var(--ink);text-align:left;padding:5px 0;font-size:15px}
 .pick-name .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pick-ic{background:none!important;display:flex;flex:none}.pick-day .pick-ic{color:var(--place)!important}
-.pick-x,.pick-plus{width:40px;height:40px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
-.pick-x{background:none;color:color-mix(in srgb,var(--place) 70%,var(--muted))}.pick-plus{background:var(--tile);color:var(--ink)}
+.pick-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;background:var(--soft);color:var(--deep)}.pick-rest .pick-ic{background:none;color:var(--mid)}
+.pick-x,.pick-plus{width:38px;height:38px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
+.pick-x{background:none;color:var(--muted)}.idea-btns{margin-top:14px}.idea-btns .soft-btn{background:var(--tile);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}.idea-btns .idea-del{color:var(--danger)}.idea-btns .idea-del.ask{background:var(--danger);color:#fff}.idea-del{color:var(--danger)}.idea-del.ask{background:var(--danger);color:#fff}.pick-plus{background:var(--tile);color:var(--ink)}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -619,33 +619,11 @@ html.kb .tabbar{display:none}
 .page .booking-group{padding:14px 16px}
 .workflow-search,.workflow-search:focus,.workflow-search:focus-visible,.dock .workflow-search:focus,.dock .workflow-search:focus-visible{outline:none!important;box-shadow:0 1px 3px rgba(43,33,28,.08)!important;border-color:transparent!important;background:var(--surface)!important}
 /* add a saved place to the plan: day chips, an optional time, one soft button */
-.plan-quick{display:flex;flex-direction:column;gap:10px}
-.plan-quick>b{font-size:15px}
-.plan-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-.plan-days::-webkit-scrollbar{display:none}
-.plan-days button{border:0;border-radius:12px;background:var(--tile);color:var(--ink);height:42px;font-family:var(--display);font-size:16px;font-weight:600}
-.plan-days button[aria-pressed="true"]{background:var(--accent-soft)}
-.plan-go{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
-.plan-time{position:relative;display:flex;align-items:center;gap:8px;background:var(--tile);border-radius:999px;padding:0 14px;min-height:44px;color:var(--muted)}
-.plan-time input{border:0;background:transparent;font:inherit;font-size:15px;color:var(--ink);min-width:0;width:74px;outline:none;-webkit-appearance:none;appearance:none}
-.plan-time input::-webkit-calendar-picker-indicator{display:none}
 .tp-wrap{position:relative;display:block;min-width:0}
-.plan-time input{display:block;padding:0;margin:0;text-align:left;line-height:44px;height:44px}
-.plan-time input::-webkit-date-and-time-value{text-align:left;margin:0;padding:0}
-.plan-time input::-webkit-datetime-edit{padding:0}
-.plan-time .tp{position:absolute;left:0;top:0;line-height:44px;font-size:15px;color:var(--muted);pointer-events:none;display:none}
-.plan-time:has(input:invalid) .tp{display:block}
-.plan-time input:invalid{color:transparent}
 .soft-btn{border:0;border-radius:999px;min-height:44px;padding:0 14px;background:var(--place-soft);color:var(--place);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:14px}
 .soft-btn:disabled{opacity:.5}
-.plan-done{display:flex;align-items:center;gap:12px;background:var(--place-soft);border-radius:16px;padding:12px 14px}
 .item-edit-visible{border:0!important;box-shadow:none!important;background:var(--tile)!important;color:var(--ink)!important;border-radius:999px}
-.plan-done .soft-btn{background:var(--surface)}
-.plan-time{justify-content:center;padding:0 16px;gap:6px}
 .tp-wrap{width:50px;flex:none}
-.plan-time input{width:50px;text-align:center}
-.plan-time input::-webkit-date-and-time-value{text-align:center}
-.plan-time .tp{left:0;right:0;text-align:center}
 .help-page{display:flex;flex-direction:column;gap:14px}
 .help-q{display:flex;flex-direction:column;gap:8px}.help-q>b{font-size:14px;font-weight:600}
 .help-start{min-height:50px;font-size:15px;background:var(--ai-soft);color:var(--ai)}
@@ -2491,33 +2469,6 @@ function itemLinks(it){
   if(it.sourceText) out.push(`<button class="lnk" data-act="show-source">${ic("file",20)}<span class="grow">ข้อความใบจอง</span>${ic("chev",16)}</button>`);
   return out.length ? `<div class="links">${out.join("")}</div>` : "";
 }
-/* a memo goes into the daily plan as a place on the chosen day; the memo stays in the list, ticked */
-function planBox(it, s){
-  const p = plannedFrom(it.id), dates = tripDates(S.trip);
-  if(p) return `<div class="plan-done"><span class="grow"><b>อยู่ในแผนแล้ว</b><br><span class="small muted">${esc(dShort(p.date))}${p.time ? " · " + esc(p.time) : ""}</span></span>
-    <button class="soft-btn" data-act="plan-goto">ดูในแผน ${ic("chev",16)}</button></div>`;
-  if(s.planDate === undefined) s.planDate = dates[S.day] || dates[0] || "";
-  if(s.planTime === undefined) s.planTime = "";
-  if(!dates.length) return "";
-  const i = dates.indexOf(s.planDate);
-  return `<div class="plan-quick"><b>เพิ่มลงแผน</b>
-    <div class="plan-days" role="group" aria-label="เลือกวัน">${dates.map((x,n) => `<button type="button" data-act="plan-day" data-d="${x}" aria-pressed="${x===s.planDate}" aria-label="${esc(dLong(x))}">${parseD(x).getDate()}</button>`).join("")}</div>
-    <div class="plan-go"><label class="plan-time">${ic("clock",18)}<span class="tp-wrap"><input id="pl-time" type="time" required value="${esc(s.planTime)}" data-bind="sheet:planTime" aria-label="เวลา (ไม่ใส่ก็ได้)"><span class="tp" aria-hidden="true">--:--</span></span></label>
-    <button class="soft-btn" data-act="plan-idea" ${S.planAdding?"disabled":""}>${ic("plus",18)}${S.planAdding?"กำลังเพิ่ม…":`เพิ่มลงวันที่ ${s.planDate ? parseD(s.planDate).getDate() + " " + MON[parseD(s.planDate).getMonth()] : ""}`}</button></div></div>`;
-}
-async function planIdea(){
-  const s = S.sheet, t = S.trip, it = s && S.items.find(i => i.id === s.id); if(!it || !t || S.planAdding) return;
-  if(plannedFrom(it.id)){toast("สถานที่นี้อยู่ในแผนแล้ว");return;}
-  if(!validD(s.planDate)){ toast("เลือกวันก่อนนะ"); return; }
-  const d = it.data || {};
-  S.planAdding=it.id;render();
-  try{
-    await store.addItem(t.id, {type:"place", date:s.planDate, time:s.planTime||"", title:it.title, sub:it.sub||"",
-      data:{address:d.address||"", lat:d.lat, lon:d.lon, placeId:d.placeId||"", kind:d.kind||"", fromIdea:it.id}, createdBy:S.me, createdAt:Date.now(), source:"idea"});
-    if(S.trip?.id===t.id){const i=tripDates(t).indexOf(s.planDate);if(i>=0)S.day=i;if(S.sheet===s)S.sheet=null;}
-    toast("เพิ่มลงแผน " + dShort(s.planDate) + " แล้ว");
-  } catch(err){ fail(err); }finally{S.planAdding=null;render();}
-}
 function plannerIdeas(s){
   const query=(s.query||'').trim().toLocaleLowerCase();
   return S.items.filter(i=>i.type==='idea'&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
@@ -2526,7 +2477,7 @@ function vDayIdeaRows(s){
   const date=tripDates(S.trip)[S.day],list=plannerIdeas(s);
   const on=i=>S.items.some(p=>p.type==='place'&&p.date===date&&(p.data||{}).fromIdea===i.id), busy=i=>PLAN_TOGGLES.has(S.trip.id+':'+date+':'+i.id)?'disabled':'';
   const inDay=list.filter(on),rest=list.filter(i=>!on(i));
-  const row=(i,act)=>`<div class="pick-row"><button class="pick-name" data-act="item" data-id="${esc(i.id)}"><span class="pick-ic ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),19)}</span><span class="grow">${esc(briefName(i.title))}</span></button>${act}</div>`;
+  const row=(i,act)=>`<div class="pick-row"><button class="pick-name" data-act="item" data-id="${esc(i.id)}"><span class="pick-ic ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),17)}</span><span class="grow">${esc(briefName(i.title))}</span></button>${act}</div>`;
   return `${inDay.length?`<div class="pick-day">${inDay.map(i=>row(i,`<button class="pick-x" data-act="planner-toggle" data-id="${esc(i.id)}" aria-label="เอาออกจากวันนี้" ${busy(i)}>${ic('close',17)}</button>`)).join('')}</div>`:''}
     <div class="pick-rest">${rest.map(i=>row(i,`<button class="pick-plus" data-act="planner-toggle" data-id="${esc(i.id)}" aria-label="ลงวันนี้" ${busy(i)}>${ic('plus',18)}</button>`)).join('')}</div>${list.length?'':'<p class="muted small">ไม่มีสถานที่</p>'}`;
 }
@@ -3047,9 +2998,9 @@ function vSheet(){
     return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.title)}" data-stop="1">
       <div class="hd"><span class="thumb tc ${toneOf(it)}">${ic(itemIcon(it))}</span><h2>${esc(it.type==='idea'?briefName(it.title):it.title)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
       <div>${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><span>${Array.isArray(r[1]) ? r[1].map(esc).join("<br>") : esc(r[1])}</span></div>`).join("")}</div>
-      ${it.type === "idea" ? planBox(it, s) : ""}
       ${itemLinks(it)}
-      <button class="btn ghost item-edit-visible" data-act="item-edit">${ic("edit",17)}แก้ไขรายละเอียด</button>
+      ${it.type === "idea" ? `<div class="grid2 idea-btns"><button class="soft-btn" data-act="item-edit">${ic("edit",17)}แก้ไข</button><button class="soft-btn idea-del${s.delAsk ? " ask" : ""}" data-act="idea-del">${ic("trash",17)}${s.delAsk ? "ลบเลย" : "ลบ"}</button></div>`
+        : `<button class="btn ghost item-edit-visible" data-act="item-edit">${ic("edit",17)}แก้ไขรายละเอียด</button>`}
     </div></div>`;
   }
   const isMove = s.kind === "move";
@@ -3098,11 +3049,13 @@ function render(){
   const active = document.activeElement && document.activeElement.id;
   /* keep the scroll position of the bottom panel and of sheets when the screen is redrawn */
   const keep = [".dock-body", ".sheet", ".picker-list"].map(sel => { const el = document.querySelector(sel); return el ? [sel, el.scrollTop, el.dataset.k || ""] : null; }).filter(Boolean);
+  const pageKey = S.view + "/" + (S.catTab || "") + "/" + (S.tripId || ""), pageY = overlayScrollY === null && pageKey === render.key ? window.scrollY : null; render.key = pageKey;   // a redraw of the same page stays where it was
   document.getElementById("app").innerHTML = (v ? v() : `<div class="load muted">กำลังโหลด…</div>`)
     + (["trip","home"].includes(S.view) ? vSheet() : "")
     + (S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "");
   if(active){ const el = document.getElementById(active); if(el && el.focus) el.focus({preventScroll:true}); }
   keep.forEach(([sel, y, k]) => { const el = document.querySelector(sel); if(el && y && (el.dataset.k || "") === k) el.scrollTop = y; });
+  if(pageY && Math.abs(window.scrollY - pageY) > 2) window.scrollTo({top: pageY, behavior: "instant"});
   const modalSheet=S.view==="upload"||(S.sheet&&S.sheet.kind!=="day-ideas");
   document.body.style.overflow = modalSheet ? "hidden" : "";
   const overlayLocked=!!modalSheet;
@@ -3999,12 +3952,6 @@ document.addEventListener("click", async e => {
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
-    case "plan-idea": planIdea(); break;
-    case "plan-day": if(S.sheet){ S.sheet.planDate = el.dataset.d; render(); } break;
-    case "plan-goto": {
-      const p = plannedFrom(S.sheet.id), i = p ? tripDates(t).indexOf(p.date) : -1;
-      S.sheet = null; if(i >= 0) S.day = i; render();
-      setTimeout(() => { const c = document.querySelector(".cal"); c && c.scrollIntoView({behavior:"smooth", block:"start"}); }, 30); break; }
     case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
     case "close-sheet": if(S.sheet?.kind==="doc"&&S.sheet.back){S.sheet=S.sheet.back;render();break;} S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
@@ -4033,6 +3980,7 @@ document.addEventListener("click", async e => {
       const it = S.items.find(i => i.id === el.dataset.id); S.swipeOpen = null; S.delAsk = null;
       if(it){if(editManualTravel(it))break;S.sheet = {kind:"item", id:it.id, edit:editFromItem(it), fromSwipe:true};render();}
       break; }
+    case "idea-del": { const s = S.sheet; if(!s.delAsk){ s.delAsk = true; render(); break; } const id = s.id; S.sheet = null; try { await store.deleteItem(t.id, id); toast("ลบแล้ว"); } catch(err){ fail(err); } render(); break; }
     case "entry-del": S.delAsk = el.dataset.key; S.swipeOpen = el.dataset.key; render(); break;
     case "entry-del-yes": {
       S.swipeOpen = null; S.delAsk = null;
@@ -4158,7 +4106,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-plan1";
+const BUILD = "2026-11-10-plan3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
