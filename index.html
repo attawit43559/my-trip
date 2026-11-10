@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFFDF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -295,10 +295,10 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-total-sum{display:flex;flex-direction:column;min-width:0}.exp-total-sum small{color:var(--idea);font-size:12px}.exp-total-sum b{font-family:var(--display);font-size:28px;font-weight:500;line-height:1.2}
 .exp-total-row{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
 .exp-total .exp-seg{background:rgba(255,255,255,.75)}
-.exp-total .exp-seg{padding:2px}.exp-total .exp-seg::before{top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / var(--n,2))}
-.exp-total .exp-seg button{color:#8A5300;font-size:12.5px;padding:2px 12px;min-height:28px}
+.exp-total .exp-seg{padding:3px}
+.exp-total .exp-seg button{color:#8A5300;font-size:15px;padding:2px 18px;min-height:38px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
-.exp-rate{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--idea)}.exp-rate input{width:52px;border:0!important;border-radius:999px!important;background:rgba(255,255,255,.6)!important;font:inherit;font-size:12px!important;color:var(--ink);text-align:center;padding:2px 4px!important;min-height:0!important;height:22px}
+.exp-rate{font-size:11px;color:var(--idea);opacity:.85}
 .exp-mini{display:flex;gap:8px}.exp-mini button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;font:inherit;font-size:14px;font-weight:600;min-height:44px}.exp-mini button:disabled{opacity:.5}
 .exp-mini-line{background:#FFFFFF;color:#06833A}.exp-mini-add{background:var(--accent);color:var(--on-accent)}
 .exp-each{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 20px;font-size:12.5px;color:var(--idea);padding-top:10px;border-top:1px solid rgba(138,83,0,.15)}.exp-each span{display:flex;justify-content:space-between;gap:8px;min-width:0}.exp-each span i{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.exp-each b{color:var(--ink);font-weight:500;white-space:nowrap}
@@ -436,6 +436,7 @@ html{overflow-x:hidden}body{overflow-x:clip}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{font-size:14px}
 input,select,textarea{font-size:16px!important}
+.help-page .help-note,.ai-rec-inline .help-note{font-size:14px!important}
 .screen{padding-block:12px 28px;gap:14px}
 .top{gap:10px;min-height:40px}
 .top h1{font-size:19px}
@@ -2551,7 +2552,7 @@ function vIdeaRecommend(s, inline){
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
       <div class="grid2"><button type="button" class="btn ghost" data-act="idea-suggest-edit">ย้อนกลับ</button><button type="button" class="soft-btn suggest-ok" data-act="idea-suggest-save" ${s.busy||!s.selected.size?'disabled':''}>${s.busy?'กำลังบันทึก…':s.selected.size?`ตกลง (${s.selected.size})`:'ตกลง'}</button></div></div>`);
   }
-  if(s.step==='loading')return box("กำลังหาไอเดีย", "", `<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ยอดนิยม 10 ที่…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div>`);
+  if(s.step==='loading')return box("กำลังหาไอเดีย", "", `<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังค้นหา"></div><p>กำลังหา${esc(C.label)}ที่น่าไป…</p><button type="button" class="link-btn" data-act="idea-suggest-cancel">ยกเลิก</button></div>`);
   const likes=s.likes[s.cat]||[];
   return box("หาไอเดีย", " steady", `
     <form class="stack idea-compose-body" data-form="idea-recommend">
@@ -3528,7 +3529,7 @@ function vExpPage(){
   const share = c && !c.missing.length ? `<div class="exp-each">${c.all.map(u => { const v = fxConv(c.owe[u] || 0, "THB", view); return `<span><i>${esc(expName(u))}</i><b>${esc(money(v == null ? c.owe[u] || 0 : v, v == null ? "THB" : view))}</b></span>`; }).join("")}</div>` : "";
   return `<section class="exp-page">
     <div class="exp-total"><div class="exp-total-top"><span class="exp-total-sum"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b></span>
-      <div class="exp-total-row">${expCurSeg(view, "exp-view", null, true)}${loc !== "THB" ? `<label class="exp-rate">1${esc((CUR_SIGN[loc] || loc).trim())} = <input inputmode="decimal" data-fx="${esc(loc)}" value="${r || ""}" placeholder="?" aria-label="เรท ${esc(loc)} เป็นบาท">฿</label>` : ""}</div></div>
+      <div class="exp-total-row">${expCurSeg(view, "exp-view", null, true)}${loc !== "THB" && r ? `<span class="exp-rate">1${esc((CUR_SIGN[loc] || loc).trim())} ≈ ${esc(String(+r.toFixed(r < 1 ? 4 : 2)))}฿</span>` : ""}</div></div>
       ${share}<div class="exp-mini"><button type="button" class="exp-mini-line" data-act="exp-line" ${list.length ? "" : "disabled"}>${ic("share",17)}แชร์ทาง LINE</button><button type="button" class="exp-mini-add" data-act="exp-add">${ic("edit",17)}จด</button></div>
     </div>
     ${list.length ? `<ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul>` : `<p class="muted small" style="text-align:center;padding:24px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
@@ -3579,7 +3580,7 @@ const CUR_TH = {JPY:"เยน", THB:"บาท", USD:"ดอลลาร์", E
 function expCurSeg(on, act, list, short){ const l = list || (expLocal() === "THB" ? ["THB"] : [expLocal(), "THB"]); return `<span class="exp-seg" role="group" style="--n:${l.length};--i:${Math.max(0, l.indexOf(on))}">${l.map(c => `<button type="button" class="${c === on ? "on" : ""}" data-act="${act}" data-cur="${c}" aria-pressed="${c === on}">${esc((CUR_SIGN[c] || "").trim() || c)}${short ? "" : " " + esc(CUR_TH[c] || c)}</button>`).join("")}</span>`; }
 const expViewCur = () => { let v = ""; try { v = localStorage.getItem("mytrip-exp-view") || ""; } catch(_){} return v === "THB" || v === expLocal() ? v : expLocal(); };
 if(!S.fxLive) try { S.fxLive = JSON.parse(localStorage.getItem("mytrip-fx") || "{}"); } catch(_){ S.fxLive = {}; }
-const fxRate = c => c === "THB" ? 1 : +(((S.trip.fx || {})[c]) || (S.fxLive || {})[c] || 0);
+const fxRate = c => c === "THB" ? 1 : +((S.fxLive || {})[c] || ((S.trip.fx || {})[c]) || 0);
 function segSlide(el){ const g = el.closest(".exp-seg"), bs = [...g.querySelectorAll("button")]; g.style.setProperty("--i", bs.indexOf(el)); bs.forEach(b => { b.classList.toggle("on", b === el); b.setAttribute("aria-pressed", b === el); }); }
 function expOne(tt, view){ view = view || expViewCur(); let sum = 0; for(const [c, n] of Object.entries(tt)){ const v = fxConv(n, c, view); if(v == null) return totalsText(tt); sum += v; } return money(sum, view); }
 const fxConv = (n, from, to) => { if(from === to) return +n || 0; const a = fxRate(from), b = fxRate(to); return a && b ? (+n || 0) * a / b : null; };
@@ -4128,7 +4129,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet12";
+const BUILD = "2026-11-10-wallet14";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
