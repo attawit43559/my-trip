@@ -331,9 +331,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .pick-x,.pick-plus{width:32px;height:32px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
 .pick-x{background:rgba(255,255,255,.65);color:var(--deep)}.idea-btns{margin-top:14px}.idea-btns .soft-btn{background:var(--tile);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}.idea-btns .idea-del{color:var(--danger)}.idea-btns .idea-del.ask{background:var(--danger);color:#fff}.idea-del{color:var(--danger)}.idea-del.ask{background:var(--danger);color:#fff}.pick-plus{background:var(--tile);color:var(--ink)}
 .picker-add{background:var(--place-soft)!important;color:var(--place)!important}
-.ai-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--tile);border-radius:999px;padding:4px;margin-bottom:12px}
-.ai-seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
-.ai-seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:14.5px;font-weight:500;color:var(--muted);min-height:42px;display:flex;align-items:center;justify-content:center;gap:6px}
+.ai-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--tile);border-radius:999px;padding:3px;margin-bottom:10px}
+.ai-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
+.ai-seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);min-height:34px;display:flex;align-items:center;justify-content:center;gap:6px}
 .ai-seg button[aria-selected="true"]{color:var(--ink);font-weight:600}
 .ai-rec-inline .idea-compose-body{overflow:visible;max-height:none;padding:0}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
@@ -2018,10 +2018,11 @@ async function helpFix(di,ti,fi){
 
 function vAiPage(){
   const mode = S.aiMode || "rec";
-  const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("pin",17)}แนะนำที่เที่ยว</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",17)}รีวิวแผน</button></div>`;
+  const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("pin",15)}แนะนำที่เที่ยว</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",15)}รีวิวแผน</button></div>`;
   if(mode === "review") return seg + vHelpPage();
   if(!S.aiRec || S.aiRec.tripId !== S.tripId){ let city = ""; try { city = localStorage.getItem(suggestCityKey()) || ""; } catch(_){}
     S.aiRec = {kind:"idea-recommend", tripId:S.tripId, step:"form", cat:"sight", city:city || S.trip.destination || "", likes:{sight:[],food:[],cafe:[]}, note:"", places:[], selected:new Set(), busy:false}; }
+  const d = tripDates(S.trip)[S.day] || ""; if(S.aiRec.step === "results" && S.aiRec.date && S.aiRec.date !== d){ S.aiRec.step = "form"; S.aiRec.places = []; S.aiRec.selected = new Set(); }
   return seg + vIdeaRecommend(S.aiRec, true);
 }
 function vHelpPage(){
@@ -2097,7 +2098,7 @@ function vTrip(){
   const isToday = d === today(), next = isToday ? nextEntry(entries) : null;
   let page;
   // the trip name and the day calendar stay put at the top while the page scrolls under them
-  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.aiMode === "review")) ? calendar(dates) : "";
+  const pin = dates.length && (tab === "" || tab === "planning" || tab === "help") ? calendar(dates) : "";
   if(tab === "planning") page = dates.length
     ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
     : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
@@ -2550,11 +2551,11 @@ function vIdeaRecommend(s, inline){
   return box("หาไอเดีย", " steady", `
     <form class="stack idea-compose-body" data-form="idea-recommend">
       <div class="chips t-idea suggest-cats">${Object.entries(SUGGEST_CATS).map(([k,c])=>`<button type="button" class="${IDEA_TONE[c.kind]}" aria-pressed="${s.cat===k}" data-act="idea-suggest-cat" data-k="${k}">${ic(IDEA_ICON[c.kind],18)}${esc(c.label)}</button>`).join('')}</div>
-      <label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="${bind}:city"></label>
+      ${inline ? "" : `<label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="${bind}:city"></label>`}
       <div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>
       <label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      <button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}เริ่ม</button>
+      <button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}${inline&&tripDates(S.trip)[S.day]?`แนะนำ 3 ที่ สำหรับวันที่ ${parseD(tripDates(S.trip)[S.day]).getDate()}`:'เริ่ม'}</button>
     </form>`);
 }
 /* redraw without the list jumping back to the top */
@@ -2569,9 +2570,10 @@ async function runIdeaRecommend(more){
   if(more)s.more=true;else{s.busy=true;s.step='loading';}
   s.err='';s.ctl=new AbortController();if(more)keepScroll(".idea-suggest-results",render);else render();
   try{
-    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude}},()=>recS()===s&&S.trip?.id===t.id);
+    if(s===S.aiRec)s.date=tripDates(t)[S.day]||'';
+    const res=await planCall(s,'recommendIdeas',{tripId:t.id,city:s.city,prefs:{category:s.cat,interests:s.likes[s.cat]||[],note:s_(s.note).slice(0,1000),exclude,...(s===S.aiRec&&s.date?{date:s.date}:{})}},()=>recS()===s&&S.trip?.id===t.id);
     if(recS()!==s||S.trip?.id!==t.id)return;
-    const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title)));
+    const fresh=(res.places||[]).filter(p=>!inTrip(p.title)&&!s.places.some(q=>sameTitle(q.title,p.title))).slice(0,s===S.aiRec?3:10);
     const base=s.places.length;s.places=s.places.concat(fresh.map((p,i)=>({...p,_id:'p'+(base+i)})));s.step='results';
     if(more&&!fresh.length)s.err='ไม่มีที่ใหม่เพิ่มแล้ว ลองปรับคำขอดูครับ';
   }catch(e){if(recS()!==s)return;if(!more)s.step='form';s.err=e?.code==='need_destination'?'ใส่เมืองก่อนครับ':e?.code==='cancelled'?'':aiErr(e);}
@@ -4126,7 +4128,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-ai2";
+const BUILD = "2026-11-10-ai3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
