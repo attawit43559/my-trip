@@ -294,7 +294,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-total{background:var(--idea-soft);border-radius:22px;padding:18px 20px 16px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:6px}
 .exp-total>small{color:var(--idea);font-size:13px}.exp-total>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15;letter-spacing:-.3px}
 .exp-total-row{display:flex;align-items:center;gap:10px;margin-top:8px}.exp-total-row small{font-size:12px;color:var(--idea)}
-.exp-total .exp-seg{background:rgba(255,255,255,.75);border:1px solid rgba(138,83,0,.15)}
+.exp-total .exp-seg{background:rgba(255,255,255,.75)}
 .exp-total .exp-seg button{color:#8A5300;font-size:14px;padding:5px 14px;min-height:36px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
 .exp-seg{position:relative;display:inline-grid;grid-template-columns:repeat(var(--n,2),1fr);background:var(--tile);border-radius:999px;padding:3px}
@@ -307,8 +307,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-row .grow{display:flex;flex-direction:column;min-width:0}.exp-row b{font-weight:400;font-size:15.5px}.exp-row small{font-size:12.5px;color:var(--muted)}.exp-amt{font-weight:600;font-size:16px;white-space:nowrap}
 .exp-who{display:flex;flex-wrap:wrap;gap:16px;padding:0 2px 14px}
 .exp-who button{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;font:inherit;color:var(--muted);min-width:48px}.exp-who button.on{color:var(--ink)}
-.exp-av{width:46px;height:46px;box-sizing:border-box;border-radius:999px;border:1.5px dashed #D9CFC2;color:#9A8D82;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:17px}
-.exp-who button.on .exp-av{border-style:solid;border-width:2px}
+.exp-av{width:46px;height:46px;box-sizing:border-box;border-radius:999px;border:0!important;background:var(--tile);color:#9A8D82;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:17px}
+
 .exp-av-n{font-size:12px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .exp-actions{display:flex;gap:10px;margin-top:14px}
 .exp-btn{flex:1;min-height:52px;border:0;border-radius:999px;font:inherit;font-size:15.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
@@ -318,8 +318,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-amt-box .exp-seg button{font-size:14.5px;padding:6px 22px;min-height:40px}
 .exp-what{display:flex;flex-direction:column;gap:4px}.exp-what input:focus,.exp-big:focus{outline:none!important}.exp-what input:focus{border-bottom-color:var(--accent-line)!important}.exp-what input{border:0!important;border-bottom:1.5px solid var(--line)!important;border-radius:0!important;background:none!important;font-size:17px;padding:10px 0!important}
 .exp-res{background:var(--place-soft);border-radius:22px;padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;margin-bottom:10px}
-.exp-res small{font-size:13px;color:var(--place)}.exp-shares{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 22px;margin:10px 0 4px}.exp-shares>div{display:flex;flex-direction:column;align-items:center;gap:3px}.exp-shares b{font-family:var(--display);font-size:22px;font-weight:500}.exp-shares .exp-av{border-style:solid;border-width:2px}.exp-res>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15}
-.exp-rate{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--place);margin-top:4px}.exp-rate input{width:72px;border:0;border-bottom:1.5px solid color-mix(in srgb,var(--place) 35%,transparent);background:none;font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:2px 0}
+.exp-res small{font-size:13px;color:var(--place)}.exp-shares{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 22px;margin:10px 0 4px}.exp-shares>div{display:flex;flex-direction:column;align-items:center;gap:3px}.exp-shares b{font-family:var(--display);font-size:22px;font-weight:500}.exp-res>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15}
+.exp-rate{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--place);margin-top:4px}.exp-rate input{width:76px;border:0!important;border-radius:999px;background:var(--surface);box-shadow:none;font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:2px 0}
 .exp-copy{margin-top:12px;min-height:44px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;font-weight:500;padding:0 20px;display:flex;align-items:center;gap:8px}
 .exp-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:4px 2px 8px;font-size:13px}.exp-h small{font-size:12px}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
@@ -3542,7 +3542,7 @@ function vExpPage(){
   </section>`;
 }
 const EXP_TONES = [["#E0ECFF","#2B61B2"],["#FCE4EC","#B83A68"],["#E2F5E2","#2F7A2E"],["#F1E5F6","#6A3A86"],["#FFE8D6","#B4501A"],["#DCF1F3","#18767F"]];
-const expTone = u => { const k = expPeople().indexOf(u), t = EXP_TONES[(k < 0 ? 0 : k) % EXP_TONES.length]; return `background:${t[0]};color:${t[1]};border-color:${t[1]}`; };
+const expTone = u => { const k = expPeople().indexOf(u), t = EXP_TONES[(k < 0 ? 0 : k) % EXP_TONES.length]; return `background:${t[0]};color:${t[1]}`; };
 function expRow(i, s, swipe){
   const d = i.data || {}, all = expPeople(), who = expSplitOf(i, all), open = s.pick === i.id, key = "x:" + i.id, ask = S.delAsk === key;
   const row = `<button type="button" class="exp-row" data-act="exp-pick" data-id="${esc(i.id)}" aria-expanded="${open}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b><small>${swipe ? esc(expName(d.by)) + " · " + esc(expWhen(d.at)) : esc(expName(d.by)) + " จ่าย · " + (who.length === all.length ? `หารทุกคน (${who.length})` : `หาร ${who.length} คน`)}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button>`;
@@ -4149,7 +4149,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet7";
+const BUILD = "2026-11-10-wallet8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
