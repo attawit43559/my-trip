@@ -296,7 +296,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-total-row{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
 .exp-total .exp-seg{background:rgba(255,255,255,.75)}
 .exp-total .exp-seg{padding:3px}
-.exp-total .exp-seg button{color:#8A5300;font-size:15px;padding:2px 18px;min-height:38px}
+.exp-total .exp-seg button{color:#8A5300;font-size:13.5px;padding:2px 14px;min-height:32px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
 .exp-rate{font-size:11px;color:var(--idea);opacity:.85}
 .exp-mini{display:flex;gap:8px}.exp-mini button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;font:inherit;font-size:14px;font-weight:600;min-height:44px}.exp-mini button:disabled{opacity:.5}
@@ -4129,7 +4129,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet14";
+const BUILD = "2026-11-10-wallet15";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
