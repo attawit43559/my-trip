@@ -289,6 +289,20 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw b{position:relative;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--muted);transition:color .2s}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
 .off-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:4px 10px;margin:2px 0 6px}.off-chip .ic{opacity:.8}
+.exp-card{display:flex;gap:8px;align-items:stretch}.exp-open{flex:1;display:flex;align-items:center;gap:12px;border:0;background:var(--surface);border-radius:20px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--lift);min-width:0}.exp-open .grow{display:flex;flex-direction:column;min-width:0}
+.exp-plus{width:56px;border:0;border-radius:20px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:var(--lift)}
+.exp-sheet{max-height:calc(var(--vvh,100dvh) - 24px);overflow-y:auto}
+.exp-total{background:var(--tile);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}.exp-total small{color:var(--muted);font-size:12.5px}.exp-total>b{font-size:24px}
+.exp-by{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.exp-by span{flex:1;min-width:120px;background:var(--surface);border-radius:12px;padding:6px 10px;font-size:12px;color:var(--muted)}.exp-by b{display:block;color:var(--ink);font-size:13.5px}
+.exp-list{list-style:none;margin:6px 0;padding:0}.exp-list li{border-bottom:1px solid var(--line)}.exp-list li>button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:10px 2px}
+.exp-list .grow{display:flex;flex-direction:column;min-width:0}.exp-list b{font-weight:500;font-size:14.5px}.exp-list small{font-size:12px;color:var(--muted)}.exp-amt{font-weight:600;white-space:nowrap}
+.exp-amt-row{display:flex;gap:8px;align-items:center}.exp-amt-row input{flex:1;min-width:0;font-size:24px;font-weight:600}
+.exp-curs{display:flex;gap:4px}.exp-curs button,.exp-who button{border:0;border-radius:999px;background:var(--tile);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;padding:8px 12px;white-space:nowrap}.exp-curs button.on,.exp-who button.on{background:var(--ink);color:var(--surface)}
+.exp-rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--tile);border-radius:14px;padding:10px 12px;font-size:14px;margin-bottom:8px}.exp-rate input{width:96px;font-size:16px;padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}.exp-rate small{width:100%;color:var(--muted);font-size:12px}
+.exp-res{border:1.5px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}.exp-res .kv{display:flex;justify-content:space-between;font-size:14px}
+.exp-move{display:flex;align-items:center;gap:6px;font-size:14px}.exp-move span{margin-left:auto;font-weight:700;font-size:16px}
+.exp-h{font-size:14px;margin:14px 0 0;font-weight:600}.exp-h small{font-weight:400;font-size:12px}
+.exp-who{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 10px}.exp-who button{display:inline-flex;align-items:center;gap:4px}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -841,6 +855,7 @@ const IC = {
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
   navi:'<path d="M12 3 5 20l7-4 7 4z"/>',
+  wallet:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.2"/>',
   wifiOff:'<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M14.8 10.3A10 10 0 0 1 19 12.9"/><path d="M2 9.3a15 15 0 0 1 4.3-2.6M10.7 5.1A15 15 0 0 1 22 9.3"/><path d="M12 20h.01"/>',
   wxFog:'<path d="M4 9h12M6 13h14M4 17h11"/>',
   wxDrizzle:'<path d="M7 15h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 8a3.5 3.5 0 0 0 1 7z"/><path d="M10 18.5l-.6 1.5M14.5 18.5l-.6 1.5"/>',
@@ -2055,7 +2070,7 @@ function vTrip(){
   const d = dates[S.day];
   const entries = d ? dayEntries(d) : [];
   const inRange = new Set(dates);
-  const loose = dates.length ? S.items.filter(it => it.type !== "idea" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
+  const loose = dates.length ? S.items.filter(it => it.type !== "idea" && it.type !== "expense" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
   const tab = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
@@ -2075,7 +2090,7 @@ function vTrip(){
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
-    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    page = `${expCard()}<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-place" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
@@ -2978,6 +2993,9 @@ function vSheet(){
   if(s.kind === "share-in") return vShareIn(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "install") return vInstall();
+  if(s.kind === "exp") return vExp(s);
+  if(s.kind === "exp-add") return vExpAdd(s);
+  if(s.kind === "exp-split") return vExpSplit(s);
   if(s.kind === "export") return vExport(s);
   if(s.kind === "clear") return vClear(s);
   const t = S.trip;
@@ -3482,6 +3500,90 @@ function vInstall(){
     ${ios ? `<p class="muted small">ใช้ได้ใน Safari · ถ้าเปิดจากแอปอื่น (LINE ฯลฯ) ให้กด "เปิดใน Safari" ก่อน</p>` : ""}
   </div></div>`;
 }
+/* trip wallet: anyone writes down what they paid (what, currency, amount); split at the end */
+const CUR_OF = {JP:"JPY",KR:"KRW",TW:"TWD",CN:"CNY",HK:"HKD",SG:"SGD",MY:"MYR",VN:"VND",ID:"IDR",PH:"PHP",US:"USD",GB:"GBP",AU:"AUD",CH:"CHF",FR:"EUR",DE:"EUR",IT:"EUR",ES:"EUR",NL:"EUR",AT:"EUR"};
+const CUR_SIGN = {JPY:"¥",THB:"฿",USD:"$",EUR:"€",GBP:"£",KRW:"₩",CNY:"¥",TWD:"NT$",HKD:"HK$",SGD:"S$",MYR:"RM",VND:"₫",IDR:"Rp",PHP:"₱",AUD:"A$",CHF:"CHF "};
+const money = (n, c) => (CUR_SIGN[c] || c + " ") + Math.round(+n || 0).toLocaleString("en-US");
+const expItems = () => S.items.filter(i => i.type === "expense").sort((a, b) => ((b.data || {}).at || 0) - ((a.data || {}).at || 0));
+const expLocal = () => { const c = tripCountry(); return (c && CUR_OF[c[0]]) || "JPY"; };
+function expTotals(list){ const t = {}; list.forEach(i => { const d = i.data || {}; t[d.cur] = (t[d.cur] || 0) + (+d.amount || 0); }); return t; }
+const totalsText = t => Object.entries(t).sort((a, b) => a[0] === "THB" ? 1 : b[0] === "THB" ? -1 : 0).map(([c, n]) => money(n, c)).join(" + ") || "—";
+function expCard(){
+  const list = expItems();
+  return `<div class="exp-card"><button type="button" class="exp-open" data-act="exp-open"><span class="thumb tc k-food">${ic("wallet",20)}</span><span class="grow"><b>ค่าใช้จ่าย</b><span class="muted small">${list.length ? esc(totalsText(expTotals(list))) + " · " + list.length + " รายการ" : "ยังไม่มีรายการ"}</span></span></button><button type="button" class="exp-plus" data-act="exp-add" aria-label="จดค่าใช้จ่าย">${ic("plus",20)}</button></div>`;
+}
+function vExp(){
+  const list = expItems(), t = expTotals(list), by = {};
+  list.forEach(i => { const d = i.data || {}, k = d.by || "?"; (by[k] ||= {name: d.by === S.me ? "ฉัน" : (d.byName || nameOf(d.by)), t:{}}).t[d.cur] = (by[k].t[d.cur] || 0) + (+d.amount || 0); });
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet" role="dialog" aria-modal="true" aria-label="ค่าใช้จ่าย" data-stop="1">
+    <div class="hd"><h2>ค่าใช้จ่าย</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="exp-total"><small>รวมทั้งทริป</small><b>${esc(totalsText(t))}</b>${Object.keys(by).length > 1 ? `<div class="exp-by">${Object.values(by).map(p => `<span>${esc(p.name)}<b>${esc(totalsText(p.t))}</b></span>`).join("")}</div>` : ""}</div>
+    ${list.length ? `<ul class="exp-list">${list.map(i => { const d = i.data || {}; return `<li><button type="button" data-act="exp-add" data-id="${esc(i.id)}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b><small>${esc(d.by === S.me ? "ฉัน" : (d.byName || nameOf(d.by)))} · ${esc(expWhen(d.at))}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button></li>`; }).join("")}</ul>` : `<p class="muted small" style="text-align:center;padding:18px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
+    <div class="grid2"><button type="button" class="soft-btn" data-act="exp-split" ${list.length ? "" : "disabled"}>หารเงิน</button><button type="button" class="btn primary" data-act="exp-add">${ic("plus",18)}จด</button></div>
+  </div></div>`;
+}
+function expWhen(at){ if(!at) return ""; const d = new Date(at); return d.toLocaleDateString("th-TH", {day:"numeric", month:"short"}) + " " + d.toTimeString().slice(0, 5); }
+function vExpAdd(s){
+  const it = s.id ? S.items.find(i => i.id === s.id) : null, d = (it && it.data) || {};
+  let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
+  const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = d.cur || (curs.includes(last) ? last : curs[0]);
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
+    <div class="hd">${s.back || it ? `<button class="round" data-act="exp-open" aria-label="กลับ">${ic("back")}</button>` : ""}<h2>${it ? "แก้รายการ" : "จดค่าใช้จ่าย"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form data-form="exp" class="stack" style="gap:14px" autocomplete="off">
+      <label class="fld">ค่าอะไร<input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" value="${esc(it ? it.title || "" : "")}"></label>
+      <div class="fld">จำนวนเงิน<div class="exp-amt-row"><span class="exp-curs">${curs.map(c => `<button type="button" class="${c === cur ? "on" : ""}" data-act="exp-cur" data-cur="${c}">${esc((CUR_SIGN[c] || "").trim() || c)} ${c === "THB" ? "บาท" : c === "JPY" ? "เยน" : c}</button>`).join("")}</span>
+        <input name="amount" inputmode="decimal" required placeholder="0" value="${d.amount != null ? esc(String(d.amount)) : ""}"></div><input type="hidden" name="cur" value="${esc(cur)}"></div>
+      <p class="muted small" style="margin:-6px 0 0">บันทึกในชื่อ ${esc(it ? (d.by === S.me ? "ฉัน" : d.byName || nameOf(d.by)) : (S.myName || "ฉัน"))}</p>
+      <button type="submit" class="btn primary" style="height:50px;font-size:16px">บันทึก</button>
+      ${it ? `<button type="button" class="link-btn" style="color:var(--danger)" data-act="exp-del">ลบรายการนี้</button>` : ""}
+    </form>
+  </div></div>`;
+}
+async function expSave(f){
+  const amount = parseFloat(String(f.elements.amount.value).replace(/[, ]/g, "")), cur = f.elements.cur.value, title = f.elements.what.value.trim();
+  if(!(amount > 0)){ toast("ใส่จำนวนเงินก่อน"); return; }
+  try { localStorage.setItem("mytrip-cur", cur); } catch(_){}
+  const s = S.sheet;
+  if(s.id) await store.updateItem(S.trip.id, s.id, {title, data:{amount, cur}});
+  else await store.addItem(S.trip.id, {type:"expense", title, data:{amount, cur, by:S.me, byName:S.myName || "", at:Date.now(), split:null}, createdBy:S.me, createdAt:Date.now()});
+  toast(s.id ? "แก้แล้ว" : "จดแล้ว"); S.sheet = s.back || s.id ? {kind:"exp"} : null; render();
+}
+/* splitting: everyone in the trip by default; per item you can pick fewer people */
+function expPeople(){ const ids = [...(S.trip.memberIds || [])]; expItems().forEach(i => { const b = (i.data || {}).by; if(b && !ids.includes(b)) ids.push(b); }); return ids.length ? ids : [S.me]; }
+function expSplitOf(it, all){ const sp = (it.data || {}).split; const ok = Array.isArray(sp) ? sp.filter(u => all.includes(u)) : []; return ok.length ? ok : all; }
+const expName = u => { if(u === S.me) return "ฉัน"; const it = S.items.find(i => i.type === "expense" && (i.data || {}).by === u && (i.data || {}).byName); return it ? it.data.byName : nameOf(u); };
+const fxRate = c => c === "THB" ? 1 : +(((S.trip.fx || {})[c]) || (S.fxLive || {})[c] || 0);
+async function expRateLoad(){
+  const need = [...new Set(expItems().map(i => (i.data || {}).cur))].filter(c => c && c !== "THB" && !(S.trip.fx || {})[c]);
+  if(!need.length || !navigator.onLine) return;
+  try { const r = await fetch("https://open.er-api.com/v6/latest/THB").then(r => r.json()); const out = {}; need.forEach(c => { const v = r.rates && r.rates[c]; if(v) out[c] = Math.round(1 / v * 10000) / 10000; }); S.fxLive = {...(S.fxLive || {}), ...out}; render(); } catch(_){}
+}
+function expCalc(){
+  const all = expPeople(), paid = {}, owe = {}; all.forEach(u => { paid[u] = 0; owe[u] = 0; });
+  let total = 0, missing = new Set();
+  expItems().forEach(i => { const d = i.data || {}, r = fxRate(d.cur); if(!r){ missing.add(d.cur); return; } const v = (+d.amount || 0) * r; total += v;
+    paid[d.by] = (paid[d.by] || 0) + v; const who = expSplitOf(i, all); who.forEach(u => owe[u] = (owe[u] || 0) + v / who.length); });
+  const bal = Object.keys(paid).map(u => ({u, v: paid[u] - (owe[u] || 0)}));
+  const give = bal.filter(x => x.v < -0.5).sort((a, b) => a.v - b.v), get = bal.filter(x => x.v > 0.5).sort((a, b) => b.v - a.v), moves = [];
+  let i = 0, j = 0; while(i < give.length && j < get.length){ const m = Math.min(-give[i].v, get[j].v); moves.push({from: give[i].u, to: get[j].u, v: m}); give[i].v += m; get[j].v -= m; if(give[i].v > -0.5) i++; if(get[j].v < 0.5) j++; }
+  return {all, paid, owe, total, moves, missing:[...missing]};
+}
+function expPlanText(){ const c = expCalc(); return [`${S.trip.name} · ค่าใช้จ่ายรวม ${money(c.total, "THB")}`, ...c.all.map(u => `${expName(u)} จ่าย ${money(c.paid[u] || 0, "THB")} · ส่วนที่ต้องจ่าย ${money(c.owe[u] || 0, "THB")}`), "", ...(c.moves.length ? c.moves.map(m => `${expName(m.from)} โอนให้ ${expName(m.to)} ${money(m.v, "THB")}`) : ["ไม่ต้องโอนกัน"])].join("\n"); }
+function vExpSplit(s){
+  const c = expCalc(), list = expItems(), curs = [...new Set(list.map(i => (i.data || {}).cur))].filter(x => x && x !== "THB");
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet" role="dialog" aria-modal="true" aria-label="หารเงิน" data-stop="1">
+    <div class="hd"><button class="round" data-act="exp-open" aria-label="กลับ">${ic("back")}</button><h2>หารเงิน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    ${curs.map(x => `<label class="exp-rate">1 ${esc(x)} = <input inputmode="decimal" data-fx="${esc(x)}" value="${fxRate(x) || ""}" placeholder="?"> บาท<small>${(S.trip.fx || {})[x] ? "เรทที่ตั้งไว้" : (S.fxLive || {})[x] ? "เรทวันนี้ · แก้เป็นเรทที่แลกจริงได้" : "ใส่เรท"}</small></label>`).join("")}
+    <div class="exp-res">${c.missing.length ? `<p class="muted small">ใส่เรทของ ${esc(c.missing.join(", "))} ก่อน</p>` : `
+      <div class="kv"><span>รวม</span><b>${esc(money(c.total, "THB"))}</b></div>
+      ${c.moves.length ? c.moves.map(m => `<div class="exp-move"><b>${esc(expName(m.from))}</b> โอนให้ <b>${esc(expName(m.to))}</b><span>${esc(money(m.v, "THB"))}</span></div>`).join("") : `<p class="muted small">ไม่ต้องโอนกัน</p>`}
+      <button type="button" class="link-btn" data-act="exp-copy">คัดลอกสรุปไปส่ง</button>`}</div>
+    <h3 class="exp-h">แต่ละรายการหารกี่คน <small class="muted">แตะเพื่อเปลี่ยน</small></h3>
+    <ul class="exp-list">${list.map(i => { const d = i.data || {}, who = expSplitOf(i, c.all), open = s.pick === i.id;
+      return `<li class="${open ? "open" : ""}"><button type="button" data-act="exp-pick" data-id="${esc(i.id)}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b><small>${esc(expName(d.by))} จ่าย · ${who.length === c.all.length ? `หารทุกคน (${who.length})` : `หาร ${who.length} คน`}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button>
+        ${open ? `<div class="exp-who">${c.all.map(u => `<button type="button" class="${who.includes(u) ? "on" : ""}" data-act="exp-who" data-u="${esc(u)}">${who.includes(u) ? ic("check",14) : ""}${esc(expName(u))}</button>`).join("")}</div>` : ""}</li>`; }).join("")}</ul>
+  </div></div>`;
+}
 /* the share section: one tab per phone, the phone in hand first */
 function shareTabs(){
   const tab = S.scTab || (/Android/i.test(navigator.userAgent) ? "android" : "iphone");
@@ -3711,9 +3813,11 @@ document.addEventListener("pointerup", endSwipe);
 document.addEventListener("pointercancel", endSwipe);
 document.addEventListener("click", e => { if(SW.suppress && e.target.closest(".trow-slide")){ e.preventDefault(); e.stopImmediatePropagation(); SW.suppress = false; } }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S.sheet.ctl?.abort();S.sheet = null; render(); } });
+document.addEventListener("change", e => { const x = e.target.closest && e.target.closest("[data-fx]"); if(!x || !S.trip) return; const v = parseFloat(x.value); const fx = {...(S.trip.fx || {})}; if(v > 0) fx[x.dataset.fx] = v; else delete fx[x.dataset.fx]; store.updateTrip(S.trip.id, {fx}); render(); });
 document.addEventListener("submit", async e => {
   if(e.target.dataset.form==='travel-leg'){e.preventDefault();await saveTravelLeg();return;}
   if(e.target.dataset.form==='sos'){e.preventDefault();await sosSave();return;}
+  if(e.target.dataset.form==='exp'){e.preventDefault();await expSave(e.target);return;}
   const f = e.target.dataset && e.target.dataset.form; if(!f) return;
   e.preventDefault();
   if(f === "join") return startJoin(S.joinCode);
@@ -3896,6 +4000,16 @@ document.addEventListener("click", async e => {
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
+    case "exp-open": S.sheet = {kind:"exp"}; render(); break;
+    case "exp-add": S.sheet = {kind:"exp-add", id:el.dataset.id || "", back:S.sheet && S.sheet.kind === "exp"}; render(); setTimeout(() => { const f = document.getElementById("exp-what"); if(f && !el.dataset.id) f.focus(); }, 60); break;
+    case "exp-cur": { const f = el.closest("form"); f.querySelectorAll("[data-act=exp-cur]").forEach(b => b.classList.toggle("on", b === el)); f.elements.cur.value = el.dataset.cur; break; }
+    case "exp-del": if(S.sheet && S.sheet.id){ await store.deleteItem(S.trip.id, S.sheet.id); S.sheet = {kind:"exp"}; render(); toast("ลบแล้ว"); } break;
+    case "exp-split": S.sheet = {kind:"exp-split", pick:""}; render(); expRateLoad(); break;
+    case "exp-pick": S.sheet.pick = S.sheet.pick === el.dataset.id ? "" : el.dataset.id; render(); break;
+    case "exp-who": { const it = S.items.find(i => i.id === S.sheet.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
+      if(cur.has(u)){ if(cur.size > 1) cur.delete(u); } else cur.add(u);
+      await store.updateItem(S.trip.id, it.id, {data:{split: cur.size === all.length ? null : [...cur]}}); render(); break; }
+    case "exp-copy": { const t = expPlanText(); try { await navigator.clipboard.writeText(t); toast("คัดลอกแล้ว ส่งใน LINE ได้เลย"); } catch(_){ toast(t); } break; }
     case "start-install": if(INSTALL.prompt){ INSTALL.prompt.prompt(); INSTALL.prompt.userChoice.then(c => { if(c && c.outcome === "accepted"){ INSTALL.prompt = null; INSTALL.done = true; render(); } }).catch(() => {}); } else { S.sheet = {kind:"install"}; render(); } break;
     case "start-share": S.scOpen = true; S.sheet = {kind:"account"}; render(); aiStatusLoad(); break;
     case "start-skip": try { localStorage.setItem("mytrip-start-off", "1"); } catch(_){} render(); toast("ซ่อนแล้ว · เปิดอีกทีได้ที่รูปโปรไฟล์ มุมขวาบน"); break;
@@ -4001,7 +4115,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-08-start4";
+const BUILD = "2026-11-10-wallet1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
