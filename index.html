@@ -290,19 +290,18 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
 .off-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:4px 10px;margin:2px 0 6px}.off-chip .ic{opacity:.8}
 .exp-page{display:flex;flex-direction:column;gap:4px;padding-bottom:8px}
-.exp-total{background:var(--idea-soft);border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;margin-bottom:4px}
+.exp-total{background:var(--idea-soft);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:6px}
 .exp-total-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.exp-total-sum{display:flex;flex-direction:column;min-width:0}.exp-total-sum small{color:var(--idea);font-size:12px}.exp-total-sum b{font-family:var(--display);font-size:26px;font-weight:500;line-height:1.2}
+.exp-total-sum{display:flex;flex-direction:column;min-width:0}.exp-total-sum small{color:var(--idea);font-size:12px}.exp-total-sum b{font-family:var(--display);font-size:28px;font-weight:500;line-height:1.2}
 .exp-total-row{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
 .exp-total .exp-seg{background:rgba(255,255,255,.75)}
 .exp-total .exp-seg{padding:2px}.exp-total .exp-seg::before{top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / var(--n,2))}
 .exp-total .exp-seg button{color:#8A5300;font-size:12.5px;padding:2px 12px;min-height:28px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
 .exp-rate{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--idea)}.exp-rate input{width:52px;border:0!important;border-radius:999px!important;background:rgba(255,255,255,.6)!important;font:inherit;font-size:12px!important;color:var(--ink);text-align:center;padding:2px 4px!important;min-height:0!important;height:22px}
-.exp-total-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:2px}
-.exp-mini{display:flex;gap:6px;flex:none}.exp-mini button{display:flex;align-items:center;gap:4px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;padding:0 12px 0 10px;min-height:30px}.exp-mini button:disabled{opacity:.5}
-.exp-mini-line{background:rgba(255,255,255,.7);color:#06833A}.exp-mini-add{background:var(--accent);color:var(--on-accent)}
-.exp-each{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--idea)}.exp-each b{color:var(--ink);font-weight:500}
+.exp-mini{display:flex;gap:8px}.exp-mini button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;font:inherit;font-size:14px;font-weight:600;min-height:44px}.exp-mini button:disabled{opacity:.5}
+.exp-mini-line{background:#FFFFFF;color:#06833A}.exp-mini-add{background:var(--accent);color:var(--on-accent)}
+.exp-each{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 20px;font-size:12.5px;color:var(--idea);padding-top:10px;border-top:1px solid rgba(138,83,0,.15)}.exp-each span{display:flex;justify-content:space-between;gap:8px;min-width:0}.exp-each span i{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.exp-each b{color:var(--ink);font-weight:500;white-space:nowrap}
 .exp-seg{position:relative;display:inline-grid;grid-template-columns:repeat(var(--n,2),1fr);background:var(--tile);border-radius:999px;padding:3px}
 .exp-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / var(--n,2));border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
 .exp-seg button{position:relative;z-index:1;transition:color .2s;border:0;background:none;border-radius:999px;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);padding:4px 14px;min-height:32px;white-space:nowrap}
@@ -3526,11 +3525,11 @@ const totalsText = t => Object.entries(t).sort((a, b) => a[0] === "THB" ? 1 : b[
 function vExpPage(){
   const list = expItems(), t = expTotals(list), s = S.expUI || (S.expUI = {pick:""});
   const view = expViewCur(), loc = expLocal(), r = fxRate(loc), c = list.length ? expCalc() : null;
-  const share = c && !c.missing.length ? `<div class="exp-each">${c.all.map(u => { const v = fxConv(c.owe[u] || 0, "THB", view); return `<span>${esc(expName(u))} <b>${esc(money(v == null ? c.owe[u] || 0 : v, v == null ? "THB" : view))}</b></span>`; }).join("")}</div>` : "";
+  const share = c && !c.missing.length ? `<div class="exp-each">${c.all.map(u => { const v = fxConv(c.owe[u] || 0, "THB", view); return `<span><i>${esc(expName(u))}</i><b>${esc(money(v == null ? c.owe[u] || 0 : v, v == null ? "THB" : view))}</b></span>`; }).join("")}</div>` : "";
   return `<section class="exp-page">
     <div class="exp-total"><div class="exp-total-top"><span class="exp-total-sum"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b></span>
       <div class="exp-total-row">${expCurSeg(view, "exp-view", null, true)}${loc !== "THB" ? `<label class="exp-rate">1${esc((CUR_SIGN[loc] || loc).trim())} = <input inputmode="decimal" data-fx="${esc(loc)}" value="${r || ""}" placeholder="?" aria-label="เรท ${esc(loc)} เป็นบาท">฿</label>` : ""}</div></div>
-      <div class="exp-total-foot">${share || "<span></span>"}<span class="exp-mini"><button type="button" class="exp-mini-line" data-act="exp-line" ${list.length ? "" : "disabled"}>${ic("share",15)}LINE</button><button type="button" class="exp-mini-add" data-act="exp-add">${ic("edit",15)}จด</button></span></div>
+      ${share}<div class="exp-mini"><button type="button" class="exp-mini-line" data-act="exp-line" ${list.length ? "" : "disabled"}>${ic("share",17)}แชร์ทาง LINE</button><button type="button" class="exp-mini-add" data-act="exp-add">${ic("edit",17)}จด</button></div>
     </div>
     ${list.length ? `<ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul>` : `<p class="muted small" style="text-align:center;padding:24px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
   </section>`;
@@ -4129,7 +4128,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet11";
+const BUILD = "2026-11-10-wallet12";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
