@@ -3559,7 +3559,7 @@ function vExpAdd(s){
         ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
       <label class="exp-what"><span class="muted small">ค่าอะไร</span><input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" value="${esc(it ? it.title || "" : "")}"></label>
       <p class="muted small" style="margin:-6px 0 0">บันทึกในชื่อ ${esc(it ? expName(d.by) : (S.myName || "ฉัน"))}</p>
-      <div class="exp-actions"><button type="button" class="exp-btn exp-btn-back" data-act="close-sheet">${ic("back",19)}ย้อนกลับ</button><button type="submit" class="exp-btn exp-btn-add">${ic("check",19)}บันทึก</button></div>
+      <div class="exp-actions"><button type="button" class="exp-btn exp-btn-back" data-act="exp-cancel">${ic("close",19)}ยกเลิก</button><button type="submit" class="exp-btn exp-btn-add">${ic("check",19)}บันทึก</button></div>
     </form>
   </div></div>`;
 }
@@ -4019,6 +4019,7 @@ document.addEventListener("click", async e => {
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
+    case "exp-cancel": S.sheet = null; render(); break;
     case "exp-open": S.sheet = null; selectTab("money"); break;
     case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
     case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = el.dataset.cur; f.elements.amount.focus(); break; }
@@ -4135,7 +4136,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet16";
+const BUILD = "2026-11-10-wallet17";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
