@@ -335,7 +335,10 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .ai-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
 .ai-seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);min-height:34px;display:flex;align-items:center;justify-content:center;gap:6px}
 .ai-seg button[aria-selected="true"]{color:var(--ink);font-weight:600}
-.ai-rec-inline .idea-compose-body{overflow:visible;max-height:none;padding:0}
+.ai-rec-inline .idea-compose-body{overflow:visible;max-height:none;padding:0;gap:10px;font-size:14px}
+.ai-rec-inline .suggest-cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.ai-rec-inline .suggest-cats button{justify-content:center;font-size:14px;min-height:40px;padding:0 4px;white-space:nowrap}
+.help-page .help-note,.ai-rec-inline .help-note{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;padding:11px 14px;min-height:44px}
+.ai-btns .soft-btn{background:var(--ai-soft,#E0ECFF)!important;color:var(--ai,#2B61B2)!important;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -2044,15 +2047,15 @@ function vHelpPage(){
       : day && day.tips.length ? day.tips.map(tipHtml).join("") : `<p class="muted small help-none">ไม่มีคำแนะนำสำหรับวันนี้</p>`;
     return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
       <section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(date)}"><b>วันที่ ${S.day + 1} · ${esc(dShort(date))}</b>${ic("chev",16)}</button>${day && day.summary && !busy ? `<span class="help-sum">${esc(day.summary)}</span>` : ""}</div>${body}</section>
-      <textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>
+      <textarea class="grow-area help-note" rows="1" maxlength="300" placeholder="ข้อความถึง AI เช่น ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="ข้อความถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>
       ${helpButtons(h, date)}`);
   }
   const date = dates[S.day] || dates[0] || "";
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-    ${date ? `<textarea class="help-note" rows="2" maxlength="300" placeholder="โน้ตถึง AI สำหรับวันนี้ เช่น อยากได้ร้านราเมน, ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="โน้ตถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>${helpButtons(h, date)}` : `<p class="muted small">ตั้งวันเที่ยวก่อน</p>`}`);
+    ${date ? `<textarea class="grow-area help-note" rows="1" maxlength="300" placeholder="ข้อความถึง AI เช่น ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="ข้อความถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>${helpButtons(h, date)}` : `<p class="muted small">ตั้งวันเที่ยวก่อน</p>`}`);
 }
 function helpButtons(h, date){
-  return `<div class="help-actions"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("calendar",16)}ทั้งหมด</button></div>`;
+  return `<div class="help-actions ai-btns"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}ทั้งหมด</button></div>`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 /* trip days laid out as a Sunday-first calendar, 7 per row.
@@ -2553,9 +2556,9 @@ function vIdeaRecommend(s, inline){
       <div class="chips t-idea suggest-cats">${Object.entries(SUGGEST_CATS).map(([k,c])=>`<button type="button" class="${IDEA_TONE[c.kind]}" aria-pressed="${s.cat===k}" data-act="idea-suggest-cat" data-k="${k}">${ic(IDEA_ICON[c.kind],18)}${esc(c.label)}</button>`).join('')}</div>
       ${inline ? "" : `<label class="fld">เมืองที่จะไป<input required maxlength="160" placeholder="เช่น โตเกียว, คามาคุระ" value="${esc(s.city)}" data-bind="${bind}:city"></label>`}
       ${inline ? "" : `<div class="stack"><b>แนวที่ชอบ</b><div class="chips">${C.likes.map(v=>`<button type="button" aria-pressed="${likes.includes(v)}" data-act="idea-suggest-like" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>`}
-      ${inline ? `<textarea class="grow-area help-note" rows="2" maxlength="1000" placeholder="โน้ตถึง AI เช่น มีเด็กเล็กไปด้วย ไม่อยากต่อคิวนาน" data-bind="${bind}:note" aria-label="โน้ตถึง AI">${esc(s.note)}</textarea>` : `<label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>`}
+      ${inline ? `<textarea class="grow-area help-note" rows="1" maxlength="1000" placeholder="ข้อความถึง AI เช่น มีเด็กเล็กไปด้วย" data-bind="${bind}:note" aria-label="ข้อความถึง AI">${esc(s.note)}</textarea>` : `<label class="fld">อยากได้แบบไหนเพิ่มเติม<textarea class="grow-area idea-note" rows="2" maxlength="1000" placeholder="เช่น ใกล้สถานีชินางาวะ ไม่ต้องต่อคิวนาน มีเด็กเล็กไปด้วย" data-bind="${bind}:note">${esc(s.note)}</textarea></label>`}
       ${s.err?`<div class="err" role="alert">${esc(s.err)}</div>`:''}
-      ${inline && tripDates(S.trip).length ? `<div class="help-actions"><button type="button" class="soft-btn" data-act="ai-rec-run" data-d="${esc(tripDates(S.trip)[S.day] || "")}" ${s.busy ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(tripDates(S.trip)[S.day] || tripDates(S.trip)[0]).getDate()}</button><button type="button" class="soft-btn help-again" data-act="ai-rec-run" data-d="all" ${s.busy ? "disabled" : ""}>${ic("calendar",16)}ทั้งหมด</button></div>`
+      ${inline && tripDates(S.trip).length ? `<div class="help-actions ai-btns"><button type="button" class="soft-btn" data-act="ai-rec-run" data-d="${esc(tripDates(S.trip)[S.day] || "")}" ${s.busy ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(tripDates(S.trip)[S.day] || tripDates(S.trip)[0]).getDate()}</button><button type="button" class="soft-btn help-again" data-act="ai-rec-run" data-d="all" ${s.busy ? "disabled" : ""}>${ic("spark",16)}ทั้งหมด</button></div>`
         : `<button class="soft-btn help-start suggest-btn" type="submit" ${s.busy?'disabled':''}>${ic('spark',18)}เริ่ม</button>`}
     </form>`);
 }
@@ -4130,7 +4133,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-ai4";
+const BUILD = "2026-11-10-ai5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
