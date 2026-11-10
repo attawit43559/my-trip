@@ -290,23 +290,25 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
 .off-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:4px 10px;margin:2px 0 6px}.off-chip .ic{opacity:.8}
 .exp-page{display:flex;flex-direction:column;gap:4px;padding-bottom:8px}
-.exp-total{background:var(--idea-soft);border-radius:22px;padding:16px 18px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:6px}
-.exp-total>small{color:var(--idea);font-size:13px}.exp-total>b{font-family:var(--display);font-size:32px;font-weight:500;line-height:1.2}
-.exp-total-row{display:flex;align-items:center;gap:10px;margin-top:6px}
+.exp-total{background:var(--idea-soft);border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;margin-bottom:4px}
+.exp-total-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.exp-total-sum{display:flex;flex-direction:column;min-width:0}.exp-total-sum small{color:var(--idea);font-size:12px}.exp-total-sum b{font-family:var(--display);font-size:26px;font-weight:500;line-height:1.2}
+.exp-total-row{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
 .exp-total .exp-seg{background:rgba(255,255,255,.75)}
-.exp-total .exp-seg button{color:#8A5300;font-size:13px;padding:4px 12px;min-height:32px}
+.exp-total .exp-seg{padding:2px}.exp-total .exp-seg::before{top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / var(--n,2))}
+.exp-total .exp-seg button{color:#8A5300;font-size:12.5px;padding:2px 12px;min-height:28px}
 .exp-total .exp-seg::before{background:var(--accent);box-shadow:0 2px 6px rgba(227,148,0,.35)}.exp-total .exp-seg button.on{color:var(--on-accent);font-weight:700}
-.exp-rate{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--idea)}.exp-rate input{width:64px;border:0;border-radius:999px;background:rgba(255,255,255,.75);font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:4px 6px}
-.exp-each{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:13px;color:var(--idea)}.exp-each span{display:flex;align-items:center;gap:6px}.exp-each b{color:var(--ink);font-weight:600}
-.exp-each .exp-av{width:22px;height:22px;font-size:11px;font-style:normal}
+.exp-rate{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--idea)}.exp-rate input{width:52px;border:0!important;border-radius:999px!important;background:rgba(255,255,255,.6)!important;font:inherit;font-size:12px!important;color:var(--ink);text-align:center;padding:2px 4px!important;min-height:0!important;height:22px}
+.exp-each{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--idea)}.exp-each b{color:var(--ink);font-weight:500}
 .exp-seg{position:relative;display:inline-grid;grid-template-columns:repeat(var(--n,2),1fr);background:var(--tile);border-radius:999px;padding:3px}
 .exp-seg::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / var(--n,2));border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
 .exp-seg button{position:relative;z-index:1;transition:color .2s;border:0;background:none;border-radius:999px;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);padding:4px 14px;min-height:32px;white-space:nowrap}
 .exp-seg button.on{color:var(--ink)}
 .exp-list{list-style:none;margin:0;padding:0}.exp-list>li{border-bottom:1px solid var(--line)}
 .exp-list .trow-slide{background:var(--bg)}
-.exp-row{width:100%;display:flex;align-items:center;gap:12px;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:10px 2px;min-height:56px}
-.exp-row .grow{display:flex;flex-direction:column;min-width:0}.exp-row b{font-weight:400;font-size:15px}.exp-row small{font-size:11.5px;color:var(--muted);opacity:.7}.exp-amt{font-weight:600;font-size:15px;white-space:nowrap}
+.exp-row{width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;font-size:14px;color:inherit;text-align:left;padding:8px 2px;min-height:48px}
+.exp-row .grow{display:block;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.exp-row b{font-weight:400;font-size:14px}.exp-row small{font-size:11.5px;color:var(--muted);opacity:.7}.exp-amt{font-weight:600;font-size:14px;white-space:nowrap;flex:none}
+.exp-list li.open .exp-row .grow{white-space:normal}
 .exp-who{display:flex;flex-wrap:wrap;gap:10px;padding:0 2px 10px}
 .exp-who button{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;font:inherit;color:var(--muted);min-width:40px}.exp-who button.on{color:var(--ink)}
 .exp-av{width:34px;height:34px;box-sizing:border-box;border-radius:999px;border:0!important;background:var(--tile);color:#9A8D82;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:14px}
@@ -3521,10 +3523,10 @@ const totalsText = t => Object.entries(t).sort((a, b) => a[0] === "THB" ? 1 : b[
 function vExpPage(){
   const list = expItems(), t = expTotals(list), s = S.expUI || (S.expUI = {pick:""});
   const view = expViewCur(), loc = expLocal(), r = fxRate(loc), c = list.length ? expCalc() : null;
-  const share = c && !c.missing.length ? `<div class="exp-each">${c.all.map(u => { const v = fxConv(c.owe[u] || 0, "THB", view); return `<span><i class="exp-av" style="${expTone(u)}">${esc(trText(expName(u)).slice(0, 1).toUpperCase())}</i>${esc(expName(u))}<b>${esc(money(v == null ? c.owe[u] || 0 : v, v == null ? "THB" : view))}</b></span>`; }).join("")}</div>` : "";
+  const share = c && !c.missing.length ? `<div class="exp-each">${c.all.map(u => { const v = fxConv(c.owe[u] || 0, "THB", view); return `<span>${esc(expName(u))} <b>${esc(money(v == null ? c.owe[u] || 0 : v, v == null ? "THB" : view))}</b></span>`; }).join("")}</div>` : "";
   return `<section class="exp-page">
-    <div class="exp-total"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b>
-      <div class="exp-total-row">${expCurSeg(view, "exp-view")}${loc !== "THB" ? `<label class="exp-rate">1 ${esc((CUR_SIGN[loc] || loc).trim())} = <input inputmode="decimal" data-fx="${esc(loc)}" value="${r || ""}" placeholder="?" aria-label="เรท ${esc(loc)} เป็นบาท"> ฿</label>` : ""}</div>
+    <div class="exp-total"><div class="exp-total-top"><span class="exp-total-sum"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b></span>
+      <div class="exp-total-row">${expCurSeg(view, "exp-view", null, true)}${loc !== "THB" ? `<label class="exp-rate">1${esc((CUR_SIGN[loc] || loc).trim())} = <input inputmode="decimal" data-fx="${esc(loc)}" value="${r || ""}" placeholder="?" aria-label="เรท ${esc(loc)} เป็นบาท">฿</label>` : ""}</div></div>
       ${share}
     </div>
     ${list.length ? `<ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul>` : `<p class="muted small" style="text-align:center;padding:24px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
@@ -3535,7 +3537,7 @@ const EXP_TONES = [["#E0ECFF","#2B61B2"],["#FCE4EC","#B83A68"],["#E2F5E2","#2F7A
 const expTone = u => { const k = expPeople().indexOf(u), t = EXP_TONES[(k < 0 ? 0 : k) % EXP_TONES.length]; return `background:${t[0]};color:${t[1]}`; };
 function expRow(i, s, swipe){
   const d = i.data || {}, all = expPeople(), who = expSplitOf(i, all), open = s.pick === i.id, key = "x:" + i.id, ask = S.delAsk === key;
-  const row = `<button type="button" class="exp-row" data-act="exp-pick" data-id="${esc(i.id)}" aria-expanded="${open}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b><small>${swipe ? esc(expName(d.by)) + " · " + esc(expWhen(d.at)) : esc(expName(d.by)) + " จ่าย · " + (who.length === all.length ? `หารทุกคน (${who.length})` : `หาร ${who.length} คน`)}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button>`;
+  const row = `<button type="button" class="exp-row" data-act="exp-pick" data-id="${esc(i.id)}" aria-expanded="${open}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b> <small>· ${swipe ? esc(expName(d.by)) + " · " + esc(expWhen(d.at)) : esc(expName(d.by)) + " จ่าย · " + (who.length === all.length ? `หารทุกคน (${who.length})` : `หาร ${who.length} คน`)}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button>`;
   const people = open ? `<div class="exp-who">${all.map(u => { const on = who.includes(u), n = expName(u); return `<button type="button" class="${on ? "on" : ""}" data-act="exp-who" data-u="${esc(u)}" aria-pressed="${on}"><span class="exp-av" style="${on ? expTone(u) : ""}">${esc(trText(n).slice(0, 1).toUpperCase())}</span><span class="exp-av-n">${esc(n)}</span></button>`; }).join("")}</div>` : "";
   if(!swipe) return `<li class="${open ? "open" : ""}">${row}${people}</li>`;
   return `<li class="${open ? "open" : ""}"><div class="trow erow${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="108">
@@ -3573,7 +3575,7 @@ function expPeople(){ const ids = [...(S.trip.memberIds || [])]; expItems().forE
 function expSplitOf(it, all){ const sp = (it.data || {}).split; const ok = Array.isArray(sp) ? sp.filter(u => all.includes(u)) : []; return ok.length ? ok : all; }
 const expName = u => { if(u === S.me && S.myName) return S.myName; if(u === S.me) return "ฉัน"; const it = S.items.find(i => i.type === "expense" && (i.data || {}).by === u && (i.data || {}).byName); return it ? it.data.byName : nameOf(u); };
 const CUR_TH = {JPY:"เยน", THB:"บาท", USD:"ดอลลาร์", EUR:"ยูโร", KRW:"วอน", CNY:"หยวน", TWD:"ดอลลาร์ไต้หวัน", GBP:"ปอนด์"};
-function expCurSeg(on, act, list){ const l = list || (expLocal() === "THB" ? ["THB"] : [expLocal(), "THB"]); return `<span class="exp-seg" role="group" style="--n:${l.length};--i:${Math.max(0, l.indexOf(on))}">${l.map(c => `<button type="button" class="${c === on ? "on" : ""}" data-act="${act}" data-cur="${c}" aria-pressed="${c === on}">${esc((CUR_SIGN[c] || "").trim() || c)} ${esc(CUR_TH[c] || c)}</button>`).join("")}</span>`; }
+function expCurSeg(on, act, list, short){ const l = list || (expLocal() === "THB" ? ["THB"] : [expLocal(), "THB"]); return `<span class="exp-seg" role="group" style="--n:${l.length};--i:${Math.max(0, l.indexOf(on))}">${l.map(c => `<button type="button" class="${c === on ? "on" : ""}" data-act="${act}" data-cur="${c}" aria-pressed="${c === on}">${esc((CUR_SIGN[c] || "").trim() || c)}${short ? "" : " " + esc(CUR_TH[c] || c)}</button>`).join("")}</span>`; }
 const expViewCur = () => { let v = ""; try { v = localStorage.getItem("mytrip-exp-view") || ""; } catch(_){} return v === "THB" || v === expLocal() ? v : expLocal(); };
 if(!S.fxLive) try { S.fxLive = JSON.parse(localStorage.getItem("mytrip-fx") || "{}"); } catch(_){ S.fxLive = {}; }
 const fxRate = c => c === "THB" ? 1 : +(((S.trip.fx || {})[c]) || (S.fxLive || {})[c] || 0);
@@ -4125,7 +4127,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet9";
+const BUILD = "2026-11-10-wallet10";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
