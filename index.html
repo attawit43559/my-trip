@@ -330,6 +330,15 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .pick-ic{display:flex;flex:none;color:var(--mid)}.pick-day .pick-ic{color:var(--deep)}
 .pick-x,.pick-plus{width:32px;height:32px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
 .pick-x{background:rgba(255,255,255,.65);color:var(--deep)}.idea-btns{margin-top:14px}.idea-btns .soft-btn{background:var(--tile);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}.idea-btns .idea-del{color:var(--danger)}.idea-btns .idea-del.ask{background:var(--danger);color:#fff}.idea-del{color:var(--danger)}.idea-del.ask{background:var(--danger);color:#fff}.pick-plus{background:var(--tile);color:var(--ink)}
+.picker-add{background:var(--place-soft)!important;color:var(--place)!important}
+.ai-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--tile);border-radius:999px;padding:4px;margin-bottom:12px}
+.ai-seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--surface);box-shadow:0 1px 4px rgba(43,33,28,.14);transform:translateX(calc(var(--i,0) * 100%));transition:transform .3s cubic-bezier(.3,.7,.2,1)}
+.ai-seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:14.5px;font-weight:500;color:var(--muted);min-height:42px;display:flex;align-items:center;justify-content:center;gap:6px}
+.ai-seg button[aria-selected="true"]{color:var(--ink);font-weight:600}
+.ai-rec{display:flex;flex-direction:column;gap:10px}
+.ai-rec-card{display:flex;align-items:center;gap:12px;border:0;border-radius:20px;background:var(--surface);box-shadow:var(--lift);padding:14px;text-align:left;font:inherit;color:var(--ink)}
+.ai-rec-card .grow{display:flex;flex-direction:column;min-width:0}.ai-rec-card b{font-size:16px}
+.ai-rec-ic{width:44px;height:44px;border-radius:14px;background:var(--soft);color:var(--deep);display:flex;align-items:center;justify-content:center;flex:none}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -2010,6 +2019,13 @@ async function helpFix(di,ti,fi){
   finally{tip.busy=false;if(S.help===h)render();}
 }
 
+function vAiPage(){
+  const mode = S.aiMode || "rec";
+  const seg = `<div class="ai-seg" role="tablist" style="--i:${mode === "rec" ? 0 : 1}"><button type="button" role="tab" data-act="ai-mode" data-k="rec" aria-selected="${mode === "rec"}">${ic("pin",17)}แนะนำที่เที่ยว</button><button type="button" role="tab" data-act="ai-mode" data-k="review" aria-selected="${mode === "review"}">${ic("calendar",17)}รีวิวแผน</button></div>`;
+  if(mode === "review") return seg + vHelpPage();
+  const cards = [["sight","ที่เที่ยว","k-sight","pin"],["food","ร้านอาหาร","k-food","food"],["cafe","คาเฟ่","k-cafe","coffee"]];
+  return `${seg}<div class="ai-rec">${cards.map(([k,l,tone,icn]) => `<button type="button" class="ai-rec-card ${tone}" data-act="ai-rec" data-k="${k}"><span class="ai-rec-ic">${ic(icn,22)}</span><span class="grow"><b>${l}</b></span>${ic("chev",18)}</button>`).join("")}</div>`;
+}
 function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
   h.notes ||= {};
@@ -2085,16 +2101,16 @@ function vTrip(){
   const isToday = d === today(), next = isToday ? nextEntry(entries) : null;
   let page;
   // the trip name and the day calendar stay put at the top while the page scrolls under them
-  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
+  const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.aiMode === "review" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
   if(tab === "planning") page = dates.length
-    ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}<div class="page-add-row"><button class="cat-add page-add t-idea" data-act="idea-add-manual">${ic("plus",18)}เพิ่ม</button><button class="cat-add page-add ai-pick" data-act="idea-suggest-open">${ic("spark",18)}แนะนำ</button></div>`
+    ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
     : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
   else if(tab === "idea"){
     const list = filteredIdeas();
     page = `${ideaToolbar()}<div class="dock-body page-list" data-k="idea">${list.length?`<ul class="cat-list">${list.map(catRow).join('')}</ul>`:`<p class="muted small">ไม่พบสถานที่</p>`}</div>
       <div class="page-add-row"><button class="cat-add page-add t-idea" data-act="idea-add-manual">${ic("plus",18)}เพิ่ม</button><button class="cat-add page-add ai-pick" data-act="idea-suggest-open">${ic("spark",18)}แนะนำ</button></div>`;
   }
-  else if(tab === "help") page = vHelpPage();
+  else if(tab === "help") page = vAiPage();
   else if(tab === "money"){ page = vExpPage(); expRateLoad(); }
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
@@ -2118,7 +2134,7 @@ function vTrip(){
   </main>${tabBar(tab)}`;
 }
 /* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
-const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["info","ข้อมูล","file"],["money","ค่าใช้จ่าย","wallet"],["help","ผู้ช่วย","spark"]];
+const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["help","AI","spark"],["money","ค่าใช้จ่าย","wallet"],["info","ข้อมูล","file"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
   return `<nav class="tabbar" aria-label="หน้าในทริป" style="--i:${from}" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
@@ -2483,7 +2499,7 @@ function vDayIdeaRows(s){
     <div class="pick-rest">${rest.map(i=>row(i,`<button class="pick-plus" data-act="planner-toggle" data-id="${esc(i.id)}" aria-label="ลงวันนี้" ${busy(i)}>${ic('plus',16)}</button>`)).join('')}</div>${list.length?'':'<p class="muted small">ไม่มีสถานที่</p>'}`;
 }
 function vDayIdeas(s){
-  return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="planner-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}">${ic('search',19)}</button></div>${s.searchOpen?`<div class="planner-search-field"><input id="day-ideas-search" class="workflow-search" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1"></div>`:''}<div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
+  return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search picker-add" data-act="idea-add-manual" aria-label="เพิ่มสถานที่">${ic('plus',20)}</button></div><div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
 }
 const PLAN_TOGGLES=new Set();
 async function togglePlannerIdea(id){
@@ -3943,6 +3959,8 @@ document.addEventListener("click", async e => {
     case "ideas-search": S.ideaSearchOpen=!S.ideaSearchOpen;if(!S.ideaSearchOpen)S.ideaQuery='';render();if(S.ideaSearchOpen)document.getElementById('ideas-search')?.focus({preventScroll:true});break;
     case "idea-add-manual": {const dates=tripDates(t);S.sheet={kind:'idea',title:'',date:dates[S.day]||dates[0],time:'',note:'',mode:'',from:'',to:'',ideaKind:'ที่เที่ยว'};render();break;}
     case "idea-suggest-open": openIdeaRecommend();break;
+    case "ai-mode": S.aiMode = el.dataset.k; render(); break;
+    case "ai-rec": openIdeaRecommend(); if(S.sheet && S.sheet.kind === "idea-recommend"){ S.sheet.cat = el.dataset.k; render(); } break;
     case "idea-suggest-cat": {const s=S.sheet;if(s?.kind==='idea-recommend'&&SUGGEST_CATS[el.dataset.k]){s.cat=el.dataset.k;s.err='';render();}break;}
     case "idea-suggest-like": {const s=S.sheet;if(s?.kind==='idea-recommend'){const l=s.likes[s.cat]||(s.likes[s.cat]=[]),v=el.dataset.v;s.likes[s.cat]=l.includes(v)?l.filter(x=>x!==v):l.concat(v);render();}break;}
     case "idea-suggest-more": await runIdeaRecommend(true,true);break;
@@ -3951,7 +3969,6 @@ document.addEventListener("click", async e => {
     case "idea-suggest-cancel": S.sheet?.ctl?.abort();if(S.sheet?.kind==='idea-recommend'){S.sheet.busy=false;S.sheet.step='form';}render();break;
     case "idea-suggest-save": await saveIdeaRecommendations();break;
     case "planner-filter": S.planner.filter=el.dataset.k;render();break;
-    case "planner-search": {const s=S.planner;s.searchOpen=!s.searchOpen;if(!s.searchOpen)s.query='';render();if(s.searchOpen)document.getElementById('day-ideas-search')?.focus({preventScroll:true});break;}
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
@@ -4112,7 +4129,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-plan9";
+const BUILD = "2026-11-10-ai1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
