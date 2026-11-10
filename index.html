@@ -289,32 +289,37 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .lang-sw b{position:relative;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--muted);transition:color .2s}
 .lang-sw:not(.en) b:first-of-type,.lang-sw.en b:last-of-type{color:var(--surface)}
 .off-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--tile);border-radius:999px;padding:4px 10px;margin:2px 0 6px}.off-chip .ic{opacity:.8}
-.exp-card{display:flex;gap:8px;align-items:stretch}.exp-open{flex:1;display:flex;align-items:center;gap:12px;border:0;background:var(--surface);border-radius:20px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--lift);min-width:0}.exp-open .grow{display:flex;flex-direction:column;min-width:0}
-.exp-plus{width:64px;border:0;border-radius:20px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:var(--lift)}
+.exp-page{display:flex;flex-direction:column;gap:4px;padding-bottom:8px}
 .exp-sheet{max-height:calc(var(--vvh,100dvh) - 24px);overflow-y:auto}
-.exp-total{background:var(--tile);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}.exp-total small{color:var(--muted);font-size:12.5px}.exp-total>b{font-size:24px}
-.exp-by{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.exp-by span{flex:1;min-width:120px;background:var(--surface);border-radius:12px;padding:6px 10px;font-size:12px;color:var(--muted)}.exp-by b{display:block;color:var(--ink);font-size:13.5px}
-.exp-list{list-style:none;margin:6px 0;padding:0}.exp-list li{border-bottom:1px solid var(--line)}.exp-list li>button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:14px 2px;min-height:60px}
-.exp-list .grow{display:flex;flex-direction:column;min-width:0}.exp-list b{font-weight:500;font-size:15.5px}.exp-amt{font-size:16px}.exp-list small{font-size:12px;color:var(--muted)}.exp-amt{font-weight:600;white-space:nowrap}
-.exp-seg{display:flex;background:var(--tile);border-radius:14px;padding:4px;gap:4px}.exp-seg button{flex:1;border:0;background:none;border-radius:11px;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:10px 12px;min-height:44px;white-space:nowrap}.exp-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(43,33,28,.15)}
-.exp-big{font-size:30px!important;font-weight:700;text-align:center;min-height:64px}
-.exp-sheet .grid2 button{min-height:54px;font-size:16px;font-weight:600}
-.exp-copy{min-height:50px;font-size:15.5px;font-weight:600;justify-content:center;margin-top:4px;display:flex;align-items:center;gap:6px}
-.exp-total-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}.exp-total-hd .exp-seg{background:var(--surface)}.exp-total-hd .exp-seg button{min-height:36px;padding:6px 10px;font-size:13.5px}.exp-total-hd .exp-seg button.on{background:var(--ink);color:var(--surface)}
-.exp-total>b{font-size:32px;margin:4px 0 0}
-.exp-curs{display:flex;gap:4px}
-.exp-rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--tile);border-radius:14px;padding:10px 12px;font-size:14px;margin-bottom:8px}.exp-rate input{width:96px;font-size:16px;padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}.exp-rate small{width:100%;color:var(--muted);font-size:12px}
-.exp-res{border:1.5px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}.exp-res .kv{display:flex;justify-content:space-between;font-size:14px}
-.exp-move{display:flex;align-items:center;gap:6px;font-size:14px}.exp-move span{margin-left:auto;font-weight:700;font-size:16px}
-.exp-h{font-size:14px;margin:14px 0 0;font-weight:600}.exp-h small{font-weight:400;font-size:12px}
-.exp-tip{margin:10px 0 0;font-size:12px}
-.exp-list .trow-slide{background:var(--surface)}.exp-row{width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:14px 2px;min-height:60px}
-.exp-who{display:flex;flex-wrap:wrap;gap:14px;padding:4px 2px 14px}
-.exp-who button{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;font:inherit;color:var(--muted);min-width:52px}
-.exp-av{position:relative;width:48px;height:48px;border-radius:999px;background:var(--tile);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;border:2px dashed var(--line)}
-.exp-who button.on .exp-av{background:var(--ink);color:var(--surface);border:2px solid var(--ink)}.exp-who button.on{color:var(--ink)}
-.exp-av i{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:999px;background:#3E9B3C;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface)}
-.exp-av-n{font-size:12.5px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-total{background:var(--idea-soft);border-radius:22px;padding:18px 20px 16px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:6px}
+.exp-total>small{color:var(--idea);font-size:13px}.exp-total>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15;letter-spacing:-.3px}
+.exp-total-row{display:flex;align-items:center;gap:10px;margin-top:6px}.exp-total-row small{font-size:12px;color:var(--idea)}
+.exp-by{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px;font-size:13px;color:var(--idea)}.exp-by b{color:var(--ink);font-weight:600}
+.exp-seg{display:inline-flex;background:var(--tile);border-radius:999px;padding:3px;gap:2px}.exp-total .exp-seg{background:var(--bg)}
+.exp-seg button{border:0;background:none;border-radius:999px;font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);padding:4px 14px;min-height:32px;white-space:nowrap}
+.exp-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(43,33,28,.14),inset 0 1px 1px rgba(255,255,255,.9)}
+.exp-list{list-style:none;margin:0;padding:0}.exp-list>li{border-bottom:1px solid var(--line)}
+.exp-list .trow-slide{background:var(--bg)}.exp-sheet .exp-list .trow-slide{background:var(--surface)}
+.exp-row{width:100%;display:flex;align-items:center;gap:12px;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:12px 2px;min-height:64px}
+.exp-row .grow{display:flex;flex-direction:column;min-width:0}.exp-row b{font-weight:400;font-size:15.5px}.exp-row small{font-size:12.5px;color:var(--muted)}.exp-amt{font-weight:600;font-size:16px;white-space:nowrap}
+.exp-tip{margin:10px 0 0;font-size:12px;text-align:center}
+.exp-who{display:flex;flex-wrap:wrap;gap:16px;padding:0 2px 14px}
+.exp-who button{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;font:inherit;color:var(--muted);min-width:48px}.exp-who button.on{color:var(--ink)}
+.exp-av{width:46px;height:46px;box-sizing:border-box;border-radius:999px;border:1.5px dashed #D9CFC2;color:#9A8D82;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:17px}
+.exp-who button.on .exp-av{border-style:solid;border-width:2px}
+.exp-av-n{font-size:12px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-actions{display:flex;gap:10px;margin-top:14px}
+.exp-btn{flex:1;min-height:52px;border:0;border-radius:999px;font:inherit;font-size:15.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
+.exp-btn-split{background:var(--place-soft);color:var(--place)}.exp-btn-add{background:#FFE7A8;color:#7A4A00}
+.exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
+.exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none}
+.exp-amt-box .exp-seg button{font-size:14.5px;padding:6px 22px;min-height:40px}
+.exp-what{display:flex;flex-direction:column;gap:4px}.exp-what input:focus,.exp-big:focus{outline:none!important}.exp-what input:focus{border-bottom-color:var(--accent-line)!important}.exp-what input{border:0!important;border-bottom:1.5px solid var(--line)!important;border-radius:0!important;background:none!important;font-size:17px;padding:10px 0!important}
+.exp-res{background:var(--place-soft);border-radius:22px;padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;margin-bottom:10px}
+.exp-res small{font-size:13px;color:var(--place)}.exp-res>b{font-family:var(--display);font-size:40px;font-weight:500;line-height:1.15}
+.exp-rate{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--place);margin-top:4px}.exp-rate input{width:72px;border:0;border-bottom:1.5px solid color-mix(in srgb,var(--place) 35%,transparent);background:none;font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:2px 0}
+.exp-copy{margin-top:12px;min-height:44px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;font-weight:500;padding:0 20px;display:flex;align-items:center;gap:8px}
+.exp-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:4px 2px 8px;font-size:13px}.exp-h small{font-size:12px}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -569,11 +574,11 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
-.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 5);border-radius:999px;pointer-events:none;overflow:hidden;
+.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 6);border-radius:999px;pointer-events:none;overflow:hidden;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
@@ -585,7 +590,7 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
 .tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .2s ease-out;scale:var(--sx,1.04) var(--sy,1.03)}
 .tabbar.press:not(.drag) .tab-pill{scale:1.02}
-.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
+.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
 .tb-ic{position:relative;width:21px;height:21px;display:block}
 .tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .25s ease-out}
 .tb-ic .ic+.ic{opacity:0}
@@ -868,6 +873,8 @@ const IC = {
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
   navi:'<path d="M12 3 5 20l7-4 7 4z"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+  people:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9.5" r="2.3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M15.5 14.4c2.3 0 4.1 1.5 4.6 4.1"/>',
+  walletF:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z" style="fill:currentColor"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.3" style="fill:var(--tab-cut);stroke:var(--tab-cut)"/>',
   wallet:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.2"/>',
   wifiOff:'<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M14.8 10.3A10 10 0 0 1 19 12.9"/><path d="M2 9.3a15 15 0 0 1 4.3-2.6M10.7 5.1A15 15 0 0 1 22 9.3"/><path d="M12 20h.01"/>',
   wxFog:'<path d="M4 9h12M6 13h14M4 17h11"/>',
@@ -1457,7 +1464,7 @@ function catRow(it){
 }
 function filteredIdeas(){return S.items.filter(i => i.type === "idea" && (!S.ideaFilter||(i.data||{}).kind===S.ideaFilter) && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0));}
 function selectTab(k, landed){
-  const cur = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
+  const cur = ["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "";
   k = k || "";
   S.tabFrom = landed ? TRIP_TABS.findIndex(x => x[0] === k) : Math.max(0, TRIP_TABS.findIndex(x => x[0] === cur));
   S.catTab = k; S.sheet = null; S.dockHidden = false;
@@ -2086,7 +2093,7 @@ function vTrip(){
   const loose = dates.length ? S.items.filter(it => it.type !== "idea" && it.type !== "expense" && !inRange.has(it.date) && !(it.type==="stay" && inRange.has(it.endDate))) : S.items.filter(it => it.type === "place" || it.type === "move");
   const count = k => S.items.filter(i => i.type === k).length;
   const nights = S.items.filter(i => i.type==="stay" && validD(i.date) && validD(i.endDate)).reduce((s,i) => s + Math.max(0, daysBetween(i.date, i.endDate)), 0);
-  const tab = ["planning","idea","info","help"].includes(S.catTab) ? S.catTab : "";
+  const tab = ["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "";
   const isToday = d === today(), next = isToday ? nextEntry(entries) : null;
   let page;
   // the trip name and the day calendar stay put at the top while the page scrolls under them
@@ -2100,10 +2107,11 @@ function vTrip(){
       <div class="page-add-row"><button class="cat-add page-add t-idea" data-act="idea-add-manual">${ic("plus",18)}เพิ่ม</button><button class="cat-add page-add ai-pick" data-act="idea-suggest-open">${ic("spark",18)}แนะนำ</button></div>`;
   }
   else if(tab === "help") page = vHelpPage();
+  else if(tab === "money"){ page = vExpPage(); expRateLoad(); }
   else if(tab === "info"){
     const group = (kind,label) => { const b = S.items.filter(i=>i.type===kind).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
       return `<section class="booking-group card"><div class="sec-h"><h3>${label}</h3></div>${b.length?`<ul class="cat-list">${b.map(catRow).join('')}</ul>`:`<p class="muted small">ยังไม่มี${label}</p>`}</section>`; };
-    page = `${expCard()}<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
+    page = `<button type="button" class="sos-card" data-act="sos-open"><span class="thumb tc k-shop">${ic("sos",20)}</span><span class="grow"><b>ข้อมูลฉุกเฉิน</b><span class="muted small">เบอร์ด่วน ที่พัก แพ้ยา ประกัน</span></span>${ic("chev",16)}</button>${group('flight','เที่ยวบิน')}${group('stay','ที่พัก')}<button class="cat-add page-add t-idea" data-act="upload" data-k="flight">${ic('plus',18)}เพิ่ม</button>`;
   }
   else page = `${!dates.length ? `<button class="add-dash t-place" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
@@ -2122,7 +2130,7 @@ function vTrip(){
   </main>${tabBar(tab)}`;
 }
 /* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
-const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูลทริป","file"],["help","ผู้ช่วย","spark"]];
+const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูล","file"],["money","ค่าใช้จ่าย","wallet"],["help","ผู้ช่วย","spark"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
   return `<nav class="tabbar" aria-label="หน้าในทริป" style="--i:${from}" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
@@ -3006,7 +3014,6 @@ function vSheet(){
   if(s.kind === "share-in") return vShareIn(s);
   if(s.kind === "account") return vAccount();
   if(s.kind === "install") return vInstall();
-  if(s.kind === "exp") return vExp(s);
   if(s.kind === "exp-add") return vExpAdd(s);
   if(s.kind === "exp-split") return vExpSplit(s);
   if(s.kind === "export") return vExport(s);
@@ -3521,28 +3528,24 @@ const expItems = () => S.items.filter(i => i.type === "expense").sort((a, b) => 
 const expLocal = () => { const c = tripCountry(); return (c && CUR_OF[c[0]]) || "JPY"; };
 function expTotals(list){ const t = {}; list.forEach(i => { const d = i.data || {}; t[d.cur] = (t[d.cur] || 0) + (+d.amount || 0); }); return t; }
 const totalsText = t => Object.entries(t).sort((a, b) => a[0] === "THB" ? 1 : b[0] === "THB" ? -1 : 0).map(([c, n]) => money(n, c)).join(" + ") || "—";
-function expCard(){
-  const list = expItems();
-  return `<div class="exp-card"><button type="button" class="exp-open" data-act="exp-open"><span class="thumb tc k-food">${ic("wallet",20)}</span><span class="grow"><b>ค่าใช้จ่าย</b><span class="muted small">${list.length ? esc(expOne(expTotals(list))) + " · " + list.length + " รายการ" : "ยังไม่มีรายการ · กด ＋ เพื่อจด"}</span></span></button><button type="button" class="exp-plus" data-act="exp-add" aria-label="จดค่าใช้จ่าย">${ic("plus",20)}</button></div>`;
-}
-function vExp(s){
-  const list = expItems(), t = expTotals(list), by = {};
+function vExpPage(){
+  const list = expItems(), t = expTotals(list), by = {}, s = S.expUI || (S.expUI = {pick:""});
   list.forEach(i => { const d = i.data || {}, k = d.by || "?"; (by[k] ||= {name: expName(d.by), t:{}}).t[d.cur] = (by[k].t[d.cur] || 0) + (+d.amount || 0); });
-  const view = expViewCur(), one = tt => expOne(tt, view);
-  const loc = expLocal(), r = fxRate(loc);
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet" role="dialog" aria-modal="true" aria-label="ค่าใช้จ่าย" data-stop="1">
-    <div class="hd"><h2>ค่าใช้จ่าย</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <div class="exp-total"><div class="exp-total-hd"><small>รวมทั้งทริป</small>${expCurSeg(view, "exp-view")}</div><b>${esc(one(t))}</b>
-      ${loc !== "THB" && r ? `<small>เรท 1 ${esc(loc)} = ${r} บาท</small>` : ""}
-      ${Object.keys(by).length > 1 ? `<div class="exp-by">${Object.values(by).map(p => `<span>${esc(p.name)} จ่าย<b>${esc(one(p.t))}</b></span>`).join("")}</div>` : ""}</div>
-    ${list.length ? `<p class="muted small exp-tip">แตะรายการเพื่อเลือกคนหาร · เลื่อนซ้ายเพื่อแก้หรือลบ</p><ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul>` : `<p class="muted small" style="text-align:center;padding:18px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
-    <div class="grid2"><button type="button" class="soft-btn" data-act="exp-split" ${list.length ? "" : "disabled"}>หารเงิน</button><button type="button" class="btn primary" data-act="exp-add">${ic("plus",18)}จด</button></div>
-  </div></div>`;
+  const view = expViewCur(), loc = expLocal(), r = fxRate(loc);
+  return `<section class="exp-page">
+    <div class="exp-total"><small>รวมทั้งทริป</small><b>${esc(expOne(t, view))}</b>
+      <div class="exp-total-row">${expCurSeg(view, "exp-view")}${loc !== "THB" && r ? `<small>1 ${esc((CUR_SIGN[loc] || loc).trim())} = ${r} ฿</small>` : ""}</div>
+      ${Object.keys(by).length ? `<div class="exp-by">${Object.values(by).map(p => `<span>${esc(p.name)} จ่าย <b>${esc(expOne(p.t, view))}</b></span>`).join("")}</div>` : ""}</div>
+    ${list.length ? `<ul class="exp-list">${list.map(i => expRow(i, s, true)).join("")}</ul><p class="muted small exp-tip">แตะรายการเพื่อเลือกคนหาร · เลื่อนซ้ายเพื่อแก้หรือลบ</p>` : `<p class="muted small" style="text-align:center;padding:24px 0">ยังไม่มีรายการ กด "จด" เพื่อเริ่ม</p>`}
+    <div class="exp-actions"><button type="button" class="exp-btn exp-btn-split" data-act="exp-split" ${list.length ? "" : "disabled"}>${ic("people",19)}หารเงิน</button><button type="button" class="exp-btn exp-btn-add" data-act="exp-add">${ic("edit",19)}จด</button></div>
+  </section>`;
 }
+const EXP_TONES = [["#E0ECFF","#2B61B2"],["#FCE4EC","#B83A68"],["#E2F5E2","#2F7A2E"],["#F1E5F6","#6A3A86"],["#FFE8D6","#B4501A"],["#DCF1F3","#18767F"]];
+const expTone = u => { const k = expPeople().indexOf(u), t = EXP_TONES[(k < 0 ? 0 : k) % EXP_TONES.length]; return `background:${t[0]};color:${t[1]};border-color:${t[1]}`; };
 function expRow(i, s, swipe){
   const d = i.data || {}, all = expPeople(), who = expSplitOf(i, all), open = s.pick === i.id, key = "x:" + i.id, ask = S.delAsk === key;
   const row = `<button type="button" class="exp-row" data-act="exp-pick" data-id="${esc(i.id)}" aria-expanded="${open}"><span class="grow"><b>${esc(i.title || "ไม่ระบุ")}</b><small>${esc(expName(d.by))} จ่าย · ${who.length === all.length ? `หารทุกคน (${who.length})` : `หาร ${who.length} คน`}${swipe ? " · " + esc(expWhen(d.at)) : ""}</small></span><span class="exp-amt">${esc(money(d.amount, d.cur))}</span></button>`;
-  const people = open ? `<div class="exp-who">${all.map(u => { const on = who.includes(u), n = expName(u); return `<button type="button" class="${on ? "on" : ""}" data-act="exp-who" data-u="${esc(u)}" aria-pressed="${on}"><span class="exp-av">${esc(trText(n).slice(0, 1).toUpperCase())}${on ? `<i>${ic("check",11)}</i>` : ""}</span><span class="exp-av-n">${esc(n)}</span></button>`; }).join("")}</div>` : "";
+  const people = open ? `<div class="exp-who">${all.map(u => { const on = who.includes(u), n = expName(u); return `<button type="button" class="${on ? "on" : ""}" data-act="exp-who" data-u="${esc(u)}" aria-pressed="${on}"><span class="exp-av" style="${on ? expTone(u) : ""}">${esc(trText(n).slice(0, 1).toUpperCase())}</span><span class="exp-av-n">${esc(n)}</span></button>`; }).join("")}</div>` : "";
   if(!swipe) return `<li class="${open ? "open" : ""}">${row}${people}</li>`;
   return `<li class="${open ? "open" : ""}"><div class="trow erow${S.swipeOpen === key ? " open" : ""}${ask ? " ask" : ""}" data-row="${esc(key)}" data-w="108">
     <div class="trow-actions">${ask ? `<button class="sw-btn sw-yes" data-act="entry-del-yes" data-id="${esc(i.id)}">ลบเลย</button>`
@@ -3555,13 +3558,14 @@ function vExpAdd(s){
   let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = d.cur || (curs.includes(last) ? last : curs[0]);
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
-    <div class="hd">${s.back || it ? `<button class="round" data-act="exp-open" aria-label="กลับ">${ic("back")}</button>` : ""}<h2>${it ? "แก้รายการ" : "จดค่าใช้จ่าย"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <form data-form="exp" class="stack" style="gap:14px" autocomplete="off">
-      <label class="fld">ค่าอะไร<input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" value="${esc(it ? it.title || "" : "")}"></label>
-      <div class="fld">จำนวนเงิน${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}
-        <input class="exp-big" name="amount" inputmode="decimal" required placeholder="0" value="${d.amount != null ? esc(String(d.amount)) : ""}"><input type="hidden" name="cur" value="${esc(cur)}"></div>
-      <p class="muted small" style="margin:-6px 0 0">บันทึกในชื่อ ${esc(it ? (d.by === S.me ? "ฉัน" : d.byName || nameOf(d.by)) : (S.myName || "ฉัน"))}</p>
-      <button type="submit" class="btn primary" style="height:50px;font-size:16px">บันทึก</button>
+    <div class="hd"><h2>${it ? "แก้รายการ" : "จดค่าใช้จ่าย"}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <form data-form="exp" class="stack exp-form" autocomplete="off">
+      <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
+        <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" value="${d.amount != null ? esc(String(d.amount)) : ""}">
+        ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
+      <label class="exp-what"><span class="muted small">ค่าอะไร</span><input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" value="${esc(it ? it.title || "" : "")}"></label>
+      <p class="muted small" style="margin:-6px 0 0">บันทึกในชื่อ ${esc(it ? expName(d.by) : (S.myName || "ฉัน"))}</p>
+      <button type="submit" class="exp-btn exp-btn-add" style="width:100%">บันทึก</button>
       ${it ? `<button type="button" class="link-btn" style="color:var(--danger)" data-act="exp-del">ลบรายการนี้</button>` : ""}
     </form>
   </div></div>`;
@@ -3573,7 +3577,7 @@ async function expSave(f){
   const s = S.sheet;
   if(s.id) await store.updateItem(S.trip.id, s.id, {title, data:{amount, cur}});
   else await store.addItem(S.trip.id, {type:"expense", title, data:{amount, cur, by:S.me, byName:S.myName || "", at:Date.now(), split:null}, createdBy:S.me, createdAt:Date.now()});
-  toast(s.id ? "แก้แล้ว" : "จดแล้ว"); S.sheet = s.back || s.id ? {kind:"exp"} : null; render();
+  toast(s.id ? "แก้แล้ว" : "จดแล้ว"); S.sheet = null; render();
 }
 /* splitting: everyone in the trip by default; per item you can pick fewer people */
 function expPeople(){ const ids = [...(S.trip.memberIds || [])]; expItems().forEach(i => { const b = (i.data || {}).by; if(b && !ids.includes(b)) ids.push(b); }); return ids.length ? ids : [S.me]; }
@@ -3606,13 +3610,13 @@ function expPlanText(){ const c = expCalc(); return [`${S.trip.name} · ค่�
 function vExpSplit(s){
   const c = expCalc(), list = expItems(), curs = [...new Set(list.map(i => (i.data || {}).cur))].filter(x => x && x !== "THB");
   return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet" role="dialog" aria-modal="true" aria-label="หารเงิน" data-stop="1">
-    <div class="hd"><button class="round" data-act="exp-open" aria-label="กลับ">${ic("back")}</button><h2>หารเงิน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    ${curs.map(x => `<label class="exp-rate">1 ${esc(x)} = <input inputmode="decimal" data-fx="${esc(x)}" value="${fxRate(x) || ""}" placeholder="?"> บาท<small>${(S.trip.fx || {})[x] ? "เรทที่ตั้งไว้" : (S.fxLive || {})[x] ? "เรทวันนี้ · แก้เป็นเรทที่แลกจริงได้" : "ใส่เรท"}</small></label>`).join("")}
-    <div class="exp-res">${c.missing.length ? `<p class="muted small">ใส่เรทของ ${esc(c.missing.join(", "))} ก่อน</p>` : `
-      <div class="kv"><span>รวม</span><b>${esc(money(c.total, "THB"))}</b></div>
-      ${c.moves.length ? c.moves.map(m => `<div class="exp-move"><b>${esc(expName(m.from))}</b> โอนให้ <b>${esc(expName(m.to))}</b><span>${esc(money(m.v, "THB"))}</span></div>`).join("") : `<p class="muted small">ไม่ต้องโอนกัน</p>`}
-      <button type="button" class="soft-btn exp-copy" data-act="exp-copy">${ic("copy",18)}คัดลอกสรุป ส่งใน LINE</button>`}</div>
-    <h3 class="exp-h">แต่ละรายการหารกี่คน <small class="muted">แตะเพื่อเปลี่ยน</small></h3>
+    <div class="hd"><h2>หารเงิน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="exp-res">${c.missing.length ? `<p class="small">ใส่เรทของ ${esc(c.missing.join(", "))} ก่อน</p>` : c.moves.length
+      ? c.moves.map(m => `<small>${esc(expName(m.from))} โอนให้ ${esc(expName(m.to))}</small><b>${esc(money(m.v, "THB"))}</b>`).join("")
+      : `<b style="font-size:24px">ไม่ต้องโอนกัน</b>`}
+      ${curs.map(x => `<label class="exp-rate">รวม ${esc(money(c.total, "THB"))} · 1 ${esc((CUR_SIGN[x] || x).trim())} = <input inputmode="decimal" data-fx="${esc(x)}" value="${fxRate(x) || ""}" placeholder="?" aria-label="เรท ${esc(x)} เป็นบาท"> ฿</label>`).join("")}
+      ${c.missing.length ? "" : `<button type="button" class="exp-copy" data-act="exp-copy">${ic("copy",17)}คัดลอกส่ง LINE</button>`}</div>
+    <div class="exp-h"><b>แต่ละรายการ</b><small class="muted">แตะเพื่อเลือกคนหาร</small></div>
     <ul class="exp-list">${list.map(i => expRow(i, s, false)).join("")}</ul>
   </div></div>`;
 }
@@ -4032,14 +4036,14 @@ document.addEventListener("click", async e => {
     case "hide-source": S.sheet.showText = false; render(); break;
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
-    case "exp-open": S.sheet = {kind:"exp"}; render(); expRateLoad(); break;
-    case "exp-add": S.sheet = {kind:"exp-add", id:el.dataset.id || "", back:S.sheet && S.sheet.kind === "exp"}; render(); setTimeout(() => { const f = document.getElementById("exp-what"); if(f && !el.dataset.id) f.focus(); }, 60); break;
+    case "exp-open": S.sheet = null; selectTab("money"); break;
+    case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
     case "exp-cur": { const f = el.closest("form"); f.querySelectorAll("[data-act=exp-cur]").forEach(b => b.classList.toggle("on", b === el)); f.elements.cur.value = el.dataset.cur; f.elements.amount.focus(); break; }
     case "exp-view": try { localStorage.setItem("mytrip-exp-view", el.dataset.cur); } catch(_){} render(); break;
-    case "exp-del": if(S.sheet && S.sheet.id){ await store.deleteItem(S.trip.id, S.sheet.id); S.sheet = {kind:"exp"}; render(); toast("ลบแล้ว"); } break;
+    case "exp-del": if(S.sheet && S.sheet.id){ await store.deleteItem(S.trip.id, S.sheet.id); S.sheet = null; render(); toast("ลบแล้ว"); } break;
     case "exp-split": S.sheet = {kind:"exp-split", pick:""}; render(); expRateLoad(); break;
-    case "exp-pick": S.sheet.pick = S.sheet.pick === el.dataset.id ? "" : el.dataset.id; render(); break;
-    case "exp-who": { const it = S.items.find(i => i.id === S.sheet.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
+    case "exp-pick": { const o = S.sheet && S.sheet.kind === "exp-split" ? S.sheet : (S.expUI ||= {pick:""}); o.pick = o.pick === el.dataset.id ? "" : el.dataset.id; render(); break; }
+    case "exp-who": { const o = S.sheet && S.sheet.kind === "exp-split" ? S.sheet : (S.expUI || {}); const it = S.items.find(i => i.id === o.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
       if(cur.has(u)){ if(cur.size > 1) cur.delete(u); } else cur.add(u);
       await store.updateItem(S.trip.id, it.id, {data:{split: cur.size === all.length ? null : [...cur]}}); render(); break; }
     case "exp-copy": { const t = expPlanText(); try { await navigator.clipboard.writeText(t); toast("คัดลอกแล้ว ส่งใน LINE ได้เลย"); } catch(_){ toast(t); } break; }
@@ -4148,7 +4152,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet3";
+const BUILD = "2026-11-10-wallet4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
