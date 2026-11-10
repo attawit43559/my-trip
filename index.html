@@ -322,6 +322,13 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-rate{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--place);margin-top:4px}.exp-rate input{width:76px;border:0!important;border-radius:999px;background:var(--surface);box-shadow:none;font:inherit;font-size:13px;color:var(--ink);text-align:center;padding:2px 0}
 .exp-copy{margin-top:12px;min-height:44px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;font-weight:500;padding:0 20px;display:flex;align-items:center;gap:8px}
 .exp-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:4px 2px 8px;font-size:13px}.exp-h small{font-size:12px}
+.pick-day{background:var(--place-soft);border-radius:22px;padding:4px 4px 4px 14px;margin-bottom:6px}
+.pick-row{display:flex;align-items:center;gap:6px;min-height:52px}.pick-rest .pick-row{padding:0 4px 0 14px}
+.pick-name{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:0;background:none;font:inherit;color:var(--ink);text-align:left;padding:8px 0;font-size:15.5px}
+.pick-name .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-ic{background:none!important;display:flex;flex:none}.pick-day .pick-ic{color:var(--place)!important}
+.pick-x,.pick-plus{width:40px;height:40px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
+.pick-x{background:none;color:color-mix(in srgb,var(--place) 70%,var(--muted))}.pick-plus{background:var(--tile);color:var(--ink)}
 .start-card{background:var(--surface);border-radius:20px;padding:14px 16px 8px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
 .start-hd{display:flex;justify-content:space-between;align-items:center;font-size:15px}.start-n{font-size:12.5px;color:var(--muted)}
 .start-bar{height:5px;border-radius:9px;background:var(--tile);margin:8px 0 6px;overflow:hidden}.start-bar i{display:block;height:100%;background:var(--accent,#F4A62A);border-radius:9px}
@@ -576,11 +583,11 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:4px;border-radius:999px;
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
-.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 6);border-radius:999px;pointer-events:none;overflow:hidden;
+.tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 5);border-radius:999px;pointer-events:none;overflow:hidden;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
@@ -2101,7 +2108,7 @@ function vTrip(){
   // the trip name and the day calendar stay put at the top while the page scrolls under them
   const pin = dates.length && (tab === "" || tab === "planning" || (tab === "help" && S.help && S.help.step === "result" && S.help.tripId === t.id)) ? calendar(dates) : "";
   if(tab === "planning") page = dates.length
-    ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}`
+    ? `${vDayIdeas(S.planner||(S.planner={query:'',filter:''}))}<div class="page-add-row"><button class="cat-add page-add t-idea" data-act="idea-add-manual">${ic("plus",18)}เพิ่ม</button><button class="cat-add page-add ai-pick" data-act="idea-suggest-open">${ic("spark",18)}แนะนำ</button></div>`
     : `<div class="card empty" style="padding:22px"><p class="muted small">ตั้งวันเที่ยวก่อน แล้วค่อยเลือกสถานที่ลงแต่ละวัน</p><button class="pill-btn" data-act="trip-edit">${ic("edit",16)}ตั้งวันเที่ยว</button></div>`;
   else if(tab === "idea"){
     const list = filteredIdeas();
@@ -2132,7 +2139,7 @@ function vTrip(){
   </main>${tabBar(tab)}`;
 }
 /* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
-const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["idea","ที่สนใจ","idea"],["info","ข้อมูล","file"],["money","ค่าใช้จ่าย","wallet"],["help","ผู้ช่วย","spark"]];
+const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["info","ข้อมูล","file"],["money","ค่าใช้จ่าย","wallet"],["help","ผู้ช่วย","spark"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
   return `<nav class="tabbar" aria-label="หน้าในทริป" style="--i:${from}" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
@@ -2516,10 +2523,12 @@ function plannerIdeas(s){
   return S.items.filter(i=>i.type==='idea'&&(!s.filter||(i.data||{}).kind===s.filter)&&(!query||(briefName(i.title)+' '+(i.data||{}).kind).toLocaleLowerCase().includes(query)));
 }
 function vDayIdeaRows(s){
-  const date=tripDates(S.trip)[S.day];
-  return plannerIdeas(s).map(i=>{const selected=S.items.some(p=>p.type==='place'&&p.date===date&&(p.data||{}).fromIdea===i.id);
-    return `<button class="ai-priority picker-choice" data-act="planner-toggle" data-id="${esc(i.id)}" aria-pressed="${selected}" ${PLAN_TOGGLES.has(S.trip.id+':'+date+':'+i.id)?'disabled':''}><span class="thumb-sm ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),16)}</span><span class="grow">${esc(briefName(i.title))}</span></button>`;
-  }).join('')||'<p class="muted small">ไม่มีสถานที่</p>';
+  const date=tripDates(S.trip)[S.day],list=plannerIdeas(s);
+  const on=i=>S.items.some(p=>p.type==='place'&&p.date===date&&(p.data||{}).fromIdea===i.id), busy=i=>PLAN_TOGGLES.has(S.trip.id+':'+date+':'+i.id)?'disabled':'';
+  const inDay=list.filter(on),rest=list.filter(i=>!on(i));
+  const row=(i,act)=>`<div class="pick-row"><button class="pick-name" data-act="item" data-id="${esc(i.id)}"><span class="pick-ic ${kindTone(i)}" aria-hidden="true">${ic(itemIcon(i),19)}</span><span class="grow">${esc(briefName(i.title))}</span></button>${act}</div>`;
+  return `${inDay.length?`<div class="pick-day">${inDay.map(i=>row(i,`<button class="pick-x" data-act="planner-toggle" data-id="${esc(i.id)}" aria-label="เอาออกจากวันนี้" ${busy(i)}>${ic('close',17)}</button>`)).join('')}</div>`:''}
+    <div class="pick-rest">${rest.map(i=>row(i,`<button class="pick-plus" data-act="planner-toggle" data-id="${esc(i.id)}" aria-label="ลงวันนี้" ${busy(i)}>${ic('plus',18)}</button>`)).join('')}</div>${list.length?'':'<p class="muted small">ไม่มีสถานที่</p>'}`;
 }
 function vDayIdeas(s){
   return `<section class="day-picker compact-picker planner-picker" aria-label="เลือกสถานที่ของวันนี้"><div class="picker-toolbar"><div class="chips picker-filters" aria-label="หมวดสถานที่">${['',...IDEA_KINDS].map(k=>`<button data-act="planner-filter" data-k="${esc(k)}" aria-pressed="${(s.filter||'')===k}">${esc(k||'ทั้งหมด')}</button>`).join('')}</div><button class="picker-search" data-act="planner-search" aria-label="${s.searchOpen?'ซ่อนช่องค้นหา':'ค้นหาสถานที่'}" aria-expanded="${!!s.searchOpen}">${ic('search',19)}</button></div>${s.searchOpen?`<div class="planner-search-field"><input id="day-ideas-search" class="workflow-search" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="ค้นหาสถานที่" placeholder="ค้นหา" value="${esc(s.query||'')}" data-day-search="1"></div>`:''}<div class="picker-list">${vDayIdeaRows(s)}</div></section>`;
@@ -2612,7 +2621,7 @@ async function saveIdeaRecommendations(){
       const g=await gmapsPlace([p.title,p.area,s.city].filter(Boolean).join(', '));if(!g)missing++;   // the real Google place, so the map pin and "open in Google Maps" are right
       await store.addItem(t.id,{type:'idea',date:'',time:'',title:p.title,sub:s_(p.area).slice(0,120),
         data:{kind:(g&&g.kind&&(s.cat!=='sight'||g.kind==='ที่เที่ยว'||g.kind==='ช้อปปิ้ง'))?g.kind:IDEA_TONE[p.kind]?p.kind:'ที่เที่ยว',gchecked:g?1:0,address:g?.address||p.area||'',recommendedFor:s.city,...(g?{lat:g.lat,lon:g.lon,placeId:g.placeId,mapsUrl:g.mapsUrl,originalMapsName:g.name}:{})},createdBy:S.me,createdAt:Date.now(),source:'ai'});}
-    if(S.sheet===s){S.sheet=null;S.catTab='idea';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
+    if(S.sheet===s){S.sheet=null;S.catTab='planning';toast(missing?`เพิ่ม ${chosen.length} แห่งแล้ว (${missing} แห่งหาใน Google Maps ไม่เจอ ลองแตะแก้ชื่อดูนะครับ)`:`เพิ่ม ${chosen.length} แห่งในที่สนใจแล้ว`);}
   }catch(e){if(e?.code!=='cancelled')fail(e);}finally{if(S.sheet===s){s.busy=false;render();}}
 }
 window.addEventListener('resize',fitPlannerPanel);
@@ -3895,7 +3904,7 @@ document.addEventListener("submit", async e => {
       try{
         await store.addItem(t.id, {type:"idea", date:"", time:"", title:s.title.trim(), sub:s.note.trim(),
           data:{kind:s.ideaKind||"ที่เที่ยว", address:s.address||"", originalMapsName:s.originalMapsName||"", lat:s.lat, lon:s.lon, placeId:s.placeId||"", mapsUrl:s.mapsUrl||""}, createdBy:S.me, createdAt:Date.now(), source:"manual"});
-        S.sheet = null; S.catTab = "idea"; render(); toast("จดไว้แล้ว");
+        S.sheet = null; S.catTab="planning"; render(); toast("จดไว้แล้ว");
       } catch(err){ fail(err); }
       return;
     }
@@ -4149,7 +4158,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet8";
+const BUILD = "2026-11-10-plan1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
