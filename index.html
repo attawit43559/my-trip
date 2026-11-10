@@ -3585,7 +3585,7 @@ function segSlide(el){ const g = el.closest(".exp-seg"), bs = [...g.querySelecto
 function expOne(tt, view){ view = view || expViewCur(); let sum = 0; for(const [c, n] of Object.entries(tt)){ const v = fxConv(n, c, view); if(v == null) return totalsText(tt); sum += v; } return money(sum, view); }
 const fxConv = (n, from, to) => { if(from === to) return +n || 0; const a = fxRate(from), b = fxRate(to); return a && b ? (+n || 0) * a / b : null; };
 async function expRateLoad(){
-  const need = [...new Set([expLocal(), ...expItems().map(i => (i.data || {}).cur)])].filter(c => c && c !== "THB" && !(S.trip.fx || {})[c]);
+  const need = [...new Set([expLocal(), ...expItems().map(i => (i.data || {}).cur)])].filter(c => c && c !== "THB");
   if(!need.length || !navigator.onLine || Date.now() - (S.fxAt || 0) < 3600e3) return;
   try { const r = await fetch("https://open.er-api.com/v6/latest/THB").then(r => r.json()); const out = {}; need.forEach(c => { const v = r.rates && r.rates[c]; if(v) out[c] = Math.round(1 / v * 10000) / 10000; });
     S.fxAt = Date.now(); S.fxLive = {...(S.fxLive || {}), ...out}; try { localStorage.setItem("mytrip-fx", JSON.stringify(S.fxLive)); } catch(_){} render(); } catch(_){}
@@ -4136,7 +4136,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-wallet17";
+const BUILD = "2026-11-10-wallet18";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
