@@ -205,6 +205,11 @@ html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock .seg{background:transparent;padding:0}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.scrim.center{align-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
+.sheet.float{border-radius:28px;max-height:100%;padding-bottom:22px;box-shadow:0 18px 50px rgba(20,19,26,.28);animation:guideIn .22s ease-out}
+.sheet.float input[type=date]{width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none}
+.plan-code{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.04em;text-align:center;background:var(--tile);border-radius:16px;padding:14px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
+.row-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px}
 .guide-scrim{align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
 .guide-card{width:100%;max-width:380px;max-height:calc(100% - 24px);background:var(--surface);border-radius:28px;box-shadow:0 18px 50px rgba(20,19,26,.28);display:flex;flex-direction:column;gap:12px;padding:14px 0 18px;overflow:hidden;animation:guideIn .22s ease-out}
 @keyframes guideIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
@@ -1256,7 +1261,7 @@ function vHome(){
         <p class="muted">ยังไม่มีทริป</p></div>` :
       `${next ? `<section class="stack"><div class="sec-h"><h2>กำลังจะถึง</h2></div>${card(next)}</section>` : ""}
        ${rest.length ? `<section class="stack" style="gap:10px"><div class="sec-h"><h2>ทริปอื่นๆ</h2></div>${rest.map(row).join("")}</section>` : ""}`}
-    <form class="join-row" data-form="join"><label for="join-code" class="sr">รหัสทริปจากเพื่อน</label><input id="join-code" name="code" maxlength="6" placeholder="รหัสทริปจากเพื่อน" autocomplete="off" value="${esc(S.joinCode)}" data-bind="root:joinCode"><button type="submit">เข้าร่วม</button></form>
+    <form class="join-row" data-form="join"><label for="join-code" class="sr">รหัสทริปจากเพื่อน</label><input id="join-code" name="code" maxlength="400" placeholder="วางรหัสทริป / รหัสแผนจากเพื่อน" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(S.joinCode)}" data-bind="root:joinCode"><button type="submit">เปิด</button></form>
     ${!CONNECTED ? `<p class="note">${ic("info",20)}<span>ยังไม่ได้เชื่อม Google Sheet ข้อมูลอยู่ในเครื่องนี้เท่านั้น</span></p>` : ""}
   </main>`;
 }
@@ -1280,18 +1285,17 @@ function vTripMenu(s){
 
 /* share a link that gives a friend their own copy of the plan (places, ideas, travel, notes; no bookings or expenses) */
 const copyLinkOf = key => location.origin + location.pathname + "?openExternalBrowser=1#copy-" + key;
+const copyMsg = key => `แผนเที่ยว “${S.trip?.name || ""}” จาก My Trip\nเปิดแอป My Trip แล้ววางข้อความนี้ในช่อง “วางรหัส” หน้าแรก\nรหัสแผน: ${key}`;
 function vCopyShare(s){
-  const link = s.key ? copyLinkOf(s.key) : "";
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แชร์แผนให้เพื่อนคัดลอก" data-stop="1"><div class="hd"><h2>แชร์แผนให้เพื่อนคัดลอก</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <div class="stack" style="gap:12px">
-      <p class="muted small" style="margin:0">เพื่อนกดลิงก์แล้วได้ทริปเป็นของเขาเอง แก้ได้ไม่กระทบแผนเรา · ไม่รวมตั๋ว ที่พัก และค่าใช้จ่าย</p>
-      ${s.err ? `<p class="err">${esc(s.err)}</p>` : !link ? `<p class="muted small" role="status">กำลังสร้างลิงก์…</p>` : `<div class="link-box"><label for="inv-link" hidden>ลิงก์คัดลอกแผน</label><input id="inv-link" readonly value="${esc(link)}"><button data-act="copy" data-text="${esc(link)}">คัดลอก</button></div>
-      ${navigator.share ? `<button class="btn primary" data-act="copy-share-send">${ic("share",18)}ส่งลิงก์</button>` : ""}`}
-    </div></div></div>`;
+  return `<div class="scrim center" data-act="close-sheet"><div class="sheet float" role="dialog" aria-modal="true" aria-label="แชร์แผนให้เพื่อนคัดลอก" data-stop="1"><div class="hd"><h2>แชร์แผนให้เพื่อน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <p class="muted small" style="margin:0">ส่งรหัสนี้ให้เพื่อน เพื่อนวางในช่องหน้าแรกของแอป แล้วได้ทริปเป็นของเขาเอง · ไม่รวมตั๋ว ที่พัก และค่าใช้จ่าย</p>
+    ${s.err ? `<p class="err">${esc(s.err)}</p>` : !s.key ? `<p class="muted small" role="status">กำลังสร้างรหัส…</p>` : `<div class="plan-code" aria-label="รหัสแผน">${esc(s.key)}</div>
+    <div class="row-btns"><button class="btn ghost" data-act="copy" data-text="${esc(copyMsg(s.key))}">${ic("copy",18)}คัดลอก</button>${navigator.share ? `<button class="btn primary" data-act="copy-share-send">${ic("share",18)}ส่ง</button>` : ""}</div>`}
+  </div></div>`;
 }
 function vCopyIn(s){
   const p = s.preview;
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="คัดลอกแผนเที่ยว" data-stop="1"><div class="hd"><h2>คัดลอกแผนเที่ยว</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?"disabled":""}>${ic("close")}</button></div>
+  return `<div class="scrim center" data-act="close-sheet"><div class="sheet float" role="dialog" aria-modal="true" aria-label="คัดลอกแผนเที่ยว" data-stop="1"><div class="hd"><h2>คัดลอกแผนเที่ยว</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?"disabled":""}>${ic("close")}</button></div>
     ${s.err ? `<p class="err">${esc(s.err)}</p>` : !p ? `<p class="muted small" role="status">กำลังโหลด…</p>` : `<form class="stack" data-form="copy-in" style="gap:12px">
       <div><b style="font-size:18px">${esc(p.name)}</b><br><span class="muted small">${esc([p.destination, p.days ? p.days + " วัน" : "", p.places + p.ideas ? (p.places + p.ideas) + " สถานที่" : ""].filter(Boolean).join(" · "))}</span></div>
       <label class="fld">วันเริ่มเที่ยวของคุณ<input type="date" required value="${esc(s.start || "")}" data-bind="sheet:start"></label>
@@ -4041,7 +4045,9 @@ document.addEventListener("submit", async e => {
   if(e.target.dataset.form==='exp'){e.preventDefault();await expSave(e.target);return;}
   const f = e.target.dataset && e.target.dataset.form; if(!f) return;
   e.preventDefault();
-  if(f === "join") return startJoin(S.joinCode);
+  if(f === "join"){ const cp = String(S.joinCode || "").toLowerCase().match(/(?:^|[^a-f0-9])([a-f0-9]{24})(?![a-f0-9])/);   // a plan code (also inside a pasted message)
+    if(cp){ S.joinCode = ""; return startCopy(cp[1]); }
+    return startJoin(String(S.joinCode || "").trim().replace(/^.*#join-/, "").slice(0, 6)); }
   if(f === "review") return saveReview(false);
   if(f === "idea-recommend") return runIdeaRecommend();
   if(f === "trip-edit"){
@@ -4184,7 +4190,7 @@ document.addEventListener("click", async e => {
       api("copyLink", {id:S.trip.id}).then(r => { if(S.sheet === s){ s.key = r.key; render(); } })
         .catch(e => { if(S.sheet === s){ s.err = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : e && e.code === "not_connected" ? "ยังไม่ได้เชื่อม Google Sheet" : "สร้างลิงก์ไม่สำเร็จ ลองใหม่อีกครั้ง"; render(); } });
       break; }
-    case "copy-share-send": { const s = S.sheet; if(!s?.key) break; try { await navigator.share({title:S.trip?.name || "แผนเที่ยว", text:"แผนเที่ยว " + (S.trip?.name || "") + " กดเพื่อคัดลอกไปเป็นทริปของคุณ", url:copyLinkOf(s.key)}); } catch(_){} break; }
+    case "copy-share-send": { const s = S.sheet; if(!s?.key) break; try { await navigator.share({text:copyMsg(s.key)}); } catch(_){} break; }
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
@@ -4344,7 +4350,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-guide6";
+const BUILD = "2026-11-14-copy3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
