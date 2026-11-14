@@ -209,8 +209,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .guide-card{width:100%;max-width:380px;max-height:calc(100% - 24px);background:var(--surface);border-radius:28px;box-shadow:0 18px 50px rgba(20,19,26,.28);display:flex;flex-direction:column;gap:12px;padding:14px 0 18px;overflow:hidden;animation:guideIn .22s ease-out}
 @keyframes guideIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 .guide-top{display:flex;align-items:center;justify-content:space-between;min-height:30px;padding:0 18px}.guide-n{font-size:12.5px;color:var(--muted)}
-.guide-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;min-height:0}.guide-track::-webkit-scrollbar{display:none}
-.guide-slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 18px;box-sizing:border-box}
+.guide-view{overflow:hidden;touch-action:pan-y;min-height:0}.guide-track{display:flex;will-change:transform}
+.guide-slide{flex:0 0 100%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 18px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
 .guide-slide img{width:100%;max-height:min(42vh,360px);aspect-ratio:390/560;object-fit:contain;border-radius:18px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--line)}
 .guide-slide h2{margin:8px 0 0;font-family:var(--display);font-size:19px;font-weight:500}.guide-slide p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
 .guide-dots{display:flex;justify-content:center;gap:5px}.guide-dots i{width:6px;height:6px;border-radius:99px;background:var(--line);transition:width .2s,background .2s}.guide-dots i.on{width:18px;background:var(--accent)}
@@ -1134,7 +1134,7 @@ async function refreshTrip(id){
     s.style.transition=anim?'opacity .2s,transform .25s ease':'none';s.style.opacity=d>14?Math.min(1,(d-14)/30):0;s.style.transform=`translateY(${Math.max(0,d/2-11)}px)`;
     s.classList.toggle('spin',loading);c.setAttribute('stroke-dasharray',loading?'70 100':`${Math.min(80,d/GO*80)} 100`);s.classList.toggle('ready',d>=GO&&!loading);};
   document.addEventListener('touchstart',e=>{y0=null;dy=0;if(busy||e.touches.length!==1||window.scrollY>2||!page())return;
-    if(document.querySelector('.scrim')||e.target.closest?.('.dock-body,.sheet,.dock.open,input,textarea,select,.exp-seg,[data-swipe],[data-guide-track]'))return;
+    if(document.querySelector('.scrim')||e.target.closest?.('.dock-body,.sheet,.dock.open,input,textarea,select,.exp-seg,[data-swipe],[data-guide-view]'))return;
     y0=e.touches[0].clientY;t0=Date.now();},{passive:true});
   document.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0;
     if(d<=0||window.scrollY>2||(dy===0&&Date.now()-t0>350)){y0=null;if(dy)show(0,{anim:true});dy=0;return;}   // a long press is a drag, not a pull
@@ -2352,43 +2352,56 @@ function shareSection(){
 }
 /* how to use the app: picture cards shown once to a new person, then kept in the profile sheet */
 const GUIDE = [
-  {t:"เชื่อมกับ Google Maps", d:"กดรูปโปรไฟล์มุมขวาบน → “แชร์เข้าทริป” แล้วทำตามขั้นตอน ทำครั้งเดียว"},
-  {t:"แชร์สถานที่เข้าทริป", d:"ใน Google Maps กด “แชร์” → เลือก My Trip สถานที่จะไปอยู่ในแท็บวางแผน"},
-  {t:"สร้างทริป", d:"กด “สร้างทริป” ใส่ชื่อ และวันไป–กลับ"},
-  {t:"ใส่ตั๋วและที่พัก", d:"แท็บข้อมูล → “เพิ่ม” เลือกรูปหรือ PDF ใบจอง แอปอ่านแล้วใส่ในแผนให้"},
-  {t:"ใส่ที่เที่ยวลงวัน", d:"แท็บวางแผน เลือกวันด้านบน แล้วกด + ที่สถานที่"},
-  {t:"ตั้งเวลา · เรียงลำดับ", d:"แตะเวลาเพื่อตั้งเวลา · กดค้างที่สถานที่แล้วลากเพื่อเรียงใหม่"},
-  {t:"เลือกการเดินทาง", d:"แตะช่องระหว่างสถานที่ แอปหาเส้นทางไว้ให้แล้ว เลือกแบบที่ชอบ"},
-  {t:"ให้ AI ช่วย", d:"แท็บ AI แนะนำที่เที่ยวใกล้แผน หรือรีวิวแผนทั้งวัน"},
-  {t:"ส่งออกเป็นรูป", d:"กด ⋯ มุมขวาบนของทริป → “ส่งออกแผนเที่ยว” ได้ทั้งรูปและ PDF"}
+  {img:3, t:"สร้างทริป", d:"กด “สร้างทริป” ใส่ชื่อ และวันไป–กลับ"},
+  {img:4, t:"ใส่ตั๋วและที่พัก", d:"แท็บข้อมูล → “เพิ่ม” เลือกรูปหรือ PDF ใบจองตั๋วเครื่องบินและโรงแรม แอปอ่านแล้วใส่ในแผนให้"},
+  {img:1, t:"เชื่อมกับ Google Maps", d:"กดรูปโปรไฟล์มุมขวาบน → “แชร์เข้าทริป” แล้วทำตามขั้นตอน ทำครั้งเดียว"},
+  {img:2, t:"แชร์สถานที่เข้าทริป", d:"ใน Google Maps กด “Share” → เลื่อนลงแล้วกด “My Trip” สถานที่จะไปอยู่ในแท็บวางแผน"},
+  {img:5, t:"ใส่ที่เที่ยวลงวัน", d:"แท็บวางแผน เลือกวันด้านบน แล้วกด + ที่สถานที่"},
+  {img:6, t:"ตั้งเวลา · เรียงลำดับ", d:"แตะเวลาเพื่อตั้งเวลา · กดค้างที่สถานที่แล้วลากเพื่อเรียงใหม่"},
+  {img:7, t:"เลือกการเดินทาง", d:"แตะช่องระหว่างสถานที่ แอปหาเส้นทางไว้ให้แล้ว เลือกแบบที่ชอบ"},
+  {img:8, t:"ให้ AI ช่วย", d:"แท็บ AI แนะนำที่เที่ยวใกล้แผน หรือรีวิวแผนทั้งวัน"},
+  {img:9, t:"ส่งออกเป็นรูป", d:"กด ⋯ มุมขวาบนของทริป → “ส่งออกแผนเที่ยว” ได้ทั้งรูปและ PDF"}
 ];
 function vGuide(s){
-  const n = GUIDE.length;
+  const n = GUIDE.length, i = Math.max(0, Math.min(n - 1, s.pos || 0)), last = i === n - 1;
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
-    <div class="guide-top"><span class="guide-n">1/${n}</span><button class="link-btn" data-act="guide-done">ข้าม</button></div>
-    <div class="guide-track" data-guide-track>${GUIDE.map((g, i) => `<section class="guide-slide" aria-label="${i + 1} จาก ${n}">
-      <img src="guide/${i + 1}.webp?v=2" alt="" width="300" height="280" ${i > 1 ? 'loading="lazy"' : ''} decoding="async">
-      <h2>${g.t}</h2><p>${g.d}</p></section>`).join("")}</div>
-    <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
-    <div class="guide-btns"><button type="button" class="btn ghost" data-act="guide-step" data-d="-1" disabled>ย้อนกลับ</button><button type="button" class="btn primary" data-act="guide-step" data-d="1">ถัดไป</button></div>
+    <div class="guide-top"><span class="guide-n">${i + 1}/${n}</span><button class="link-btn" data-act="guide-done" style="${last ? "visibility:hidden" : ""}">ข้าม</button></div>
+    <div class="guide-view" data-guide-view><div class="guide-track" style="transform:translateX(${-i * 100}%)">${GUIDE.map((g, k) => `<section class="guide-slide" aria-label="${k + 1} จาก ${n}" ${k === i ? "" : 'aria-hidden="true"'}>
+      <img src="guide/${g.img}.webp?v=3" alt="" width="300" height="280" decoding="async" draggable="false">
+      <h2>${g.t}</h2><p>${g.d}</p></section>`).join("")}</div></div>
+    <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
+    <div class="guide-btns"><button type="button" class="btn ghost" data-act="guide-step" data-d="-1" ${i ? "" : "disabled"}>ย้อนกลับ</button><button type="button" class="btn primary" data-act="${last ? "guide-done" : "guide-step"}" data-d="1">${last ? "เริ่มใช้งาน" : "ถัดไป"}</button></div>
   </div></div>`;
 }
-/* the cards scroll natively (smooth, with momentum); dots and buttons follow the card in view */
-function guideSync(track){
-  const card = track.closest(".guide-card"); if(!card) return;
-  const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth)), last = i >= GUIDE.length - 1;
-  if(S.sheet?.kind === "guide") S.sheet.pos = i;
-  card.querySelectorAll(".guide-dots i").forEach((d, n) => d.classList.toggle("on", n === i));
-  card.querySelector(".guide-n").textContent = (i + 1) + "/" + GUIDE.length;
+/* the cards follow the finger and always settle on one card (no stopping halfway) */
+function guideGo(i){
+  const s = S.sheet; if(s?.kind !== "guide") return;
+  s.pos = Math.max(0, Math.min(GUIDE.length - 1, i));
+  const card = document.querySelector(".guide-card"), tr = card?.querySelector(".guide-track"); if(!tr){ render(); return; }
+  const n = GUIDE.length, last = s.pos === n - 1;
+  tr.style.transition = "transform .3s cubic-bezier(.2,.8,.2,1)"; tr.style.transform = `translateX(${-s.pos * 100}%)`;
+  card.querySelectorAll(".guide-slide").forEach((x, k) => k === s.pos ? x.removeAttribute("aria-hidden") : x.setAttribute("aria-hidden", "true"));
+  card.querySelectorAll(".guide-dots i").forEach((d, k) => d.classList.toggle("on", k === s.pos));
+  card.querySelector(".guide-n").textContent = (s.pos + 1) + "/" + n;
   const [back, next] = card.querySelectorAll(".guide-btns .btn");
-  back.disabled = i === 0; next.textContent = last ? "เริ่มใช้งาน" : "ถัดไป"; next.dataset.act = last ? "guide-done" : "guide-step";
+  back.disabled = s.pos === 0; next.textContent = last ? "เริ่มใช้งาน" : "ถัดไป"; next.dataset.act = last ? "guide-done" : "guide-step";
   card.querySelector(".guide-top .link-btn").style.visibility = last ? "hidden" : "";
 }
-document.addEventListener("scroll", e => { const t = e.target; if(t?.matches?.("[data-guide-track]")) guideSync(t); }, true);
-document.addEventListener("scrollend", e => { const t = e.target; if(t?.matches?.("[data-guide-track]")) guideSync(t); }, true);
+{ let gx = null, gy = 0, gt = 0, dx = 0, horiz = null;
+  document.addEventListener("touchstart", e => { const v = e.target.closest?.("[data-guide-view]"); gx = v && e.touches.length === 1 ? e.touches[0].clientX : null; gy = gx == null ? 0 : e.touches[0].clientY; gt = Date.now(); dx = 0; horiz = null; }, {passive:true});
+  document.addEventListener("touchmove", e => { if(gx == null || S.sheet?.kind !== "guide") return;
+    const x = e.touches[0].clientX - gx, y = e.touches[0].clientY - gy;
+    if(horiz == null && (Math.abs(x) > 6 || Math.abs(y) > 6)) horiz = Math.abs(x) > Math.abs(y);
+    if(!horiz) return; dx = x; const tr = document.querySelector(".guide-track"), i = S.sheet.pos || 0;
+    const edge = (i === 0 && dx > 0) || (i === GUIDE.length - 1 && dx < 0) ? .35 : 1;   // resist past the first and last card
+    if(tr){ tr.style.transition = "none"; tr.style.transform = `translateX(calc(${-i * 100}% + ${dx * edge}px))`; } }, {passive:true});
+  const end = () => { if(gx == null) return; gx = null; if(!horiz || S.sheet?.kind !== "guide") return;
+    const w = document.querySelector("[data-guide-view]")?.clientWidth || 300, fast = Math.abs(dx) / Math.max(1, Date.now() - gt) > .45;
+    const step = Math.abs(dx) > w * .22 || (fast && Math.abs(dx) > 24) ? (dx < 0 ? 1 : -1) : 0; guideGo((S.sheet.pos || 0) + step); };
+  document.addEventListener("touchend", end, {passive:true}); document.addEventListener("touchcancel", end, {passive:true}); }
 function guideMaybe(){
   let seen = true; try { seen = !!localStorage.getItem("mytrip-guide-seen"); } catch(_){}
-  if(!seen && S.view === "home" && !S.sheet && S.token){ S.sheet = {kind:"guide", step:0}; render(); }
+  if(!seen && S.view === "home" && !S.sheet && S.token){ S.sheet = {kind:"guide", pos:0}; render(); }
 }
 function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
@@ -3272,7 +3285,6 @@ function render(){
   lockOverlayPage(overlayLocked);document.documentElement.classList.toggle("lock",overlayLocked);   // measure the pinned header before anything stops the page scrolling
   document.body.style.overflow = modalSheet ? "hidden" : "";
   if(S.sheet && S.sheet.kind === "doc") docMount();
-  if(S.sheet?.kind === "guide" && S.sheet.pos){ const gt = document.querySelector("[data-guide-track]"); if(gt){ gt.scrollLeft = S.sheet.pos * gt.clientWidth; guideSync(gt); } }
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
 }
@@ -3591,7 +3603,6 @@ document.addEventListener('touchstart',e=>{overlayTouchY=e.touches[0]?.clientY||
 function overlayTouchMove(e){
   if(!document.documentElement.classList.contains("lock"))return;
   if(e.target.closest?.(".doc-body"))return;   // the ticket viewer scrolls (and zooms) on its own
-  if(e.target.closest?.("[data-guide-track]"))return;   // the how-to pictures swipe sideways
   const compose=e.target.closest?.('.idea-compose-sheet');
   if(compose){
     const y=e.touches?.[0]?.clientY??overlayTouchY,dy=y-overlayTouchY;overlayTouchY=y;
@@ -4163,8 +4174,8 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
-    case "guide-open": S.sheet = {kind:"guide", step:0}; render(); break;
-    case "guide-step": { const tr = document.querySelector("[data-guide-track]"); if(!tr) break; const w = tr.clientWidth || 1, i = Math.max(0, Math.min(GUIDE.length - 1, Math.round(tr.scrollLeft / w) + Number(el.dataset.d || 1))); tr.scrollTo({left: i * w, behavior: "smooth"}); break; }
+    case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
+    case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render(); } break;
     case "copy-share": {
       const s = S.sheet = {kind:"copy-share", key:"", err:""}; render();
@@ -4331,7 +4342,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-guide4";
+const BUILD = "2026-11-14-guide5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
