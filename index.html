@@ -205,6 +205,8 @@ html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock .seg{background:transparent;padding:0}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:90;width:40px;height:40px;margin-left:-20px;border-radius:999px;background:var(--surface,#fff);color:var(--ink);box-shadow:0 4px 14px rgba(43,33,28,.14);display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-60px);pointer-events:none;transition:opacity .15s}
+.ptr.on{opacity:1}.ptr.ready{color:var(--accent-ink,#8A5300)}.ptr.spin svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{to{transform:rotate(360deg)}}
 /* dims from the bottom and fades to clear before the top: iPhone tints the status bar from the page a beat late, so a dark top made it flash */
 .dock-dismiss{position:fixed;inset:0;z-index:15;border:0;padding:0;background:transparent;cursor:default}
 .dock.open{box-shadow:0 -4px 40px rgba(43,33,28,.22),0 0 0 1px var(--line)}
@@ -850,6 +852,7 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   globe:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
   history:'<path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7M12 7v5l3 2"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
@@ -1111,6 +1114,22 @@ async function refreshTrip(id){
     C.items[id] = next; C.revisions[id]=r.revision; emit();secureTripFiles(r.trip,r.items);
   } catch(_) { S.tripLoading = false; emit(); }
 }
+/* pull down at the top of the screen to fetch the latest plan (e.g. places just shared from Google Maps) */
+(()=>{let y0=null,t0=0,dy=0,busy=false,el=null;const MAX=90,GO=64;
+  const bar=()=>{if(!el){el=document.createElement('div');el.className='ptr';el.setAttribute('aria-hidden','true');el.innerHTML=ic('refresh',20);document.body.appendChild(el);}return el;};
+  const show=(d,cls)=>{const b=bar();b.style.transform=`translateY(${Math.min(MAX,d)-50}px) rotate(${d*3}deg)`;b.className='ptr'+(d>8?' on':'')+(cls?' '+cls:'');};
+  document.addEventListener('touchstart',e=>{y0=null;dy=0;if(busy||e.touches.length!==1||window.scrollY>2)return;
+    if(document.querySelector('.scrim')||e.target.closest?.('.dock-body,.sheet,.dock.open,input,textarea,select,.exp-seg,[data-swipe]'))return;
+    y0=e.touches[0].clientY;t0=Date.now();},{passive:true});
+  document.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0;
+    if(d<=0||window.scrollY>2||(dy===0&&Date.now()-t0>350)){y0=null;if(dy)show(0);dy=0;return;}   // a long press is a drag, not a pull
+    dy=d*.55;show(dy,dy>=GO?'ready':'');},{passive:true});
+  const end=async()=>{if(y0==null)return;y0=null;const d=dy;dy=0;if(d<GO){show(0);return;}
+    busy=true;show(GO,'on spin');
+    try{checkUpdate();flush();if(S.view==='trip'&&S.tripId)await refreshTrip(S.tripId);else await refreshTrips();toast(navigator.onLine?'อัปเดตแล้ว':'ไม่มีอินเทอร์เน็ต');}
+    finally{busy=false;show(0);}};
+  document.addEventListener('touchend',end,{passive:true});document.addEventListener('touchcancel',()=>{y0=null;dy=0;show(0);},{passive:true});
+})();
 const securingTrips=new Set();
 async function secureTripFiles(trip,items){
   if(trip.ownerId!==S.me||securingTrips.has(trip.id))return;
@@ -4173,7 +4192,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-travel5";
+const BUILD = "2026-11-14-ptr1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
