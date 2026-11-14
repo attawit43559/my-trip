@@ -205,16 +205,16 @@ html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock .seg{background:transparent;padding:0}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
-.guide-scrim{align-items:center;padding:16px}
+.guide-scrim{align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
 .guide-card{width:100%;max-width:380px;max-height:calc(100% - 24px);background:var(--surface);border-radius:28px;box-shadow:0 18px 50px rgba(20,19,26,.28);display:flex;flex-direction:column;gap:12px;padding:14px 0 18px;overflow:hidden;animation:guideIn .22s ease-out}
 @keyframes guideIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 .guide-top{display:flex;align-items:center;justify-content:space-between;min-height:30px;padding:0 18px}.guide-n{font-size:12.5px;color:var(--muted)}
 .guide-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;min-height:0}.guide-track::-webkit-scrollbar{display:none}
 .guide-slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 18px;box-sizing:border-box}
-.guide-slide img{width:100%;max-height:min(46vh,380px);aspect-ratio:390/560;object-fit:contain;border-radius:18px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--line)}
+.guide-slide img{width:100%;max-height:min(42vh,360px);aspect-ratio:390/560;object-fit:contain;border-radius:18px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--line)}
 .guide-slide h2{margin:8px 0 0;font-family:var(--display);font-size:19px;font-weight:500}.guide-slide p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
 .guide-dots{display:flex;justify-content:center;gap:5px}.guide-dots i{width:6px;height:6px;border-radius:99px;background:var(--line);transition:width .2s,background .2s}.guide-dots i.on{width:18px;background:var(--accent)}
-.guide-btns{display:flex;gap:10px;padding:0 18px}.guide-btns .btn{flex:1;min-height:46px}.guide-btns .btn[hidden]{display:none}
+.guide-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px}.guide-btns .btn{width:100%;min-width:0;min-height:46px;margin:0}.guide-btns .btn:disabled{opacity:.35}
 .ptr{position:fixed;left:50%;top:env(safe-area-inset-top,0px);margin-left:-11px;width:22px;height:22px;color:var(--muted);opacity:0;pointer-events:none;z-index:0}
 .ptr svg{display:block;transform:rotate(-90deg)}.ptr.ready{color:var(--accent-ink,#8A5300)}.ptr.spin svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
 /* dims from the bottom and fades to clear before the top: iPhone tints the status bar from the page a beat late, so a dark top made it flash */
@@ -2367,10 +2367,10 @@ function vGuide(s){
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
     <div class="guide-top"><span class="guide-n">1/${n}</span><button class="link-btn" data-act="guide-done">ข้าม</button></div>
     <div class="guide-track" data-guide-track>${GUIDE.map((g, i) => `<section class="guide-slide" aria-label="${i + 1} จาก ${n}">
-      <img src="guide/${i + 1}.webp?v=1" alt="" width="300" height="280" ${i > 1 ? 'loading="lazy"' : ''} decoding="async">
+      <img src="guide/${i + 1}.webp?v=2" alt="" width="300" height="280" ${i > 1 ? 'loading="lazy"' : ''} decoding="async">
       <h2>${g.t}</h2><p>${g.d}</p></section>`).join("")}</div>
     <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
-    <div class="guide-btns"><button class="btn ghost" data-act="guide-step" data-d="-1" hidden>ย้อนกลับ</button><button class="btn primary" data-act="guide-step" data-d="1">ถัดไป</button></div>
+    <div class="guide-btns"><button type="button" class="btn ghost" data-act="guide-step" data-d="-1" disabled>ย้อนกลับ</button><button type="button" class="btn primary" data-act="guide-step" data-d="1">ถัดไป</button></div>
   </div></div>`;
 }
 /* the cards scroll natively (smooth, with momentum); dots and buttons follow the card in view */
@@ -2381,10 +2381,11 @@ function guideSync(track){
   card.querySelectorAll(".guide-dots i").forEach((d, n) => d.classList.toggle("on", n === i));
   card.querySelector(".guide-n").textContent = (i + 1) + "/" + GUIDE.length;
   const [back, next] = card.querySelectorAll(".guide-btns .btn");
-  back.hidden = i === 0; next.textContent = last ? "เริ่มใช้งาน" : "ถัดไป"; next.dataset.act = last ? "guide-done" : "guide-step";
+  back.disabled = i === 0; next.textContent = last ? "เริ่มใช้งาน" : "ถัดไป"; next.dataset.act = last ? "guide-done" : "guide-step";
   card.querySelector(".guide-top .link-btn").style.visibility = last ? "hidden" : "";
 }
 document.addEventListener("scroll", e => { const t = e.target; if(t?.matches?.("[data-guide-track]")) guideSync(t); }, true);
+document.addEventListener("scrollend", e => { const t = e.target; if(t?.matches?.("[data-guide-track]")) guideSync(t); }, true);
 function guideMaybe(){
   let seen = true; try { seen = !!localStorage.getItem("mytrip-guide-seen"); } catch(_){}
   if(!seen && S.view === "home" && !S.sheet && S.token){ S.sheet = {kind:"guide", step:0}; render(); }
@@ -3590,6 +3591,7 @@ document.addEventListener('touchstart',e=>{overlayTouchY=e.touches[0]?.clientY||
 function overlayTouchMove(e){
   if(!document.documentElement.classList.contains("lock"))return;
   if(e.target.closest?.(".doc-body"))return;   // the ticket viewer scrolls (and zooms) on its own
+  if(e.target.closest?.("[data-guide-track]"))return;   // the how-to pictures swipe sideways
   const compose=e.target.closest?.('.idea-compose-sheet');
   if(compose){
     const y=e.touches?.[0]?.clientY??overlayTouchY,dy=y-overlayTouchY;overlayTouchY=y;
@@ -4162,7 +4164,7 @@ document.addEventListener("click", async e => {
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
     case "guide-open": S.sheet = {kind:"guide", step:0}; render(); break;
-    case "guide-step": { const tr = document.querySelector("[data-guide-track]"); if(tr) tr.scrollBy({left: tr.clientWidth * Number(el.dataset.d || 1), behavior: "smooth"}); break; }
+    case "guide-step": { const tr = document.querySelector("[data-guide-track]"); if(!tr) break; const w = tr.clientWidth || 1, i = Math.max(0, Math.min(GUIDE.length - 1, Math.round(tr.scrollLeft / w) + Number(el.dataset.d || 1))); tr.scrollTo({left: i * w, behavior: "smooth"}); break; }
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render(); } break;
     case "copy-share": {
       const s = S.sheet = {kind:"copy-share", key:"", err:""}; render();
@@ -4329,7 +4331,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-ptr2";
+const BUILD = "2026-11-14-guide4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
