@@ -2432,14 +2432,14 @@ async function runTravelPrefetch(){
     for(const date of order){
       for(const leg of manualTravelLegs(date)){
         if(S.trip?.id!==tripId||S.me!==me)return;
-        if(leg.saved||!leg.from||!leg.to)continue;
+        if(!leg.from||!leg.to)continue;
         const key=travelCacheKey(leg);if(travelResultsCache.has(key)||travelPrefetch.failed.has(key))continue;
         if(S.sheet?.kind==='travel-leg'&&S.sheet.cacheKey===key&&(S.sheet.lookup||S.sheet.lookupBusy))continue;
-        const q={date:leg.date,time:travelDepartureHint(leg),timezone:travelTimezone(leg),mode:'ขนส่งสาธารณะ'};
+        const sd=leg.saved?.data||{},q={date:leg.date,time:leg.saved?.time||travelDepartureHint(leg),timezone:sd.timezone||travelTimezone(leg),mode:sd.mode||'ขนส่งสาธารณะ'};
         try{
           const result=await api('travelOptions',{ai:false,tripId,...q,fromId:leg.fromId,toId:leg.toId,from:leg.from,to:leg.to});
           if(!travelResultMatches(q,result))throw {code:'travel_date_mismatch'};
-          travelResultsCache.set(key,{result,selectedIndex:-1});
+          travelResultsCache.set(key,{result,selectedIndex:leg.saved?(result.routes||[]).findIndex(r=>travelModeFor(r)===sd.mode&&r.minutes===Number(sd.durationMinutes)):-1});
           const sh=S.sheet;if(sh?.kind==='travel-leg'&&sh.cacheKey===key&&!sh.lookup&&!sh.lookupBusy&&!sh.chosen){sh.lookup=result;sh.time=result.time;sh.lookupKey=travelQueryKey(sh);sh.lookupError='';render();}
         }catch(e){travelPrefetch.failed.add(key);if(['travel_quota','offline','not_connected','auth_required','travel_maps_unavailable'].includes(e?.code))return;}
         await new Promise(r=>setTimeout(r,600));
@@ -2488,7 +2488,7 @@ function editManualTravel(it){
 }
 function vTravelLeg(s){
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg)return `<div class="scrim" data-act="close-sheet"><div class="sheet"><p>ลำดับสถานที่เปลี่ยนแล้ว</p><button class="btn ghost" data-act="close-sheet">ปิด</button></div></div>`;
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet lean-travel" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2 class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><form class="stack" data-form="travel-leg" id="travel-leg-form"><small class="muted">${esc(dLong(s.date))}</small>${vTravelResults(s)}${s.chosen&&!s.lookup&&!s.lookupBusy?`<div class="travel-chosen"><b>${esc(s.mode)}${s.minutes?' · '+esc(s.minutes)+' นาที':''}</b>${s.note?`<small>${esc(s.note)}</small>`:''}</div>`:''}<textarea class="grow-area help-note travel-memo" id="travel-memo" rows="1" maxlength="200" placeholder="โน้ต เช่น Hikari 507 · ออก 10:03 · รถ 7 ที่ 12A" data-bind="sheet:memo" aria-label="โน้ตการเดินทาง">${esc(s.memo||'')}</textarea></form><div class="travel-actions"><button class="btn primary travel-save" type="submit" form="travel-leg-form" ${(!s.chosen&&!s_(s.memo))||s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}).replace('&dir_action=navigate',''))}" target="_blank" rel="noopener">เปิด Google Maps${ic('ext',16)}</a></div></div></div>`;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet lean-travel" role="dialog" aria-modal="true" aria-label="บันทึกการเดินทาง" data-stop="1"><div class="hd"><h2 class="travel-points">${esc(briefName(leg.from))} → ${esc(briefName(leg.to))}</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?'disabled':''}>${ic('close')}</button></div><form class="stack" data-form="travel-leg" id="travel-leg-form"><small class="muted">${esc(dLong(s.date))}</small>${vTravelResults(s)}${s.chosen&&!s.lookup?`<div class="travel-chosen"><b>${esc(s.mode)}${s.minutes?' · '+esc(s.minutes)+' นาที':''}</b>${s.note?`<small>${esc(s.note)}</small>`:''}</div>`:''}<textarea class="grow-area help-note travel-memo" id="travel-memo" rows="1" maxlength="200" placeholder="โน้ต เช่น Hikari 507 · ออก 10:03 · รถ 7 ที่ 12A" data-bind="sheet:memo" aria-label="โน้ตการเดินทาง">${esc(s.memo||'')}</textarea></form><div class="travel-actions"><button class="btn primary travel-save" type="submit" form="travel-leg-form" ${(!s.chosen&&!s_(s.memo))||s.busy?'disabled':''}>${s.busy?'กำลังบันทึก…':'บันทึก'}</button><a class="btn ghost maps-travel-link" href="${esc(routeLink({type:'move',data:{from:leg.from,to:leg.to}}).replace('&dir_action=navigate',''))}" target="_blank" rel="noopener">เปิด Google Maps${ic('ext',16)}</a></div></div></div>`;
 }
 
 async function saveTravelLeg(){
@@ -4173,7 +4173,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-travel4";
+const BUILD = "2026-11-14-travel5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
