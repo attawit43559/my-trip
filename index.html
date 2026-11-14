@@ -209,9 +209,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .guide-card{width:100%;max-width:380px;max-height:calc(100% - 24px);background:var(--surface);border-radius:28px;box-shadow:0 18px 50px rgba(20,19,26,.28);display:flex;flex-direction:column;gap:12px;padding:14px 0 18px;overflow:hidden;animation:guideIn .22s ease-out}
 @keyframes guideIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 .guide-top{display:flex;align-items:center;justify-content:space-between;min-height:30px;padding:0 18px}.guide-n{font-size:12.5px;color:var(--muted)}
-.guide-view{overflow:hidden;touch-action:pan-y;min-height:0}.guide-track{display:flex;will-change:transform}
+.guide-view{overflow:hidden;touch-action:pan-y;min-height:0;contain:paint}.guide-track{display:flex;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .guide-slide{flex:0 0 100%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 18px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
-.guide-slide img{width:100%;max-height:min(42vh,360px);aspect-ratio:390/560;object-fit:contain;border-radius:18px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--line)}
+.guide-slide img{width:100%;max-height:min(42vh,360px);aspect-ratio:390/560;object-fit:contain;border-radius:18px;background:var(--tile);-webkit-user-drag:none;pointer-events:none}
 .guide-slide h2{margin:8px 0 0;font-family:var(--display);font-size:19px;font-weight:500}.guide-slide p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
 .guide-dots{display:flex;justify-content:center;gap:5px}.guide-dots i{width:6px;height:6px;border-radius:99px;background:var(--line);transition:width .2s,background .2s}.guide-dots i.on{width:18px;background:var(--accent)}
 .guide-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px}.guide-btns .btn{width:100%;min-width:0;min-height:46px;margin:0}.guide-btns .btn:disabled{opacity:.35}
@@ -2366,7 +2366,7 @@ function vGuide(s){
   const n = GUIDE.length, i = Math.max(0, Math.min(n - 1, s.pos || 0)), last = i === n - 1;
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
     <div class="guide-top"><span class="guide-n">${i + 1}/${n}</span><button class="link-btn" data-act="guide-done" style="${last ? "visibility:hidden" : ""}">ข้าม</button></div>
-    <div class="guide-view" data-guide-view><div class="guide-track" style="transform:translateX(${-i * 100}%)">${GUIDE.map((g, k) => `<section class="guide-slide" aria-label="${k + 1} จาก ${n}" ${k === i ? "" : 'aria-hidden="true"'}>
+    <div class="guide-view" data-guide-view><div class="guide-track" style="transform:translate3d(${-i * 100}%,0,0)">${GUIDE.map((g, k) => `<section class="guide-slide" aria-label="${k + 1} จาก ${n}" ${k === i ? "" : 'aria-hidden="true"'}>
       <img src="guide/${g.img}.webp?v=3" alt="" width="300" height="280" decoding="async" draggable="false">
       <h2>${g.t}</h2><p>${g.d}</p></section>`).join("")}</div></div>
     <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
@@ -2379,7 +2379,7 @@ function guideGo(i){
   s.pos = Math.max(0, Math.min(GUIDE.length - 1, i));
   const card = document.querySelector(".guide-card"), tr = card?.querySelector(".guide-track"); if(!tr){ render(); return; }
   const n = GUIDE.length, last = s.pos === n - 1;
-  tr.style.transition = "transform .3s cubic-bezier(.2,.8,.2,1)"; tr.style.transform = `translateX(${-s.pos * 100}%)`;
+  tr.style.transition = "transform .32s cubic-bezier(.22,.8,.24,1)"; tr.style.transform = `translate3d(${-s.pos * 100}%,0,0)`;
   card.querySelectorAll(".guide-slide").forEach((x, k) => k === s.pos ? x.removeAttribute("aria-hidden") : x.setAttribute("aria-hidden", "true"));
   card.querySelectorAll(".guide-dots i").forEach((d, k) => d.classList.toggle("on", k === s.pos));
   card.querySelector(".guide-n").textContent = (s.pos + 1) + "/" + n;
@@ -2387,15 +2387,16 @@ function guideGo(i){
   back.disabled = s.pos === 0; next.textContent = last ? "เริ่มใช้งาน" : "ถัดไป"; next.dataset.act = last ? "guide-done" : "guide-step";
   card.querySelector(".guide-top .link-btn").style.visibility = last ? "hidden" : "";
 }
-{ let gx = null, gy = 0, gt = 0, dx = 0, horiz = null;
+{ let gx = null, gy = 0, gt = 0, dx = 0, horiz = null, raf = 0;
   document.addEventListener("touchstart", e => { const v = e.target.closest?.("[data-guide-view]"); gx = v && e.touches.length === 1 ? e.touches[0].clientX : null; gy = gx == null ? 0 : e.touches[0].clientY; gt = Date.now(); dx = 0; horiz = null; }, {passive:true});
   document.addEventListener("touchmove", e => { if(gx == null || S.sheet?.kind !== "guide") return;
     const x = e.touches[0].clientX - gx, y = e.touches[0].clientY - gy;
     if(horiz == null && (Math.abs(x) > 6 || Math.abs(y) > 6)) horiz = Math.abs(x) > Math.abs(y);
-    if(!horiz) return; dx = x; const tr = document.querySelector(".guide-track"), i = S.sheet.pos || 0;
-    const edge = (i === 0 && dx > 0) || (i === GUIDE.length - 1 && dx < 0) ? .35 : 1;   // resist past the first and last card
-    if(tr){ tr.style.transition = "none"; tr.style.transform = `translateX(calc(${-i * 100}% + ${dx * edge}px))`; } }, {passive:true});
-  const end = () => { if(gx == null) return; gx = null; if(!horiz || S.sheet?.kind !== "guide") return;
+    if(!horiz) return; dx = x; if(raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; if(gx == null) return; const tr = document.querySelector(".guide-track"), i = S.sheet?.pos || 0, w = tr?.parentNode.clientWidth || 300;
+      const edge = (i === 0 && dx > 0) || (i === GUIDE.length - 1 && dx < 0) ? .35 : 1;   // resist past the first and last card
+      if(tr){ tr.style.transition = "none"; tr.style.transform = `translate3d(${-i * w + dx * edge}px,0,0)`; } }); }, {passive:true});
+  const end = () => { if(gx == null) return; gx = null; if(raf){ cancelAnimationFrame(raf); raf = 0; } if(!horiz || S.sheet?.kind !== "guide") return;
     const w = document.querySelector("[data-guide-view]")?.clientWidth || 300, fast = Math.abs(dx) / Math.max(1, Date.now() - gt) > .45;
     const step = Math.abs(dx) > w * .22 || (fast && Math.abs(dx) > 24) ? (dx < 0 ? 1 : -1) : 0; guideGo((S.sheet.pos || 0) + step); };
   document.addEventListener("touchend", end, {passive:true}); document.addEventListener("touchcancel", end, {passive:true}); }
@@ -3265,6 +3266,7 @@ function lockOverlayPage(locked){
   else if(!locked&&overlayScrollY!==null){pinShift=0;const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
 }
 function render(){
+  if(S.sheet?.kind === "guide" && document.querySelector(".guide-card")){ render.pendingGuide = true; return; }
   /* the phone's time wheel closes if the screen is redrawn under it (sync, clock): wait until it closes */
   if(document.activeElement?.classList?.contains('time-pick')){render.pending=true;return;}
   if(S.view==='trip')scheduleTravelPrefetch();
@@ -4176,7 +4178,7 @@ document.addEventListener("click", async e => {
     case "clear-run": clearPlan();break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
     case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
-    case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render(); } break;
+    case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render.pendingGuide = false; render(); } break;
     case "copy-share": {
       const s = S.sheet = {kind:"copy-share", key:"", err:""}; render();
       api("copyLink", {id:S.trip.id}).then(r => { if(S.sheet === s){ s.key = r.key; render(); } })
@@ -4342,7 +4344,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-guide5";
+const BUILD = "2026-11-14-guide6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
