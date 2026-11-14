@@ -1226,7 +1226,11 @@ function openTrip(id, view="trip"){
 /* ---------- views ---------- */
 /* each trip gets one of the four colours, picked from its id so it stays the same */
 /* each trip gets its own header colour, the same every time it opens */
-function tone(id){ let n = 7; for(const c of String(id||"")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return ["flight","stay","place","move","plum","caramel","olive","spruce","coral","sun","sky","indigo"][n % 12]; }
+/* each trip's colour changes every time the app is opened (never the same as last time), and stays put while it is open */
+const TONE_SHIFT = (() => { let last = -1; try { last = Number(localStorage.getItem("mytrip-tone-shift")); } catch(_){}
+  let n = Math.floor(Math.random() * 11); if(n >= last && last >= 0) n++;   // 0..11, skipping last time's
+  try { localStorage.setItem("mytrip-tone-shift", String(n)); } catch(_){} return n; })();
+function tone(id){ let n = 7; for(const c of String(id||"")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return ["flight","stay","place","move","plum","caramel","olive","spruce","coral","sun","sky","indigo"][(n + TONE_SHIFT) % 12]; }
 function swipeWrap(t, inner, cls){
   const owner = t.ownerId === S.me;
   const key = "t:" + t.id, ask = S.delAsk === key;
@@ -4350,7 +4354,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-copy4";
+const BUILD = "2026-11-14-tone1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
