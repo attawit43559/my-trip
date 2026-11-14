@@ -2547,7 +2547,7 @@ function dailyEntryRows(entries,date,nowAt){
   return entries.map(e=>{
     const here=nowAt===e?nowLine:'';
     const before=missing.filter(l=>l.beforeKey?l.beforeKey===dayEntryKey(e):e.night&&l.toId===e.it.id);
-    return here+before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}"><span class="gap-dot" aria-hidden="true">${ic('plus',14)}</span><span class="grow"><b>เพิ่มการเดินทาง</b>${travelHint(l)}</span></button></li>`).join('')+entryHtml(e);
+    return here+before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}"><span class="gap-dot" aria-hidden="true">${ic('plus',14)}</span><span class="grow"><b>เพิ่มการเดินทาง</b></span></button></li>`).join('')+entryHtml(e);
   }).join('')+(nowAt==='end'?nowLine:'');
 }
 function travelTimezone(leg){
@@ -4350,7 +4350,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-copy3";
+const BUILD = "2026-11-14-copy4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

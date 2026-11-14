@@ -1466,6 +1466,14 @@ function copyTrip_(req) {
     if (json.length > 45000) return null;
     return [o.id, id, json, new Date().toISOString()];
   }).filter(Boolean);
+  if (trip.dayRowOrder && typeof trip.dayRowOrder === 'object') {   // the day's row order names items by id and days by date
+    const order = {};
+    Object.keys(trip.dayRowOrder).forEach(d => {
+      const keys = Array.isArray(trip.dayRowOrder[d]) ? trip.dayRowOrder[d] : [];
+      order[copyShiftDate_(d, shift)] = keys.map(k => { let t = String(k); Object.keys(map).forEach(old => { t = t.split('"' + old + '"').join('"' + map[old] + '"'); }); return t; });
+    });
+    trip.dayRowOrder = order;
+  }
   upsert_(TRIPS, id, '', trip);
   if (rows.length) { const sh = sheet_(ITEMS); sh.getRange(sh.getLastRow() + 1, 1, rows.length, 4).setValues(rows); }
   return { trip, count: rows.length };
