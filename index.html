@@ -595,7 +595,7 @@ html.lock,html.lock body{overflow:hidden}
 .travel-gap .gap-dot{display:flex;align-items:center;flex:none}
 .day-list .now-line{position:relative}.day-list .now-line::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.travel-result>summary{cursor:pointer;list-style:revert}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}
-.travel-memo{margin-top:4px}.gap-hint{display:block;font-size:12px;color:var(--muted);font-weight:400}.entry-move .entry-copy.has-memo{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.move-memo{display:block;font-size:12px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+.travel-memo{margin-top:4px}.entry-move .entry-copy.has-memo{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.move-memo{display:block;font-size:12px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
 
@@ -667,17 +667,6 @@ html.kb .tabbar{display:none}
 .help-kind{font-size:11.5px;font-weight:600;color:var(--muted)}
 .help-fix{margin-top:8px;min-height:36px;font-size:13px}
 .help-tip .soft-btn{background:var(--place-soft);color:var(--place)}
-/* every choice on the helper page is the same soft tile: 3 across, 44 high, 14 radius, 14px text; a chosen one turns green */
-.help-pace,.help-likes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.help-pace button,.help-likes button{border:0;border-radius:14px;min-height:44px;padding:0 6px;background:var(--tile);color:var(--ink);font:inherit;font-size:14px;line-height:1.2}
-.help-pace button[aria-pressed="true"],.help-likes button[aria-pressed="true"]{background:var(--place-soft);color:var(--place);font-weight:600}
-.help-like-in{grid-column:span 2;box-sizing:border-box;height:44px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);padding:0 14px;font:inherit;font-size:14px!important;width:100%;min-width:0}
-.help-like-in::placeholder{color:var(--muted)}
-.help-like-in:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-@supports (-webkit-touch-callout:none){
-  /* iPhone zooms the page into any box under 16px: type at 16px, drawn at 14px */
-  .help-like-in{font-size:16px!important;width:calc(100% / .875);height:calc(44px / .875);border-radius:16px;padding:0 16px;transform:scale(.875);transform-origin:0 0;margin-bottom:calc(44px - 44px / .875)}
-}
 .help-start,.help-actions .soft-btn,.help-fix{border-radius:14px}
 .big-sheet{position:fixed;inset:0;z-index:30;background:#FFFFFF;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
 .big-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 10px 18px}
@@ -1288,7 +1277,6 @@ function vTripMenu(s){
 }
 
 /* share a link that gives a friend their own copy of the plan (places, ideas, travel, notes; no bookings or expenses) */
-const copyLinkOf = key => location.origin + location.pathname + "?openExternalBrowser=1#copy-" + key;
 const copyMsg = key => `แผนเที่ยว “${S.trip?.name || ""}” จาก My Trip\nเปิดแอป My Trip แล้ววางข้อความนี้ในช่อง “วางรหัส” หน้าแรก\nรหัสแผน: ${key}`;
 function vCopyShare(s){
   return `<div class="scrim center" data-act="close-sheet"><div class="sheet float" role="dialog" aria-modal="true" aria-label="แชร์แผนให้เพื่อนคัดลอก" data-stop="1"><div class="hd"><h2>แชร์แผนให้เพื่อน</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
@@ -2539,11 +2527,6 @@ function manualTravelLegs(date,entries=dayEntries(date)){
     const saved=S.items.find(m=>m.type==='move'&&m.date===date&&(m.data||{}).legKey===key)||S.items.find(m=>m.type==='move'&&m.date===date&&!(m.data||{}).legKey&&(m.data||{}).from===from.name&&(m.data||{}).to===to.name);
     return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
   }).filter(l=>l.fromId!==l.toId&&s_(l.from).toLowerCase()!==s_(l.to).toLowerCase());   // no travel between two bookings of the same hotel
-}
-/* the quickest route already found for an empty gap, as a hint */
-function travelHint(leg){
-  const c=travelResultsCache.get(travelCacheKey(leg)),r=c?.result?.routes?.[0];if(!r)return '';
-  return `<small class="gap-hint">${esc(travelModeFor(r))} · ${esc(r.minutes)} นาที</small>`;
 }
 function dailyEntryRows(entries,date,nowAt){
   const missing=manualTravelLegs(date).filter(l=>!l.saved);
@@ -4122,7 +4105,6 @@ document.addEventListener("click", async e => {
     case "travel-leg": {const date=tripDates(t)[S.day],leg=manualTravelLegs(date).find(l=>l.key===el.dataset.key);if(leg)openTravelSheet(leg);break;}
     case "saved-move-option": {const it=S.items.find(i=>i.id===S.sheet.id),o=(it.data.options||[])[+el.dataset.o];if(o){Object.assign(S.sheet.edit,{mode:o.mode,note:o.note,durationMinutes:travelMinutes(o)});render();}break;}
     case "sync-retry": C.outbox.forEach(o=>delete o.error);persist();flush();break;
-    case "overview-mode": S.sheet.mode=el.dataset.mode;render();break;
     case "history-confirm": S.sheet.confirm=el.dataset.id;render();break;
     case "history-restore": restoreHistory(el.dataset.id);break;
     case "home": go("home"); break;
@@ -4132,23 +4114,16 @@ document.addEventListener("click", async e => {
       openTrip(el.dataset.id); break;
     case "trip": if(S.view === "upload" && S.upload && S.upload.ctl) S.upload.ctl.abort(); go("trip"); break;
     case "invite": go("invite"); break;
-    case "step": {
-      const k = el.dataset.k, v = S.newTrip[k] + Number(el.dataset.d);
-      S.newTrip[k] = Math.max(Number(el.dataset.min), Math.min(Number(el.dataset.max), v)); render(); break; }
     case "cal-week": S.calWeek = Math.max(0, (S.calWeek ?? Math.floor((parseD(tripDates(t)[0]).getDay() + S.day) / 7)) + Number(el.dataset.d)); render(); break;
     case "cal-open": S.calOpen = !S.calOpen; S.calWeek = null; render(); break;
     case "day": S.calOpen = false; S.calWeek = null; if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
     case "trip-more": S.sheet={kind:"trip-more"};render();break;
     case "lang-toggle": el.classList.toggle("en"); setTimeout(() => setLang(LANG === "en" ? "th" : "en"), 220); break;
     case "tab": selectTab(el.dataset.k); break;
-    case "help-pace": S.help.pace = el.dataset.k; render(); break;
-    case "help-num": { const h = S.help, k = el.dataset.k; h[k] = Math.max(0, Math.min(20, h[k] + Number(el.dataset.d))); if(h.adults + h.elders < 1) h[k] = 1; render(); break; }
     case "help-run": helpRun(); break;
     case "help-day-run": helpRun(el.dataset.d); break;
-    case "help-ask": S.help.step = "ask"; S.help.err = ""; render(); break;
     case "help-stop": if(S.help && S.help.ctl) S.help.ctl.abort(); break;
     case "help-fix": helpFix(Number(el.dataset.i), Number(el.dataset.j), el.dataset.f != null ? Number(el.dataset.f) : undefined); break;
-    case "help-like": { const h = S.help, v = el.dataset.v; h.interests = h.interests.includes(v) ? h.interests.filter(x => x !== v) : [...h.interests, v]; render(); break; }
     case "help-goto": { const i = tripDates(t).indexOf(el.dataset.d); if(i >= 0) S.day = i; selectTab(""); break; }
     case "trip-edit": { const tr=S.trip; S.sheet={kind:"trip-edit",name:tr.name||"",destination:tr.destination||"",start:tr.planStart||tr.startDate||"",end:tr.planEnd||(tr.startDate&&tr.days?addDays(tr.startDate,tr.days-1):"")}; render(); break; }
     case "upload": S.upload = {kind:"auto", status:"idle"}; go("upload"); break;
@@ -4170,7 +4145,6 @@ document.addEventListener("click", async e => {
       render(); setTimeout(() => { const i = document.getElementById("sh-title"); i && i.focus(); }, 30); break; }
     case "mode": S.sheet.mode = el.dataset.m; render(); break;
     case "idea-kind": S.sheet.ideaKind = el.dataset.m; render(); break;
-    case "day-ideas-open": S.sheet=null;S.catTab='planning';S.planner||={query:'',filter:''};S.dockHidden=false;render();break;
     case "planner-toggle": await togglePlannerIdea(el.dataset.id);break;
     case "ideas-filter": S.ideaFilter=el.dataset.k;render();break;
     case "ideas-search": S.ideaSearchOpen=!S.ideaSearchOpen;if(!S.ideaSearchOpen)S.ideaQuery='';render();if(S.ideaSearchOpen)document.getElementById('ideas-search')?.focus({preventScroll:true});break;
@@ -4240,17 +4214,14 @@ document.addEventListener("click", async e => {
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
     case "exp-cancel": S.sheet = null; render(); break;
-    case "exp-open": S.sheet = null; selectTab("money"); break;
     case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
     case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = el.dataset.cur; f.elements.amount.focus(); break; }
     case "exp-view": { if(S.segSwiped){ S.segSwiped = false; break; } let b = el; if(b.classList.contains("on")){ const o = [...b.parentNode.querySelectorAll("button")].find(x => x !== b); if(o) b = o; } try { localStorage.setItem("mytrip-exp-view", b.dataset.cur); } catch(_){} segSlide(b); setTimeout(render, 280); break; }
-    case "exp-del": if(S.sheet && S.sheet.id){ await store.deleteItem(S.trip.id, S.sheet.id); S.sheet = null; render(); toast("ลบแล้ว"); } break;
     case "exp-pick": { const o = (S.expUI ||= {pick:""}); o.pick = o.pick === el.dataset.id ? "" : el.dataset.id; render(); break; }
     case "exp-who": { const o = (S.expUI || {}); const it = S.items.find(i => i.id === o.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
       if(cur.has(u)){ if(cur.size > 1) cur.delete(u); } else cur.add(u);
       await store.updateItem(S.trip.id, it.id, {data:{split: cur.size === all.length ? null : [...cur]}}); render(); break; }
     case "exp-line": { const txt = expPlanText(); try { await navigator.clipboard.writeText(txt); } catch(_){} location.href = "https://line.me/R/share?text=" + encodeURIComponent(txt); break; }
-    case "exp-copy": { const t = expPlanText(); try { await navigator.clipboard.writeText(t); toast("คัดลอกแล้ว ส่งใน LINE ได้เลย"); } catch(_){ toast(t); } break; }
     case "start-install": if(INSTALL.prompt){ INSTALL.prompt.prompt(); INSTALL.prompt.userChoice.then(c => { if(c && c.outcome === "accepted"){ INSTALL.prompt = null; INSTALL.done = true; render(); } }).catch(() => {}); } else { S.sheet = {kind:"install"}; render(); } break;
     case "start-share": S.scOpen = true; S.sheet = {kind:"account"}; render(); aiStatusLoad(); break;
     case "start-skip": try { localStorage.setItem("mytrip-start-off", "1"); } catch(_){} render(); toast("ซ่อนแล้ว · เปิดอีกทีได้ที่รูปโปรไฟล์ มุมขวาบน"); break;
@@ -4357,7 +4328,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-safari1";
+const BUILD = "2026-11-14-lean1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
