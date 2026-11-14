@@ -2414,8 +2414,39 @@ function travelResultMatches(s,r){
     return parts.year+'-'+parts.month+'-'+parts.day===s.date;
   });
 }
-const travelResultsCache=new Map();
+/* route options found for each travel gap; kept on the phone so reopening the app does not search again */
+const TRAVEL_CACHE='mytrip-travel-cache',TRAVEL_TTL=14*864e5;
+const travelResultsCache=(()=>{const m=new Map();try{const o=JSON.parse(localStorage.getItem(TRAVEL_CACHE)||'[]');for(const [k,v] of o)if(v&&Date.now()-(v.at||0)<TRAVEL_TTL)m.set(k,v);}catch(_){}
+  const set=m.set.bind(m);let t=0;m.set=(k,v)=>{set(k,{...v,at:Date.now()});while(m.size>120)m.delete(m.keys().next().value);clearTimeout(t);t=setTimeout(()=>{try{localStorage.setItem(TRAVEL_CACHE,JSON.stringify([...m]));}catch(_){}},300);return m;};return m;})();
 function travelCacheKey(leg){return JSON.stringify([S.me,S.trip.id,leg.date,leg.key,leg.from,leg.to,travelTimezone(leg)]);}
+/* find route options for every travel gap in the background, so tapping a gap shows choices at once; re-runs when places are added or moved */
+const travelPrefetch={timer:0,busy:false,failed:new Set()};
+function scheduleTravelPrefetch(){clearTimeout(travelPrefetch.timer);travelPrefetch.timer=setTimeout(runTravelPrefetch,1500);}
+async function runTravelPrefetch(){
+  if(travelPrefetch.busy||!CONNECTED||!navigator.onLine||S.view!=='trip'||!S.trip||!S.items)return;
+  const dates=tripDates(S.trip),here=Math.max(0,S.day||0),min=addDays(today(),-6);
+  const order=[...dates.slice(here),...dates.slice(0,here)].filter(d=>d>=min);
+  const tripId=S.trip.id,me=S.me;
+  travelPrefetch.busy=true;
+  try{
+    for(const date of order){
+      for(const leg of manualTravelLegs(date)){
+        if(S.trip?.id!==tripId||S.me!==me)return;
+        if(leg.saved||!leg.from||!leg.to)continue;
+        const key=travelCacheKey(leg);if(travelResultsCache.has(key)||travelPrefetch.failed.has(key))continue;
+        if(S.sheet?.kind==='travel-leg'&&S.sheet.cacheKey===key&&(S.sheet.lookup||S.sheet.lookupBusy))continue;
+        const q={date:leg.date,time:travelDepartureHint(leg),timezone:travelTimezone(leg),mode:'ขนส่งสาธารณะ'};
+        try{
+          const result=await api('travelOptions',{ai:false,tripId,...q,fromId:leg.fromId,toId:leg.toId,from:leg.from,to:leg.to});
+          if(!travelResultMatches(q,result))throw {code:'travel_date_mismatch'};
+          travelResultsCache.set(key,{result,selectedIndex:-1});
+          const sh=S.sheet;if(sh?.kind==='travel-leg'&&sh.cacheKey===key&&!sh.lookup&&!sh.lookupBusy&&!sh.chosen){sh.lookup=result;sh.time=result.time;sh.lookupKey=travelQueryKey(sh);sh.lookupError='';render();}
+        }catch(e){travelPrefetch.failed.add(key);if(['travel_quota','offline','not_connected','auth_required','travel_maps_unavailable'].includes(e?.code))return;}
+        await new Promise(r=>setTimeout(r,600));
+      }
+    }
+  }finally{travelPrefetch.busy=false;}
+}
 function travelQueryKey(s){return JSON.stringify([s.tripId,s.date,s.key,s.time,s.timezone,s.mode]);}
 function vTravelResults(s){
   if(s.lookupBusy)return '<p class="muted small" role="status">กำลังหาเส้นทาง…</p>';
@@ -3076,6 +3107,9 @@ function lockOverlayPage(locked){
   else if(!locked&&overlayScrollY!==null){pinShift=0;const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
 }
 function render(){
+  /* the phone's time wheel closes if the screen is redrawn under it (sync, clock): wait until it closes */
+  if(document.activeElement?.classList?.contains('time-pick')){render.pending=true;return;}
+  if(S.view==='trip')scheduleTravelPrefetch();
   const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
   const v = views[S.view];
   const active = document.activeElement && document.activeElement.id;
@@ -3665,6 +3699,7 @@ document.addEventListener('click',e=>{const a=e.target.closest?.('a.sc-get');if(
 /* tap the time in the day plan: the phone's time picker, saved when it closes (Done) */
 document.addEventListener('focusout',e=>{
   const el=e.target;if(!el.classList?.contains('time-pick'))return;
+  if(render.pending){render.pending=false;setTimeout(()=>{if(!document.activeElement?.classList?.contains('time-pick'))render();},50);}
   const it=S.items.find(i=>i.id===el.dataset.timeId),t=S.trip,f=el.dataset.timeField==='endTime'?'endTime':'time';
   /* leaving last night's hotel: the time is kept per day on that stay */
   const lv=/^leave:(\d{4}-\d\d-\d\d)$/.exec(el.dataset.timeField||'');
@@ -4138,7 +4173,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-10-travel3";
+const BUILD = "2026-11-14-travel4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
