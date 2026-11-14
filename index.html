@@ -3273,10 +3273,11 @@ function lockOverlayPage(locked){
   else if(locked)holdPin();
   else if(!locked&&overlayScrollY!==null){pinShift=0;const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
 }
+const TOUCH_UI=matchMedia('(pointer:coarse)').matches;   // phones: the time wheel is open while its field has focus
 function render(){
   if(S.sheet?.kind === "guide" && document.querySelector(".guide-card")){ render.pendingGuide = true; return; }
   /* the phone's time wheel closes if the screen is redrawn under it (sync, clock): wait until it closes */
-  if(document.activeElement?.classList?.contains('time-pick')){render.pending=true;return;}
+  if(TOUCH_UI&&document.activeElement?.classList?.contains('time-pick')){render.pending=true;return;}
   if(S.view==='trip')scheduleTravelPrefetch();
   const views = {login:vLogin, home:vHome, new:vNew, invite:vInvite, trip:vTrip, upload:vUpload, review:vReview, join:vJoin};
   const v = views[S.view];
@@ -4106,6 +4107,8 @@ document.addEventListener("submit", async e => {
     } catch(err){ fail(err); }
   }
 });
+/* a tap elsewhere finishes editing a time (desktop Safari keeps focus in the field after a click) */
+document.addEventListener("pointerdown", e => { const a = document.activeElement; if(a?.classList?.contains("time-pick") && e.target !== a) a.blur(); }, true);
 document.addEventListener("click", async e => {
   const el = e.target.closest("[data-act]");
   if(el?.classList.contains("scrim")&&e.target.closest("[data-stop]"))return;
@@ -4354,7 +4357,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-tone1";
+const BUILD = "2026-11-14-safari1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
