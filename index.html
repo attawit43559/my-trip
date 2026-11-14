@@ -586,7 +586,7 @@ html.lock,html.lock body{overflow:hidden}
 .travel-gap .gap-dot{display:flex;align-items:center;flex:none}
 .day-list .now-line{position:relative}.day-list .now-line::before{content:"";position:absolute;left:83px;top:0;bottom:0;border-left:2px solid var(--rail,#CFE9EC);transform:translateX(-1px)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rail:#2C4448}}:root[data-theme="dark"]{--rail:#2C4448}.travel-chosen{display:flex;flex-direction:column;gap:4px;padding:12px;background:var(--tile);border-radius:12px;overflow-wrap:anywhere}.travel-manual summary,.external-maps summary{font-size:13px;color:var(--muted);cursor:pointer;padding:8px 0}.travel-manual>.stack{padding-top:8px}.travel-result>summary{cursor:pointer;list-style:revert}.travel-results .btn{min-height:40px;height:40px;font-size:14px}.lean-travel .travel-result{display:block}.lean-travel .grid2{min-width:0}.lean-travel .travel-result{padding:0;overflow:hidden}.travel-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.travel-option>span{flex:1;min-width:0}.travel-option small{display:block;color:var(--accent);font-size:11px;margin-top:2px}.travel-option strong{white-space:nowrap;display:flex;align-items:center;gap:5px}.lean-travel .travel-result.selected{background:var(--move-soft)}.travel-option.selected{background:transparent}.travel-route-detail[open]{border-top:1px solid var(--line);padding-top:8px}.travel-result.selected .travel-route-detail[open]{border-top-color:var(--accent-line)}.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.travel-actions .btn{padding:10px 8px;min-width:0;font-size:13px;min-height:46px;border-radius:999px;border:0!important;box-shadow:none!important;background:var(--move-soft)!important;color:var(--move)!important;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.travel-actions .btn:disabled{opacity:.45}.travel-route-detail{padding:0 12px 8px}.travel-route-detail summary{font-size:11px;color:var(--muted);cursor:pointer}.travel-credit{display:block;padding:2px 0;font-size:12px}.travel-save[hidden]{display:none}
-.travel-memo{margin-top:4px}.entry-move .entry-copy.has-memo{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.move-memo{display:block;font-size:12px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+.travel-memo{margin-top:4px}.gap-hint{display:block;font-size:12px;color:var(--muted);font-weight:400}.entry-move .entry-copy.has-memo{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.move-memo{display:block;font-size:12px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
 .travel-manual:not([open])+.travel-save:not(.ready){display:none}
 .dock .workflow-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;font-size:16px;line-height:1.4;appearance:none;-webkit-appearance:none;box-sizing:border-box}.interest-tools,.planner-picker,.dock-panel{min-width:0}.dock .workflow-search::-webkit-search-decoration{-webkit-appearance:none}
 
@@ -1399,7 +1399,10 @@ function saveDayRowOrder(date,keys,tripId){
   if(keys.every((k,n)=>k===current[n])){render();return true;}
   const patch={dayRowOrder:{[date]:keys.slice()}};
   C.trips[tripId]=deepMerge(C.trips[tripId],patch);
-  queue('saveTrip',{trip:{id:tripId,...patch}});emit();toast('เรียงรายการแล้ว');return true;
+  queue('saveTrip',{trip:{id:tripId,...patch}});emit();
+  toast('เรียงรายการแล้ว');
+  setTimeout(()=>{if(S.trip?.id===tripId)staleTravel(date).forEach(m=>store.deleteItem(tripId,m.id).catch(()=>{}));},60);   // travel saved for the old order goes; new gaps get routes found in the background
+  return true;
 }
 /* the stay whose nights cover the night of `date` (check-in ≤ date < check-out): where the group sleeps that night,
    and so where the next day starts. A stay saved without a check-out date (a booking the AI could not read fully)
@@ -1414,7 +1417,26 @@ function stayForNight(date){
   const ds = S.trip ? tripDates(S.trip) : [], last = ds.length ? ds[ds.length - 1] : "";
   return (nextIn ? date < nextIn : (!last || date < last)) ? open : null;
 }
+/* the day's rows, with each saved travel leg placed between the two stops it joins.
+   A leg saved for an old order (its stops are no longer next to each other) is not shown. */
 function dayEntries(dateStr){
+  const all = dayEntriesRaw(dateStr), manual = e => e.it.type === "move" && !!(e.it.data || {}).legKey;
+  if(!all.some(manual)) return all;
+  const out = all.filter(e => !manual(e)), byId = new Map(all.filter(manual).map(e => [e.it.id, e]));
+  for(const leg of manualTravelLegs(dateStr, out)){
+    const e = leg.saved && byId.get(leg.saved.id); if(!e) continue; byId.delete(leg.saved.id);
+    let at = leg.beforeKey ? out.findIndex(x => dayEntryKey(x) === leg.beforeKey) : -1;
+    if(at < 0){ const a = leg.afterKey ? out.findIndex(x => dayEntryKey(x) === leg.afterKey) : -1; at = a >= 0 ? a + 1 : out.findIndex(x => x.night); }
+    out.splice(at < 0 ? out.length : at, 0, e);
+  }
+  return out;
+}
+/* travel legs saved for stops that are no longer next to each other (after moving places around) */
+function staleTravel(dateStr){
+  const keep = new Set(manualTravelLegs(dateStr).map(l => l.saved?.id).filter(Boolean));
+  return S.items.filter(m => m.type === "move" && m.date === dateStr && (m.data || {}).legKey && !keep.has(m.id));
+}
+function dayEntriesRaw(dateStr){
   const out = [];
   for(const it of S.items){
     if(it.type === "stay"){
@@ -2457,8 +2479,8 @@ function mapsLink(it){
   if(point.placeId)q.set('query_place_id',point.placeId);
   return point.query?'https://www.google.com/maps/search/?'+q.toString():'';
 }
-function manualTravelLegs(date){
-  const entries=dayEntries(date),points=[];
+function manualTravelLegs(date,entries=dayEntries(date)){
+  const points=[];
   const arrival=entries.some(e=>!e.night&&e.it.type==='flight'&&(e.phase==='arr'||(arrDateOf(e.it)===date&&e.it.date!==date)));
   const hotel=!arrival&&stayForNight(addDays(date,-1));
   if(hotel)points.push({id:hotel.id,name:hotel.title,key:''});
@@ -2470,9 +2492,14 @@ function manualTravelLegs(date){
     }
   }
   return points.slice(1).map((to,i)=>{const from=points[i],key=JSON.stringify([from.id,from.name,to.id,to.name]);
-    const saved=S.items.find(m=>m.type==='move'&&m.date===date&&((m.data||{}).legKey===key||((m.data||{}).from===from.name&&(m.data||{}).to===to.name)));
+    const saved=S.items.find(m=>m.type==='move'&&m.date===date&&(m.data||{}).legKey===key)||S.items.find(m=>m.type==='move'&&m.date===date&&!(m.data||{}).legKey&&(m.data||{}).from===from.name&&(m.data||{}).to===to.name);
     return {date,key,from:from.name,to:to.name,fromId:from.id,toId:to.id,afterKey:from.key,beforeKey:to.key,saved};
   }).filter(l=>l.fromId!==l.toId&&s_(l.from).toLowerCase()!==s_(l.to).toLowerCase());   // no travel between two bookings of the same hotel
+}
+/* the quickest route already found for an empty gap, as a hint */
+function travelHint(leg){
+  const c=travelResultsCache.get(travelCacheKey(leg)),r=c?.result?.routes?.[0];if(!r)return '';
+  return `<small class="gap-hint">${esc(travelModeFor(r))} · ${esc(r.minutes)} นาที</small>`;
 }
 function dailyEntryRows(entries,date,nowAt){
   const missing=manualTravelLegs(date).filter(l=>!l.saved);
@@ -2480,7 +2507,7 @@ function dailyEntryRows(entries,date,nowAt){
   return entries.map(e=>{
     const here=nowAt===e?nowLine:'';
     const before=missing.filter(l=>l.beforeKey?l.beforeKey===dayEntryKey(e):e.night&&l.toId===e.it.id);
-    return here+before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}"><span class="gap-dot" aria-hidden="true">${ic('plus',14)}</span><span class="grow"><b>เพิ่มการเดินทาง</b></span></button></li>`).join('')+entryHtml(e);
+    return here+before.map(l=>`<li class="travel-gap"><button data-act="travel-leg" data-key="${esc(l.key)}"><span class="gap-dot" aria-hidden="true">${ic('plus',14)}</span><span class="grow"><b>เพิ่มการเดินทาง</b>${travelHint(l)}</span></button></li>`).join('')+entryHtml(e);
   }).join('')+(nowAt==='end'?nowLine:'');
 }
 function travelTimezone(leg){
@@ -4280,7 +4307,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-guide1";
+const BUILD = "2026-11-14-legs1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
