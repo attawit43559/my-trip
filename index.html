@@ -205,6 +205,12 @@ html.kb .dock.open .seg{display:none}
 html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dock .seg{background:transparent;padding:0}
 .dock-body{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.guide{display:flex;flex-direction:column;gap:14px}.guide-top{display:flex;align-items:center;justify-content:space-between;min-height:32px}
+.guide-body{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:8px 6px 0;min-height:210px;touch-action:pan-y}
+.guide-ic{width:72px;height:72px;border-radius:24px;display:flex;align-items:center;justify-content:center}
+.guide-body h2{margin:6px 0 0;font-family:var(--display);font-size:22px;font-weight:500}.guide-body p{margin:0;color:var(--muted);font-size:14px;line-height:1.6;max-width:300px}
+.guide-dots{display:flex;justify-content:center;gap:6px}.guide-dots i{width:6px;height:6px;border-radius:99px;background:var(--line);transition:width .2s}.guide-dots i.on{width:18px;background:var(--accent)}
+.guide-btns{display:flex;gap:10px}.guide-btns .btn{flex:1}
 .ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:90;width:40px;height:40px;margin-left:-20px;border-radius:999px;background:var(--surface,#fff);color:var(--ink);box-shadow:0 4px 14px rgba(43,33,28,.14);display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-60px);pointer-events:none;transition:opacity .15s}
 .ptr.on{opacity:1}.ptr.ready{color:var(--accent-ink,#8A5300)}.ptr.spin svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{to{transform:rotate(360deg)}}
 /* dims from the bottom and fades to clear before the top: iPhone tints the status bar from the page a beat late, so a dark top made it flash */
@@ -1185,7 +1191,11 @@ function avatars(ids, max=4){
 const inviteLink = id => location.origin + location.pathname + "?openExternalBrowser=1#join-" + id;
 
 /* ---------- navigation ---------- */
-function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; S.dockHidden = false; render(); window.scrollTo(0,0); }
+function go(view, extra={}){ Object.assign(S, extra); S.view = view; S.sheet = null; S.dockHidden = false; render(); window.scrollTo(0,0); if(view === "home") setTimeout(guideMaybe, 700); }
+/* swipe the how-to card left / right */
+{ let gx = null; document.addEventListener("touchstart", e => { gx = e.target.closest?.("[data-guide-swipe]") && e.touches.length === 1 ? e.touches[0].clientX : null; }, {passive:true});
+  document.addEventListener("touchend", e => { if(gx == null || S.sheet?.kind !== "guide") return; const dx = (e.changedTouches[0]?.clientX || gx) - gx; gx = null; if(Math.abs(dx) < 40) return;
+    S.sheet.step = Math.max(0, Math.min(GUIDE.length - 1, (S.sheet.step || 0) + (dx < 0 ? 1 : -1))); render(); }, {passive:true}); }
 function openTrip(id, view="trip"){
   if(S.tripId !== id){
     unsubTrip && unsubTrip(); unsubItems && unsubItems();
@@ -2312,6 +2322,30 @@ function shareSection(){
     <div class="share-act"><button class="link-btn" data-act="share-reset">สร้างรหัสใหม่</button><button class="link-btn" data-act="share-off">ปิดการแชร์</button></div>
   </section>`;
 }
+/* how to use the app: shown once to a new person, then kept in the profile sheet */
+const GUIDE = [
+  {ic:"calendar", tone:"#FFF1CC", ink:"#8A5300", t:"สร้างทริป", d:"กด “สร้างทริป” ใส่ชื่อ และวันไป–กลับ"},
+  {ic:"ticket", tone:"#FCE4EC", ink:"#B83A68", t:"ใส่ตั๋วและที่พัก", d:"อัปโหลดรูปหรือ PDF ใบจอง แอปอ่านแล้วใส่ในแผนให้เอง"},
+  {ic:"place", tone:"#E2F5E2", ink:"#2F7A2E", t:"วางแผนแต่ละวัน", d:"เก็บที่อยากไปในแท็บวางแผน แชร์จาก Google Maps ได้ แล้วกด + ใส่วัน แตะช่องระหว่างที่เพื่อเลือกการเดินทาง"},
+  {ic:"navi", tone:"#E0ECFF", ink:"#2B61B2", t:"วันเที่ยว", d:"หน้าหลักบอกว่าถัดไปไปไหน กดนำทางได้เลย ใช้ได้แม้ไม่มีเน็ต · ดึงหน้าจอลงเพื่ออัปเดต"},
+  {ic:"users", tone:"#F1E5F6", ink:"#6A3A86", t:"เที่ยวกับเพื่อน", d:"ชวนเพื่อนเข้าทริป จดค่าใช้จ่ายและหารกัน แชร์ทาง LINE ได้ · แชร์แผนให้เพื่อนคัดลอกไปใช้ได้ที่ ⋯ ในทริป"}
+];
+function vGuide(s){
+  const i = Math.max(0, Math.min(GUIDE.length - 1, s.step || 0)), g = GUIDE[i], last = i === GUIDE.length - 1;
+  return `<div class="scrim" data-act="guide-done"><div class="sheet guide" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
+    <div class="guide-top"><span class="muted small">วิธีใช้ ${i + 1}/${GUIDE.length}</span>${last ? "" : `<button class="link-btn" data-act="guide-done">ข้าม</button>`}</div>
+    <div class="guide-body" data-guide-swipe>
+      <span class="guide-ic" style="background:${g.tone};color:${g.ink}">${ic(g.ic,30)}</span>
+      <h2>${g.t}</h2><p>${g.d}</p>
+    </div>
+    <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, n) => `<i class="${n === i ? "on" : ""}"></i>`).join("")}</div>
+    <div class="guide-btns">${i ? `<button class="btn ghost" data-act="guide-step" data-d="-1">ย้อนกลับ</button>` : ""}<button class="btn primary" data-act="${last ? "guide-done" : "guide-step"}" data-d="1">${last ? "เริ่มใช้งาน" : "ถัดไป"}</button></div>
+  </div></div>`;
+}
+function guideMaybe(){
+  let seen = true; try { seen = !!localStorage.getItem("mytrip-guide-seen"); } catch(_){}
+  if(!seen && S.view === "home" && !S.sheet && S.token){ S.sheet = {kind:"guide", step:0}; render(); }
+}
 function vAccount(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="บัญชี" data-stop="1">
     <div class="hd"><h2>${esc(S.myName)}</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
@@ -2321,6 +2355,7 @@ function vAccount(){
     </div>
     ${aiStatusRow()}
     ${offlineRow()}
+    <button class="acc-ai" data-act="guide-open"><span>${ic("book",18)}วิธีใช้แอป</span><span class="start-go">เปิดดู</span></button>
     ${(() => { try { return localStorage.getItem("mytrip-start-off"); } catch(_){ return null; } })() ? `<button class="acc-ai start-back" data-act="start-back"><span>${ic("check",18)}เริ่มใช้งาน My Trip</span><span class="start-go">แสดงอีกครั้ง</span></button>` : ""}
     <details class="advanced-options" id="sc-sec" ${S.scOpen?"open":""}><summary>แชร์เข้าทริป (iPhone / Android)</summary>${shareTabs()}</details>
     <div class="menu"><button class="danger" data-act="logout">${ic("leave",20)}ออกจากระบบ</button></div>
@@ -3085,6 +3120,7 @@ function vSheet(){
   if(s.kind === "sos-doctor") return vSosDoctor();
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "copy-share")return vCopyShare(s);
+  if(s.kind === "guide")return vGuide(s);
   if(s.kind === "copy-in")return vCopyIn(s);
   if(s.kind === "idea-recommend")return vIdeaRecommend(s);
   if(s.kind === "day-ideas") return "";
@@ -4076,6 +4112,9 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
+    case "guide-open": S.sheet = {kind:"guide", step:0}; render(); break;
+    case "guide-step": if(S.sheet?.kind === "guide"){ S.sheet.step = Math.max(0, Math.min(GUIDE.length - 1, (S.sheet.step || 0) + Number(el.dataset.d || 1))); render(); } break;
+    case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render(); } break;
     case "copy-share": {
       const s = S.sheet = {kind:"copy-share", key:"", err:""}; render();
       api("copyLink", {id:S.trip.id}).then(r => { if(S.sheet === s){ s.key = r.key; render(); } })
@@ -4241,7 +4280,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-copy2";
+const BUILD = "2026-11-14-guide1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
