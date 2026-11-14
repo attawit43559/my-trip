@@ -1262,12 +1262,51 @@ function vTripMenu(s){
   </div></div>`;
 }
 
+/* share a link that gives a friend their own copy of the plan (places, ideas, travel, notes; no bookings or expenses) */
+const copyLinkOf = key => location.origin + location.pathname + "?openExternalBrowser=1#copy-" + key;
+function vCopyShare(s){
+  const link = s.key ? copyLinkOf(s.key) : "";
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="แชร์แผนให้เพื่อนคัดลอก" data-stop="1"><div class="hd"><h2>แชร์แผนให้เพื่อนคัดลอก</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
+    <div class="stack" style="gap:12px">
+      <p class="muted small" style="margin:0">เพื่อนกดลิงก์แล้วได้ทริปเป็นของเขาเอง แก้ได้ไม่กระทบแผนเรา · ไม่รวมตั๋ว ที่พัก และค่าใช้จ่าย</p>
+      ${s.err ? `<p class="err">${esc(s.err)}</p>` : !link ? `<p class="muted small" role="status">กำลังสร้างลิงก์…</p>` : `<div class="link-box"><label for="inv-link" hidden>ลิงก์คัดลอกแผน</label><input id="inv-link" readonly value="${esc(link)}"><button data-act="copy" data-text="${esc(link)}">คัดลอก</button></div>
+      ${navigator.share ? `<button class="btn primary" data-act="copy-share-send">${ic("share",18)}ส่งลิงก์</button>` : ""}`}
+    </div></div></div>`;
+}
+function vCopyIn(s){
+  const p = s.preview;
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="คัดลอกแผนเที่ยว" data-stop="1"><div class="hd"><h2>คัดลอกแผนเที่ยว</h2><button class="round" data-act="close-sheet" aria-label="ปิด" ${s.busy?"disabled":""}>${ic("close")}</button></div>
+    ${s.err ? `<p class="err">${esc(s.err)}</p>` : !p ? `<p class="muted small" role="status">กำลังโหลด…</p>` : `<form class="stack" data-form="copy-in" style="gap:12px">
+      <div><b style="font-size:18px">${esc(p.name)}</b><br><span class="muted small">${esc([p.destination, p.days ? p.days + " วัน" : "", p.places + p.ideas ? (p.places + p.ideas) + " สถานที่" : ""].filter(Boolean).join(" · "))}</span></div>
+      <label class="fld">วันเริ่มเที่ยวของคุณ<input type="date" required value="${esc(s.start || "")}" data-bind="sheet:start"></label>
+      <p class="muted small" style="margin:0">ได้ทริปใหม่เป็นของคุณเอง · ไม่รวมตั๋ว ที่พัก และค่าใช้จ่าย</p>
+      <button class="btn primary" type="submit" ${s.busy?"disabled":""}>${s.busy?"กำลังคัดลอก…":"คัดลอกเป็นทริปของฉัน"}</button>
+    </form>`}
+  </div></div>`;
+}
+async function startCopy(key){
+  go("home"); S.sheet = {kind:"copy-in", key, preview:null, start:"", busy:false, err:""}; render();
+  const s = S.sheet;
+  try { const p = await api("copyPreview", {key}); if(S.sheet !== s) return; s.preview = p; s.start = p.startDate || today(); }
+  catch(e){ if(S.sheet === s) s.err = e && e.code === "copy_not_found" ? "ไม่พบแผนนี้ ลิงก์อาจไม่ถูกต้อง" : e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "โหลดแผนไม่สำเร็จ ลองใหม่อีกครั้ง"; }
+  if(S.sheet === s) render();
+}
+async function confirmCopy(){
+  const s = S.sheet; if(s?.kind !== "copy-in" || s.busy || !s.preview) return;
+  s.busy = true; render();
+  try {
+    const r = await api("copyTrip", {key:s.key, startDate:s.start});
+    C.trips[r.trip.id] = r.trip; if(!C.myTrips.includes(r.trip.id)) C.myTrips.unshift(r.trip.id); emit();
+    S.sheet = null; toast("คัดลอกแผนแล้ว"); openTrip(r.trip.id); refreshTrip(r.trip.id);
+  } catch(e){ s.busy = false; if(S.sheet === s){ s.err = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง"; render(); } }
+}
 function vTripMore(){
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
     <button data-act="trip-edit">${ic("edit",20)}แก้ไขชื่อ / วันเที่ยว</button>
     <button data-act="export-open">${ic("image",20)}ส่งออกแผนเที่ยว (PDF / รูป)</button>
     <button data-act="sos-open">${ic("sos",20)}ข้อมูลฉุกเฉิน</button>
     <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
+    <button data-act="copy-share">${ic("share",20)}แชร์แผนให้เพื่อนคัดลอก</button>
     <button data-act="account">${ic("info",20)}บัญชีและการตั้งค่า</button>
     ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
   </div></div></div>`;
@@ -3045,6 +3084,8 @@ function vSheet(){
   if(s.kind === "sos") return vSos(s);
   if(s.kind === "sos-doctor") return vSosDoctor();
   if(s.kind === "travel-leg")return vTravelLeg(s);
+  if(s.kind === "copy-share")return vCopyShare(s);
+  if(s.kind === "copy-in")return vCopyIn(s);
   if(s.kind === "idea-recommend")return vIdeaRecommend(s);
   if(s.kind === "day-ideas") return "";
   if(s.kind === "history") return vHistory(s);
@@ -3895,6 +3936,7 @@ document.addEventListener("keydown", e => { if(e.key === "Escape" && S.sheet){ S
 document.addEventListener("change", e => { const x = e.target.closest && e.target.closest("[data-fx]"); if(!x || !S.trip) return; const v = parseFloat(x.value); const fx = {...(S.trip.fx || {})}; if(v > 0) fx[x.dataset.fx] = v; else delete fx[x.dataset.fx]; store.updateTrip(S.trip.id, {fx}); render(); });
 document.addEventListener("submit", async e => {
   if(e.target.dataset.form==='travel-leg'){e.preventDefault();await saveTravelLeg();return;}
+  if(e.target.dataset.form==='copy-in'){e.preventDefault();await confirmCopy();return;}
   if(e.target.dataset.form==='sos'){e.preventDefault();await sosSave();return;}
   if(e.target.dataset.form==='exp'){e.preventDefault();await expSave(e.target);return;}
   const f = e.target.dataset && e.target.dataset.form; if(!f) return;
@@ -4034,6 +4076,12 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
+    case "copy-share": {
+      const s = S.sheet = {kind:"copy-share", key:"", err:""}; render();
+      api("copyLink", {id:S.trip.id}).then(r => { if(S.sheet === s){ s.key = r.key; render(); } })
+        .catch(e => { if(S.sheet === s){ s.err = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : e && e.code === "not_connected" ? "ยังไม่ได้เชื่อม Google Sheet" : "สร้างลิงก์ไม่สำเร็จ ลองใหม่อีกครั้ง"; render(); } });
+      break; }
+    case "copy-share-send": { const s = S.sheet; if(!s?.key) break; try { await navigator.share({title:S.trip?.name || "แผนเที่ยว", text:"แผนเที่ยว " + (S.trip?.name || "") + " กดเพื่อคัดลอกไปเป็นทริปของคุณ", url:copyLinkOf(s.key)}); } catch(_){} break; }
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
@@ -4167,8 +4215,9 @@ async function onGoogleCredential(resp){
 }
 function afterLogin(){
   flush(); refreshTrips();
-  const code = S.pendingJoin, add = S.pendingAdd; S.pendingJoin = null; S.pendingAdd = "";
+  const code = S.pendingJoin, add = S.pendingAdd, cp = S.pendingCopy; S.pendingJoin = null; S.pendingAdd = ""; S.pendingCopy = "";
   if(code) startJoin(code);
+  else if(cp) startCopy(cp);
   else if(add){ go("home"); waitTrips(() => addFromLink(add)); }
   else go("home");
 }
@@ -4192,7 +4241,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-ptr1";
+const BUILD = "2026-11-14-copy2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
@@ -4218,14 +4267,17 @@ async function checkUpdate(){
   flush();
   checkUpdate();
   const m = (location.hash || "").match(/^#join-([A-Za-z0-9]{6})$/);
+  const cp = (location.hash || "").match(/^#copy-([a-f0-9]{24})$/);
   let add = "", shareInNow = false; try { const q = new URLSearchParams(location.search); add = q.get("add") || ""; shareInNow = q.get("share-in") === "1"; if(q.has("share-in")) history.replaceState(null, "", location.pathname); } catch(_){}
   if(!add){ const h = (location.hash || "").match(/^#add=(.+)$/); if(h) try { add = decodeURIComponent(h[1]); } catch(_){} }
   const addUrl = (String(add).match(MAPS_LINK) || [])[0] || "";
   if(addUrl){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
   // drop the invite part of the address straight away, so a refresh, bookmark or home-screen icon opens the trip list
   if(location.hash){ try { history.replaceState(null, "", location.pathname); } catch(_){} }
-  if(!S.token){ S.pendingJoin = m ? m[1] : null; S.pendingAdd = addUrl; go("login"); return; }
+  window.addEventListener("hashchange", () => { const h = (location.hash || "").match(/^#copy-([a-f0-9]{24})$/); if(h && S.token){ try { history.replaceState(null, "", location.pathname); } catch(_){} startCopy(h[1]); } });
+  if(!S.token){ S.pendingJoin = m ? m[1] : null; S.pendingCopy = cp ? cp[1] : ""; S.pendingAdd = addUrl; go("login"); return; }
   if(m) startJoin(m[1]);
+  else if(cp) startCopy(cp[1]);
   else if(shareInNow){ go("home"); shareIn(); }
   else if(addUrl){ go("home"); waitTrips(() => addFromLink(addUrl)); }
   else go("home");

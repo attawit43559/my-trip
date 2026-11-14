@@ -155,6 +155,21 @@ const ACTIONS = {
     return true;
   }),
 
+  // a private link that lets anyone signed in make their own copy of the plan (not a membership)
+  copyLink: (req) => withLock_(() => {
+    const t = find_(TRIPS, String(req.id));
+    if (!t) throw new Error('not_found');
+    if (!isMember_(t.obj, req.me)) throw new Error('not_member');
+    if (!t.obj.copyKey) { t.obj.copyKey = Utilities.getUuid().replace(/-/g, '').slice(0, 24); upsert_(TRIPS, t.id, '', t.obj); }
+    return { key: t.obj.copyKey };
+  }),
+  copyPreview: (req) => {
+    const src = copySource_(req.key);
+    const items = rows_(ITEMS).filter(r => r.tripId === src.id && COPY_TYPES.indexOf(r.obj.type) >= 0);
+    return { name: src.name, destination: src.destination || '', startDate: src.startDate, days: src.days,
+      places: items.filter(r => r.obj.type === 'place').length, ideas: items.filter(r => r.obj.type === 'idea').length };
+  },
+  copyTrip: (req) => withLock_(() => copyTrip_(req)),
   planHistory: (req) => planHistory_(req),
   replacePlan: (req) => replacePlan_(req),
 
@@ -1400,4 +1415,58 @@ function travelCompare_(req,ai){
   const result={source:'Google Maps',date:req.date,time:req.time,timezone:req.timezone,checkedAt,routes:travelRankOptions_(routes),approximate:true,referencedDates:[...new Set(referencedDates)],errors};
   if(ai){if(result.routes.length){travelAdviceFor_(req,result);if(result.advice){result.advice.mode=result.routes[0].method;result.advice.minutes=result.routes[0].minutes;}}else result.adviceError='ยังไม่มีข้อมูลเส้นทางพอให้ AI เปรียบเทียบ';}
   return result;
+}
+
+/* ---------- copy a trip's plan to another person (places, ideas, travel and notes only: no bookings, files, expenses or members) ---------- */
+const COPY_TYPES = ['place', 'idea', 'move'];
+const COPY_TRIP_DROP = ['ownerId', 'memberIds', 'members', 'copyKey', 'sos', 'fx'];
+const COPY_ITEM_DROP = ['fileId', 'fileIds', 'by', 'createdBy', 'updatedBy'];
+function copySource_(key) {
+  key = String(key || '');
+  if (!/^[a-f0-9]{24}$/.test(key)) throw new Error('copy_not_found');
+  const hit = rows_(TRIPS).find(r => r.obj.copyKey === key);
+  if (!hit) throw new Error('copy_not_found');
+  return hit.obj;
+}
+function copyShiftDate_(d, days) {
+  if (!/^\d{4}-\d\d-\d\d$/.test(String(d || '')) || !days) return d;
+  const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + days); return x.toISOString().slice(0, 10);
+}
+function copyTrip_(req) {
+  const src = copySource_(req.key);
+  const start = /^\d{4}-\d\d-\d\d$/.test(String(req.startDate || '')) ? String(req.startDate) : src.startDate;
+  const shift = src.startDate && start ? Math.round((Date.parse(start + 'T00:00:00Z') - Date.parse(src.startDate + 'T00:00:00Z')) / 864e5) : 0;
+  const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let id = '';
+  for (let n = 0; n < 20 && (!id || find_(TRIPS, id)); n++) { id = ''; for (let i = 0; i < 6; i++) id += abc[Math.floor(Math.random() * abc.length)]; }
+  const trip = clean_(src);
+  COPY_TRIP_DROP.forEach(k => delete trip[k]);
+  Object.assign(trip, { id, startDate: start, ownerId: req.me, memberIds: [req.me], members: { [req.me]: String(req.name || '').slice(0, 40) }, copiedFrom: src.name || '' });
+  if (trip.endDate) trip.endDate = copyShiftDate_(trip.endDate, shift);
+  let items = rows_(ITEMS).filter(r => r.tripId === src.id && COPY_TYPES.indexOf(r.obj.type) >= 0).map(r => r.obj);
+  const kept = {};
+  items.forEach(it => { kept[it.id] = 1; });
+  items = items.filter(it => {   // travel to or from a hotel or flight (not copied) would be left hanging
+    if (it.type !== 'move' || !(it.data && it.data.legKey)) return true;
+    try { const k = JSON.parse(it.data.legKey); return !!(kept[k[0]] && kept[k[2]]); } catch (e) { return false; }
+  });
+  const map = {};
+  items.forEach(it => { map[it.id] = 'c' + Utilities.getUuid().replace(/-/g, '').slice(-16); });
+  const rows = items.map(it => {
+    let text = JSON.stringify(it);
+    Object.keys(map).forEach(old => {   // ids also appear inside other items (a travel leg's ends, a place made from an idea)
+      text = text.split('"' + old + '"').join('"' + map[old] + '"').split('\\"' + old + '\\"').join('\\"' + map[old] + '\\"');
+    });
+    const o = JSON.parse(text);
+    COPY_ITEM_DROP.forEach(k => delete o[k]);
+    o.id = map[it.id]; o.tripId = id;
+    ['date', 'endDate'].forEach(k => { if (o[k]) o[k] = copyShiftDate_(o[k], shift); });
+    if (o.data && o.data.leave) { const lv = {}; Object.keys(o.data.leave).forEach(d => { lv[copyShiftDate_(d, shift)] = o.data.leave[d]; }); o.data.leave = lv; }
+    const json = JSON.stringify(o);
+    if (json.length > 45000) return null;
+    return [o.id, id, json, new Date().toISOString()];
+  }).filter(Boolean);
+  upsert_(TRIPS, id, '', trip);
+  if (rows.length) { const sh = sheet_(ITEMS); sh.getRange(sh.getLastRow() + 1, 1, rows.length, 4).setValues(rows); }
+  return { trip, count: rows.length };
 }
