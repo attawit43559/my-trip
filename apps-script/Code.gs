@@ -1386,6 +1386,22 @@ function travelAdviceFor_(req,result){
 }
 
 ACTIONS.travelOptions=req=>travelCompare_(req,!!req.ai);
+/* map pins: find coordinates for places that have none (name + address, near the trip's destination); saved on the item */
+ACTIONS.placeCoords=req=>{
+  const tripId=String(req.tripId);mustBeMember_(tripId,req.me);
+  const trip=(find_(TRIPS,tripId)||{}).obj||{},near=String(trip.destination||'').slice(0,80),out={};
+  const ids=(Array.isArray(req.ids)?req.ids:[]).map(String).slice(0,15);
+  for(const id of ids){
+    const row=find_(ITEMS,id);if(!row||row.tripId!==tripId||!['place','stay'].includes(row.obj.type))continue;
+    const it=row.obj,d=it.data||{};if(d.lat!=null&&d.lat!==''&&isFinite(Number(d.lat))){out[id]={lat:Number(d.lat),lon:Number(d.lon)};continue;}
+    const q=[it.title,d.address||near].filter(Boolean).join(', ').slice(0,300);if(!q)continue;
+    let g;try{travelQuota_();g=Maps.newGeocoder().setLanguage('en').geocode(q);}catch(e){if(String(e.message).indexOf('travel_quota')>=0)break;continue;}
+    const loc=g&&g.status==='OK'&&g.results&&g.results[0]&&g.results[0].geometry.location;if(!loc)continue;
+    const ll={lat:+loc.lat.toFixed(6),lon:+loc.lng.toFixed(6)};out[id]=ll;
+    withLock_(()=>{const cur=find_(ITEMS,id);if(!cur)return;const o=cur.obj;o.data=Object.assign({},o.data||{},ll,{coordsFrom:'geocode'});upsert_(ITEMS,id,tripId,o);});
+  }
+  return {coords:out};
+};
 function travelSampleDate_(date,tz){
   const today=Utilities.formatDate(new Date(),tz,'yyyy-MM-dd'),day=x=>new Date(x+'T12:00:00Z').getUTCDay();
   const offset=(day(date)-day(today)+7)%7||7;

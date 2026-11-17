@@ -2420,7 +2420,7 @@ function dayMapData(date){
   const lines = [];
   for(const l of legs){ const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
     if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride"}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}});
-    else { const a = stops.find(x => x.id === l.fromId)?.ll, b = stops.find(x => x.id === l.toId)?.ll; if(a && b) lines.push({type:"Feature", properties:{k:"guess"}, geometry:{type:"LineString", coordinates:[a, b]}}); } }
+  }
   return {stops, lines};
 }
 function vDayMap(s){
@@ -2449,12 +2449,13 @@ async function dayMapMount(){
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
     DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", filter:["==", ["get", "k"], "ride"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":5, "line-opacity":.9}});
     DM.map.addLayer({id:"leg-walk", type:"line", source:"legs", filter:["==", ["get", "k"], "walk"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":4.5, "line-dasharray":[0.1, 1.8]}});
-    DM.map.addLayer({id:"leg-guess", type:"line", source:"legs", filter:["==", ["get", "k"], "guess"], paint:{"line-color":"#8C7F74", "line-width":2.5, "line-opacity":.6, "line-dasharray":[2, 2]}});
   }
   if(S.sheet !== s) return;
   DM.map.resize();
   const {stops, lines} = dayMapData(s.date), sig = s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
-  if(sig === DM.sig) return; const moved = DM.date !== s.date; DM.sig = sig; DM.date = s.date; DM.stops = stops;
+  if(DM.date !== s.date) setTimeout(() => dayMapFill(s.date), 300);
+  const nLL = stops.filter(x => x.ll).length;
+  if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
   DM.markers.forEach(m => m.remove()); DM.markers = [];
   for(const x of stops){ if(!x.ll) continue;
@@ -2462,6 +2463,30 @@ async function dayMapMount(){
     DM.markers.push(new gl.Marker({element:el}).setLngLat(x.ll).setPopup(new gl.Popup({offset:18, closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
   if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
+}
+/* the day shown first: find pins for places with no coordinates, and the route line of legs saved before lines were kept */
+const DMF = {busy:false, asked:new Set()};
+async function dayMapFill(date){
+  if(DMF.busy || !CONNECTED || !navigator.onLine || !S.trip) return; DMF.busy = true;
+  const tripId = S.trip.id, still = () => S.sheet?.kind === "day-map" && S.sheet.date === date && S.trip?.id === tripId;
+  let changed = false;
+  try {
+    const need = dayMapData(date).stops.filter(x => !x.ll && !DMF.asked.has(x.id)).map(x => x.id);
+    if(need.length){ need.forEach(id => DMF.asked.add(id));
+      try { const r = await api("placeCoords", {tripId, ids:need});
+        for(const [id, ll] of Object.entries(r.coords || {})){ const it = S.items.find(i => i.id === id); if(it && !llOf(it.data)){ it.data = {...(it.data || {}), lat:ll.lat, lon:ll.lon}; store.updateItem(tripId, id, {data:{lat:ll.lat, lon:ll.lon}}).catch(() => {}); changed = true; } }
+      } catch(_){} }
+    if(changed && still()) dayMapMount();
+    for(const leg of manualTravelLegs(date)){
+      const sd = leg.saved?.data || {}; if(!still()) break; if(!leg.saved || sd.poly || DMF.asked.has("leg:" + leg.saved.id) || !leg.from || !leg.to) continue;
+      DMF.asked.add("leg:" + leg.saved.id);
+      const q = {date:leg.date, time:leg.saved.time || travelDepartureHint(leg), timezone:sd.timezone || travelTimezone(leg), mode:sd.mode || "ขนส่งสาธารณะ"};
+      try { const r = await api("travelOptions", {ai:false, tripId, ...q, fromId:leg.fromId, toId:leg.toId, from:leg.from, to:leg.to});
+        const routes = r.routes || [], pick = routes.find(x => travelModeFor(x) === sd.mode && x.minutes === Number(sd.durationMinutes)) || routes.find(x => travelModeFor(x) === sd.mode) || routes[0];
+        if(pick?.poly){ leg.saved.data = {...sd, poly:pick.poly, a:pick.a || null, b:pick.b || null}; store.updateItem(tripId, leg.saved.id, {data:{poly:pick.poly, a:pick.a || null, b:pick.b || null}}).catch(() => {}); if(still()) dayMapMount(); }
+      } catch(e){ if(["travel_quota", "offline", "auth_required"].includes(e?.code)) break; }
+    }
+  } finally { DMF.busy = false; }
 }
 function dayMapFocus(i){ const x = DM.stops[i]; if(!DM.map || !x?.ll) return; DM.map.flyTo({center:x.ll, zoom:Math.max(DM.map.getZoom(), 15)}); DM.markers.find(m => m.getElement().title === x.name)?.togglePopup(); }
 function vGuide(s){
@@ -4442,7 +4467,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map2";
+const BUILD = "2026-11-17-map3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
