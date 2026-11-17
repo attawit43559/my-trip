@@ -2406,6 +2406,21 @@ function decodePoly(str){
       const d = r & 1 ? ~(r >> 1) : r >> 1; if(k) lng += d; else lat += d; } out.push([lng / 1e5, lat / 1e5]); }
   return out;
 }
+/* walking routes zigzag along every street corner: drop tiny turns, then round the corners */
+function smoothLine(pts){
+  if(pts.length < 4) return pts;
+  const tol = 0.00006, keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1;
+  const st = [[0, pts.length - 1]];
+  while(st.length){ const [a, b] = st.pop(); let far = -1, best = tol;
+    const [x1, y1] = pts[a], [x2, y2] = pts[b], dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1e-12;
+    for(let i = a + 1; i < b; i++){ const d = Math.abs(dy * pts[i][0] - dx * pts[i][1] + x2 * y1 - y2 * x1) / len; if(d > best){ best = d; far = i; } }
+    if(far > 0){ keep[far] = 1; st.push([a, far], [far, b]); } }
+  let out = pts.filter((_, i) => keep[i]);
+  for(let r = 0; r < 2; r++){ const n = [out[0]];
+    for(let i = 0; i < out.length - 1; i++){ const [ax, ay] = out[i], [bx, by] = out[i + 1]; n.push([ax * .75 + bx * .25, ay * .75 + by * .25], [ax * .25 + bx * .75, ay * .25 + by * .75]); }
+    n.push(out[out.length - 1]); out = n; }
+  return out;
+}
 const llOf = d => d && d.lat !== "" && d.lat != null && isFinite(+d.lat) && isFinite(+d.lon) ? [+d.lon, +d.lat] : null;
 /* the day's stops (places and where we sleep) in plan order, and each leg's line */
 function dayMapData(date){
@@ -2426,7 +2441,7 @@ function dayMapData(date){
   });
   const lines = [], rows = [];
   legs.forEach((l, i) => { const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
-    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride", id:"L" + i}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}}); });
+    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride", id:"L" + i}, geometry:{type:"LineString", coordinates:smoothLine(decodePoly(d.poly))}}); });
   /* the list: each stop, then the way to the next one */
   stops.forEach((x, k) => { rows.push({stop:k});
     const i = legs.findIndex(l => l.fromId === x.id && stops[k + 1] && l.toId === stops[k + 1].id), l = legs[i];
@@ -2466,6 +2481,7 @@ async function dayMapMount(){
   DM.map.resize();
   const {stops, lines} = dayMapData(s.date), sig = s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
   if(DM.date !== s.date) setTimeout(() => dayMapFill(s.date), 300);
+  if(s.leg == null){ const first = lines[0]; s.leg = first ? first.properties.id : ""; document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); }   // start with the first leg; tap others in turn
   const nLL = stops.filter(x => x.ll).length;
   if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
@@ -2475,7 +2491,9 @@ async function dayMapMount(){
     const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.air ? ic("flight",14) : x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
     DM.markers.push(new gl.Marker({element:el}).setLngLat(x.ll).setPopup(new gl.Popup({offset:18, closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
-  if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
+  const sel = s.leg && lines.find(f => f.properties.id === s.leg);
+  if(sel && (moved || DM.legShown !== s.leg)){ DM.legShown = s.leg; const c = sel.geometry.coordinates; DM.map.fitBounds(c.reduce((b, p) => b.extend(p), new gl.LngLatBounds(c[0], c[0])), {padding:60, maxZoom:16, duration:0}); }
+  else if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
 }
 /* the day shown first: find pins for places with no coordinates, and the route line of legs saved before lines were kept */
 const DMF = {busy:false, asked:new Set()};
@@ -2505,7 +2523,7 @@ async function dayMapFill(date){
 }
 function dayMapLeg(id){
   const s = S.sheet; if(s?.kind !== "day-map" || !DM.map) return;
-  s.leg = s.leg === id ? "" : id;   // tap again to see the whole day
+  s.leg = s.leg === id ? "" : id; DM.legShown = s.leg;   // tap again to see the whole day
   document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg));
   DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
   ["leg-ride", "leg-walk"].forEach(l => DM.map.setPaintProperty(l, "line-opacity", s.leg ? .3 : .85));
@@ -3757,6 +3775,7 @@ document.addEventListener('touchstart',e=>{overlayTouchY=e.touches[0]?.clientY||
 function overlayTouchMove(e){
   if(!document.documentElement.classList.contains("lock"))return;
   if(e.target.closest?.(".doc-body"))return;   // the ticket viewer scrolls (and zooms) on its own
+  if(e.target.closest?.(".day-map"))return;   // the map pans and its list scrolls on their own
   const compose=e.target.closest?.('.idea-compose-sheet');
   if(compose){
     const y=e.touches?.[0]?.clientY??overlayTouchY,dy=y-overlayTouchY;overlayTouchY=y;
@@ -4323,8 +4342,8 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
-    case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today()}; render(); break;
-    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.sheet.leg = ""; S.day = i; render(); } break;
+    case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:null}; render(); break;
+    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.sheet.leg = null; S.day = i; render(); } break;
     case "day-map-stop": dayMapFocus(Number(el.dataset.i)); break;
     case "day-map-leg": dayMapLeg(el.dataset.leg); break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
@@ -4492,7 +4511,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map6";
+const BUILD = "2026-11-17-map7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
