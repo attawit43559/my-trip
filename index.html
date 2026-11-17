@@ -3932,6 +3932,9 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
   document.addEventListener("focusout", () => { fit.left = Date.now(); setTimeout(onChange, 520); });
+  /* undo the slide the moment it starts, not a frame later */
+  const unslide = () => { if(document.querySelector(".exp-sheet") && (vv.offsetTop > 0 || window.scrollY > 0)) window.scrollTo(0, 0); };
+  vv.addEventListener("scroll", unslide); window.addEventListener("scroll", unslide, {passive:true});
   document.addEventListener("focusin", e => { if(!e.target.closest?.(".exp-sheet")) return; for(const t of [0, 60, 200, 400]) setTimeout(() => { if(vv.offsetTop > 0) window.scrollTo(0, 0); fit(); }, t); });
 })();
 document.addEventListener("focusout", e => {
@@ -4618,7 +4621,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp10";
+const BUILD = "2026-11-17-exp11";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
