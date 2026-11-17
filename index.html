@@ -235,11 +235,13 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .trip-map{--hmh:min(46svh,420px);position:relative;flex:none;height:var(--hmh);border-radius:28px;overflow:hidden;background:var(--soft,var(--tile))}
 .hm-slot{position:absolute;top:0;left:0;right:0;height:var(--hmh)}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
 .trip-bar,.trip-map{touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.trip-map.grow{animation:hmGrow .34s cubic-bezier(.2,.8,.2,1) var(--ad,0s) both}.trip-map.grow .hm-slot,.trip-map.grow .hm-ov{animation:hmFade .34s ease-out var(--ad,0s) both}
-.trip-map.shrink{animation:hmShrink .23s cubic-bezier(.4,0,.6,1) forwards}.trip-map.shrink .hm-ov{opacity:0;transition:opacity .15s}
-.trip-bar.pop>*{animation:hmFade .26s ease-out var(--ad,0s) both}
-@keyframes hmGrow{from{height:108px}to{height:var(--hmh)}}@keyframes hmShrink{from{height:var(--hmh)}to{height:108px}}@keyframes hmFade{from{opacity:0}}
-@media (prefers-reduced-motion:reduce){.trip-map.grow,.trip-map.shrink,.trip-bar.pop>*{animation-duration:.01s}}
+.trip-map .hm-cover{position:absolute;top:0;left:0;right:0;height:var(--hmfrom);z-index:3;pointer-events:none;margin:0}
+.trip-map.grow{animation:hmGrow .48s cubic-bezier(.32,.72,0,1) var(--ad,0s) both}
+.trip-map.grow .hm-cover{animation:hmOut .3s ease-out var(--ad,0s) both}.trip-map.grow .hm-ov{animation:hmIn .3s ease-out calc(var(--ad,0s) + .16s) both}
+.trip-map.shrink{animation:hmShrink .4s cubic-bezier(.32,.72,0,1) var(--ad,0s) both}
+.trip-map.shrink .hm-cover{animation:hmIn .24s ease-in-out calc(var(--ad,0s) + .08s) both}.trip-map.shrink .hm-ov{animation:hmOut .14s ease-out var(--ad,0s) both}
+@keyframes hmGrow{from{height:var(--hmfrom)}to{height:var(--hmh)}}@keyframes hmShrink{from{height:var(--hmh)}to{height:var(--hmfrom)}}@keyframes hmIn{from{opacity:0}}@keyframes hmOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.trip-map.grow,.trip-map.shrink,.trip-map .hm-cover,.trip-map .hm-ov{animation-duration:.01s;animation-delay:0s}}
 .hm-ov{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;min-width:0}
 .trip-map .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
 .hm-title{min-width:0;background:rgba(255,255,255,.72);color:#5A4E46;border-radius:999px;padding:3px 10px;font-size:12px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
@@ -2260,16 +2262,19 @@ function vTrip(){
   /* map mode: the header card shows the day on a small map; tapping a travel row lights its route up */
   const mapHead = !!(S.mapMode && tab === "" && d);
   if(mapHead){ S.hm ||= {date:"", leg:""}; if(S.hm.date !== d){ S.hm.date = d; S.hm.leg = ""; S.hm.err = ""; } }
-  /* grow into the map, or the cover settling back; a redraw part way through carries on from where it was */
-  const anim = S.hmAnim && Date.now() - S.hmAnim.at < 400 ? S.hmAnim.k : "", animAt = anim ? ` style="--ad:-${Date.now() - S.hmAnim.at}ms"` : "";
-  const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim === "grow" ? " grow" : ""}"${animAt} title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
-      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title">${esc(t.name)} · ${esc(dLong(d))}</div></div>
-      <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
-    </section>` : `<section class="trip-bar cv-${tone(t.id)}${anim === "pop" ? " pop" : ""}"${animAt} title="แตะสองครั้งเพื่อดูแผนที่">${tripArt(d && d >= today() ? wxFor(d) : null)}
+  /* the cover grows into the map (and back): the cover fades over the map while the card changes height;
+     a redraw part way through carries on from where it was */
+  const anim = S.hmAnim && Date.now() - S.hmAnim.at < 600 ? S.hmAnim.k : "", animAt = `--hmfrom:${S.coverH || 108}px${anim ? `;--ad:-${Date.now() - S.hmAnim.at}ms` : ""}`;
+  const cover = (cls, live) => `<section class="trip-bar cv-${tone(t.id)}${cls}" ${live ? `title="แตะสองครั้งเพื่อดูแผนที่"` : `aria-hidden="true" inert`}>${tripArt(d && d >= today() ? wxFor(d) : null)}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span>${tbWx(d)}</div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
     </section>`;
+  const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim ? " " + anim : ""}" style="${animAt}" title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
+      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title">${esc(t.name)} · ${esc(dLong(d))}</div></div>
+      <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
+      ${anim ? cover(" hm-cover", false) : ""}
+    </section>` : cover("", true);
   return `<main class="screen has-tabbar">
     <div class="trip-top">
     ${head}${pin ? `<div class="pin-cal">${pin}</div>` : ""}</div>
@@ -2487,10 +2492,12 @@ function mapModeSwitch(on){
   if(on === !!S.mapMode) return;
   try { localStorage.setItem("mytrip-mapmode", on ? "1" : ""); } catch(_){}
   if(S.sheet?.kind === "trip-more") S.sheet = null;
+  const bar = document.querySelector(".trip-bar:not(.hm-cover)"); if(bar) S.coverH = bar.offsetHeight;   // the map grows from (and shrinks back to) the cover's own height
   if(on){ S.mapMode = true; S.hmAnim = {k:"grow", at:Date.now()}; if(S.catTab){ selectTab(""); return; } render(); return; }
-  render(); const m = document.querySelector(".trip-map");
-  if(!m){ S.mapMode = false; render(); return; }
-  m.classList.add("shrink"); setTimeout(() => { S.mapMode = false; S.hmAnim = {k:"pop", at:Date.now()}; render(); }, 220);
+  if(S.hmAnim?.k === "shrink") return;
+  if(!document.querySelector(".trip-map")){ S.mapMode = false; render(); return; }
+  const a = S.hmAnim = {k:"shrink", at:Date.now()}; render();
+  setTimeout(() => { if(S.hmAnim !== a) return; S.mapMode = false; S.hmAnim = null; render(); }, 400);
 }
 { let down = null, last = 0, lx = 0, ly = 0;
   document.addEventListener("pointerdown", e => { const h = e.isPrimary && S.view === "trip" && e.target.closest?.(".trip-bar,.trip-map");
@@ -4569,7 +4576,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode6";
+const BUILD = "2026-11-17-mapmode7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
