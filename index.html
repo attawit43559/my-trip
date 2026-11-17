@@ -376,8 +376,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.scrim.exp-scrim{align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 0;box-sizing:border-box}
-.exp-sheet{padding-top:6px;padding-bottom:16px}.exp-sheet.steady{animation:none}.exp-sheet .exp-amt-box{padding-top:8px}
+.exp-sheet.steady{animation:none}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
 .exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none;caret-color:transparent}
 .exp-big::placeholder{color:var(--muted);opacity:.45;transition:color .15s,opacity .15s}.exp-big:focus::placeholder{color:var(--ink);opacity:1}
@@ -3903,12 +3902,16 @@ document.addEventListener("focusin", e => {
   fieldToReveal = e.target; clearTimeout(revealTimer); revealTimer = setTimeout(revealField, 700);   // fallback when no keyboard appears
 });
 /* tapping yen / baht in the expense card keeps the field being typed in (and its keyboard) as it is */
-for(const ev of ["pointerdown", "mousedown"]) document.addEventListener(ev, e => { if(e.target.closest?.(".exp-sheet .exp-seg button") && /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) e.preventDefault(); });
+document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet .exp-seg button") && /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) e.preventDefault(); });
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
   const fit = () => {
-    const r = document.documentElement.style; r.setProperty("--vvh", vv.height + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
+    /* in the expense sheet, moving between the amount (number pad) and the name (letters, a taller keyboard) would bounce the sheet:
+       while typing there it only moves up, never back down, until the keyboard is put away */
+    const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
+    const h = exp && typing && fit.minH ? Math.min(vv.height, fit.minH) : vv.height; fit.minH = exp && typing ? h : 0;
+    const r = document.documentElement.style; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
     const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
     const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
@@ -3922,6 +3925,7 @@ for(const ev of ["pointerdown", "mousedown"]) document.addEventListener(ev, e =>
     clearTimeout(settle); settle = setTimeout(revealField, 160);
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
+  document.addEventListener("focusout", () => { fit.left = Date.now(); setTimeout(onChange, 520); });
 })();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
@@ -4017,10 +4021,8 @@ function vExpAdd(s){
   const it = s.id ? S.items.find(i => i.id === s.id) : null, d = (it && it.data) || {};
   let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
-  /* a card at the top of the visible area: the keyboard opens below it (a sheet at the bottom jumps up and down with the keyboard);
-     if iPhone still slides the page up for the keyboard, the card follows the visible area so it stays on screen */
   const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
-  return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet float exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
+  return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
     <form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
         <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
@@ -4609,7 +4611,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp4";
+const BUILD = "2026-11-17-exp5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
