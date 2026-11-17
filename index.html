@@ -214,11 +214,12 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .map-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2);font:inherit;font-size:13px;font-weight:600;padding:0 14px;min-height:34px}
 .day-map{background:var(--bg);z-index:40}.dm-top{display:flex;align-items:center;gap:8px;padding:8px 12px}.dm-day{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}.dm-day b{font-family:var(--display);font-weight:500;font-size:17px;min-width:150px;text-align:center}
 .dm-arrow{width:40px;height:40px;border:0;border-radius:999px;background:var(--tile);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}.dm-arrow:disabled{opacity:.3}.flip{display:inline-flex;transform:scaleX(-1)}
-.dm-slot{position:relative;flex:1 1 60%;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:var(--tile)}.dm-slot .dm-map{position:absolute;inset:0;height:auto}
+.dm-slot{position:relative;flex:1 1 auto;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:var(--tile)}.dm-slot .dm-map{position:absolute;inset:0;height:auto}
 .dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
-.dm-list{list-style:none;margin:8px 0 0;padding:0 12px calc(env(safe-area-inset-bottom,0px) + 12px);flex:0 1 auto;max-height:36%;overflow-y:auto;overscroll-behavior:contain}
+.dm-list{list-style:none;margin:6px 0 0;padding:0 12px;flex:0 0 auto;height:132px;margin-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);overflow-y:auto;overscroll-behavior:contain}
 .dm-list button{width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:14px;color:var(--ink);text-align:left;min-height:44px;padding:0 2px}
 .dm-list button:disabled{color:var(--muted)}
+.dm-list .dm-leg{min-height:36px;padding-left:8px;font-size:13px;color:var(--ai,#2B61B2);gap:14px}.dm-leg svg{flex:none}.dm-leg.on{background:#FFF1DC;color:#A85A00;border-radius:12px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
 .dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
 .dm-pin svg{width:14px;height:14px}
@@ -2423,21 +2424,25 @@ function dayMapData(date){
     const ll = llOf(d) || at[it.id] || null;
     stops.push({id:it.id, name:(e.start ? "เริ่มจาก " : "") + (it.title || ""), stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
   });
-  const lines = [];
-  for(const l of legs){ const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
-    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride"}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}});
-  }
-  return {stops, lines};
+  const lines = [], rows = [];
+  legs.forEach((l, i) => { const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
+    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride", id:"L" + i}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}}); });
+  /* the list: each stop, then the way to the next one */
+  stops.forEach((x, k) => { rows.push({stop:k});
+    const i = legs.findIndex(l => l.fromId === x.id && stops[k + 1] && l.toId === stops[k + 1].id), l = legs[i];
+    if(l?.saved){ const d = l.saved.data || {}; rows.push({leg:"L" + i, has:!!d.poly, label:[d.mode, d.durationMinutes ? d.durationMinutes + " นาที" : ""].filter(Boolean).join(" · "), mode:d.mode || ""}); } });
+  return {stops, lines, rows};
 }
 function vDayMap(s){
-  const ds = tripDates(S.trip), i = ds.indexOf(s.date), {stops} = dayMapData(s.date);
+  const ds = tripDates(S.trip), i = ds.indexOf(s.date), {stops, rows} = dayMapData(s.date);
   return `<div class="big-sheet day-map" role="dialog" aria-modal="true" aria-label="แผนที่">
     <div class="dm-top"><span class="dm-day"><button class="dm-arrow" data-act="day-map-day" data-d="-1" aria-label="วันก่อน" ${i > 0 ? "" : "disabled"}><span class="flip">${ic("chev",18)}</span></button>
       <b>${esc(dLong(s.date))}</b>
       <button class="dm-arrow" data-act="day-map-day" data-d="1" aria-label="วันถัดไป" ${i < ds.length - 1 ? "" : "disabled"}>${ic("chev",18)}</button></span>
       <button class="round" data-act="close-sheet" aria-label="ปิดแผนที่">${ic("close")}</button></div>
     <div class="dm-slot" id="dm-slot">${s.err ? `<p class="muted small dm-msg">${esc(s.err)}</p>` : ""}</div>
-    <ol class="dm-list">${stops.length ? stops.map((x, k) => `<li><button type="button" data-act="day-map-stop" data-i="${k}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
+    <ol class="dm-list">${stops.length ? rows.map(r => { if(r.leg) return `<li><button type="button" class="dm-leg${s.leg === r.leg ? " on" : ""}" data-act="day-map-leg" data-leg="${r.leg}" ${r.has ? "" : "disabled"}>${ic(/เดิน/.test(r.mode) ? "walk" : /แท็กซี่|ขับรถ/.test(r.mode) ? "taxi" : "bus",14)}<span class="grow">${esc(r.label || "การเดินทาง")}</span>${r.has ? "" : `<small class="muted">กำลังหาเส้นทาง</small>`}</button></li>`;
+      const x = stops[r.stop]; return `<li><button type="button" data-act="day-map-stop" data-i="${r.stop}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`; }).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
   </div>`;
 }
 async function dayMapMount(){
@@ -2453,8 +2458,9 @@ async function dayMapMount(){
     DM.map.touchZoomRotate.disableRotation();
     await new Promise(r => DM.map.once("load", r));
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
-    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", filter:["==", ["get", "k"], "ride"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":5, "line-opacity":.9}});
-    DM.map.addLayer({id:"leg-walk", type:"line", source:"legs", filter:["==", ["get", "k"], "walk"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":4.5, "line-dasharray":[0.1, 1.8]}});
+    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", filter:["==", ["get", "k"], "ride"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":3.5, "line-opacity":.85}});
+    DM.map.addLayer({id:"leg-walk", type:"line", source:"legs", filter:["==", ["get", "k"], "walk"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":3, "line-opacity":.85, "line-dasharray":[0.1, 2]}});
+    DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":5}});
   }
   if(S.sheet !== s) return;
   DM.map.resize();
@@ -2463,6 +2469,7 @@ async function dayMapMount(){
   const nLL = stops.filter(x => x.ll).length;
   if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
+  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]); ["leg-ride", "leg-walk"].forEach(l => DM.map.setPaintProperty(l, "line-opacity", s.leg ? .3 : .85));
   DM.markers.forEach(m => m.remove()); DM.markers = [];
   for(const x of stops){ if(!x.ll) continue;
     const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.air ? ic("flight",14) : x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
@@ -2495,6 +2502,15 @@ async function dayMapFill(date){
       } catch(e){ if(["travel_quota", "offline", "auth_required"].includes(e?.code)) break; }
     }
   } finally { DMF.busy = false; }
+}
+function dayMapLeg(id){
+  const s = S.sheet; if(s?.kind !== "day-map" || !DM.map) return;
+  s.leg = s.leg === id ? "" : id;   // tap again to see the whole day
+  document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg));
+  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
+  ["leg-ride", "leg-walk"].forEach(l => DM.map.setPaintProperty(l, "line-opacity", s.leg ? .3 : .85));
+  const f = s.leg && dayMapData(s.date).lines.find(x => x.properties.id === s.leg), pts = f ? f.geometry.coordinates : DM.stops.filter(x => x.ll).map(x => x.ll);
+  if(pts.length){ const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:60, maxZoom:16}); }
 }
 function dayMapFocus(i){ const x = DM.stops[i]; if(!DM.map || !x?.ll) return; DM.map.flyTo({center:x.ll, zoom:Math.max(DM.map.getZoom(), 15)}); DM.markers.find(m => m.getElement().title === x.name)?.togglePopup(); }
 function vGuide(s){
@@ -4308,8 +4324,9 @@ document.addEventListener("click", async e => {
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
     case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today()}; render(); break;
-    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.day = i; render(); } break;
+    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.sheet.leg = ""; S.day = i; render(); } break;
     case "day-map-stop": dayMapFocus(Number(el.dataset.i)); break;
+    case "day-map-leg": dayMapLeg(el.dataset.leg); break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
     case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render.pendingGuide = false; render(); } break;
@@ -4475,7 +4492,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map5";
+const BUILD = "2026-11-17-map6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
