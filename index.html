@@ -377,9 +377,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
 .exp-sheet.steady{animation:none}
-/* iPhone briefly drops and re-raises the keyboard when moving between the number pad and the letter keyboard:
-   the sheet glides instead of following that dip (a quick down-and-up barely moves it) */
-.scrim.exp-scrim{transition:top .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
+/* moving between the number pad and the letter keyboard, iPhone slides the whole page down and up again;
+   this sheet stays pinned to the top of the screen instead, and that slide is undone at once (see fit below) */
+.scrim.exp-scrim{top:0}
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
@@ -3916,10 +3916,8 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
        while typing there it only moves up, never back down, until the keyboard is put away */
     const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
     const h = exp && typing && fit.minH ? Math.min(vv.height, fit.minH) : vv.height; fit.minH = exp && typing ? h : 0;
-    const r = document.documentElement.style, set = () => { r.setProperty("--vvh", (exp && fit.minH ? Math.min(vv.height, fit.minH) : vv.height) + "px"); r.setProperty("--vvt", vv.offsetTop + "px"); };
-    clearTimeout(fit.wait);
-    if(exp && Date.now() - (fit.left || 0) < 700) fit.wait = setTimeout(set, 180);   // moving between fields: wait for the keyboard to settle, then glide once
-    else set();
+    const r = document.documentElement.style; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
+    if(exp && vv.offsetTop > 0) window.scrollTo(0, 0);   // the fields are already above the keyboard: put back iPhone's slide
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
     const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
     const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
@@ -3934,6 +3932,7 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
   document.addEventListener("focusout", () => { fit.left = Date.now(); setTimeout(onChange, 520); });
+  document.addEventListener("focusin", e => { if(!e.target.closest?.(".exp-sheet")) return; for(const t of [0, 60, 200, 400]) setTimeout(() => { if(vv.offsetTop > 0) window.scrollTo(0, 0); fit(); }, t); });
 })();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
@@ -4619,7 +4618,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp9";
+const BUILD = "2026-11-17-exp10";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
