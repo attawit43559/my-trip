@@ -210,6 +210,18 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .sheet.float input[type=date]{width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none}
 .plan-code{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.04em;text-align:center;background:var(--tile);border-radius:16px;padding:14px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
 .row-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px}
+.day-tools{display:flex;justify-content:flex-end;margin:-4px 2px 6px}
+.map-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2);font:inherit;font-size:13px;font-weight:600;padding:0 14px;min-height:34px}
+.day-map{background:var(--bg);z-index:40}.dm-top{display:flex;align-items:center;gap:8px;padding:8px 12px}.dm-day{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}.dm-day b{font-family:var(--display);font-weight:500;font-size:17px;min-width:150px;text-align:center}
+.dm-arrow{width:40px;height:40px;border:0;border-radius:999px;background:var(--tile);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}.dm-arrow:disabled{opacity:.3}.flip{display:inline-flex;transform:scaleX(-1)}
+.dm-slot{position:relative;flex:1 1 60%;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:var(--tile)}.dm-slot .dm-map{position:absolute;inset:0;height:auto}
+.dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
+.dm-list{list-style:none;margin:8px 0 0;padding:0 12px calc(env(safe-area-inset-bottom,0px) + 12px);flex:0 1 auto;max-height:36%;overflow-y:auto;overscroll-behavior:contain}
+.dm-list button{width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:14px;color:var(--ink);text-align:left;min-height:44px;padding:0 2px}
+.dm-list button:disabled{color:var(--muted)}
+.dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
+.dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
+.dm-pin svg{width:14px;height:14px}
 .guide-scrim{align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
 .guide-card{width:100%;max-width:380px;max-height:calc(100% - 24px);background:var(--surface);border-radius:28px;box-shadow:0 18px 50px rgba(20,19,26,.28);display:flex;flex-direction:column;gap:12px;padding:14px 0 18px;overflow:hidden;animation:guideIn .22s ease-out}
 @keyframes guideIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
@@ -856,6 +868,7 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  map:'<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4zM9 4v13.5M15 6.5V20"/>',
   refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   globe:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
   history:'<path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7M12 7v5l3 2"/>',
@@ -1170,7 +1183,7 @@ async function prepFile(f){
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide","day-map"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -2216,7 +2229,7 @@ function vTrip(){
   else page = `${!dates.length ? `<button class="add-dash t-place" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
       ${isToday && next ? vNext(next) : ""}
-      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
+      ${entries.length ? `<div class="day-tools"><button type="button" class="map-btn" data-act="day-map">${ic("map",16)}แผนที่วันนี้</button></div><ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
   return `<main class="screen has-tabbar">
@@ -2358,6 +2371,99 @@ const GUIDE = [
   {img:8, t:"ให้ AI ช่วย", d:"แท็บ AI แนะนำที่เที่ยวใกล้แผน หรือรีวิวแผนทั้งวัน"},
   {img:9, t:"ส่งออกเป็นรูป", d:"กด ⋯ มุมขวาบนของทริป → “ส่งออกแผนเที่ยว” ได้ทั้งรูปและ PDF"}
 ];
+/* ---------- day map: a free map (OpenFreeMap, no key) with the day's stops in order and the routes chosen for each leg ---------- */
+const MAP_LIB = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl";
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const DM = {lib:null, style:null, map:null, box:null, markers:[], stops:[], date:"", sig:""};
+function dayMapLib(){
+  return DM.lib ||= new Promise((ok, no) => {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = MAP_LIB + ".css"; document.head.appendChild(css);
+    const js = document.createElement("script"); js.src = MAP_LIB + ".js"; js.onload = () => ok(window.maplibregl); js.onerror = () => { DM.lib = null; no(new Error("map_offline")); }; document.head.appendChild(js);
+  });
+}
+/* the colourful style, roads and water a little softer so the plan stands out */
+async function dayMapStyle(){
+  if(DM.style) return DM.style;
+  const st = await (await fetch(MAP_STYLE)).json();
+  for(const l of st.layers){ const id = l.id, p = l.paint || (l.paint = {});
+    if(l.type === "line" && /^(road|tunnel|bridge)_/.test(id)){
+      if(/casing/.test(id)) p["line-color"] = /service|minor|street/.test(id) ? "#E0D8CE" : "#EAB886";
+      else if(/motorway/.test(id)) p["line-color"] = "#FBCB8A";
+      else if(/trunk_primary|link/.test(id)) p["line-color"] = "#FDE2AA";
+      else if(/secondary_tertiary/.test(id)) p["line-color"] = "#FFF1CF";
+    }
+    if(/water/.test(id) && l.type === "fill") p["fill-color"] = "#BCD8EE";
+    if(/water/.test(id) && l.type === "line") p["line-color"] = "#BCD8EE";
+    if(/park|wood|grass/.test(id) && l.type === "fill") p["fill-color"] = "#D6EAC6";
+  }
+  return DM.style = st;
+}
+/* Google's encoded route line → [lng, lat] points */
+function decodePoly(str){
+  const out = []; let i = 0, lat = 0, lng = 0;
+  while(i < str.length){ for(const k of [0, 1]){ let b, sh = 0, r = 0; do { b = str.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while(b >= 32 && i <= str.length);
+      const d = r & 1 ? ~(r >> 1) : r >> 1; if(k) lng += d; else lat += d; } out.push([lng / 1e5, lat / 1e5]); }
+  return out;
+}
+const llOf = d => d && d.lat !== "" && d.lat != null && isFinite(+d.lat) && isFinite(+d.lon) ? [+d.lon, +d.lat] : null;
+/* the day's stops (places and where we sleep) in plan order, and each leg's line */
+function dayMapData(date){
+  const legs = manualTravelLegs(date), at = {}, stops = [];
+  for(const l of legs){ const d = l.saved?.data || {}; if(d.a) at[l.fromId] ||= [d.a[1], d.a[0]]; if(d.b) at[l.toId] ||= [d.b[1], d.b[0]]; }
+  let n = 0;
+  for(const e of dayEntries(date)){
+    const it = e.it; if(!["place", "stay"].includes(it.type)) continue;
+    if(stops.some(x => x.id === it.id) && it.type === "stay") continue;
+    const ll = llOf(it.data) || at[it.id] || null;
+    stops.push({id:it.id, name:it.title || "", stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
+  }
+  const lines = [];
+  for(const l of legs){ const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
+    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride"}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}});
+    else { const a = stops.find(x => x.id === l.fromId)?.ll, b = stops.find(x => x.id === l.toId)?.ll; if(a && b) lines.push({type:"Feature", properties:{k:"guess"}, geometry:{type:"LineString", coordinates:[a, b]}}); } }
+  return {stops, lines};
+}
+function vDayMap(s){
+  const ds = tripDates(S.trip), i = ds.indexOf(s.date), {stops} = dayMapData(s.date);
+  return `<div class="big-sheet day-map" role="dialog" aria-modal="true" aria-label="แผนที่">
+    <div class="dm-top"><span class="dm-day"><button class="dm-arrow" data-act="day-map-day" data-d="-1" aria-label="วันก่อน" ${i > 0 ? "" : "disabled"}><span class="flip">${ic("chev",18)}</span></button>
+      <b>${esc(dLong(s.date))}</b>
+      <button class="dm-arrow" data-act="day-map-day" data-d="1" aria-label="วันถัดไป" ${i < ds.length - 1 ? "" : "disabled"}>${ic("chev",18)}</button></span>
+      <button class="round" data-act="close-sheet" aria-label="ปิดแผนที่">${ic("close")}</button></div>
+    <div class="dm-slot" id="dm-slot">${s.err ? `<p class="muted small dm-msg">${esc(s.err)}</p>` : ""}</div>
+    <ol class="dm-list">${stops.length ? stops.map((x, k) => `<li><button type="button" data-act="day-map-stop" data-i="${k}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
+  </div>`;
+}
+async function dayMapMount(){
+  const s = S.sheet, slot = document.getElementById("dm-slot"); if(!slot || s?.kind !== "day-map") return;
+  if(!DM.box){ DM.box = document.createElement("div"); DM.box.className = "dm-map"; }
+  slot.prepend(DM.box);   // the map lives in one box that is moved into each redraw, so it is not rebuilt
+  let gl, style;
+  try { [gl, style] = await Promise.all([dayMapLib(), dayMapStyle()]); }
+  catch(_){ if(S.sheet === s && !s.err){ s.err = "ต้องใช้อินเทอร์เน็ตเพื่อโหลดแผนที่"; render(); } return; }
+  if(S.sheet !== s) return;
+  if(!DM.map){
+    DM.map = new gl.Map({container:DM.box, style, center:[139.76, 35.68], zoom:11, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false});
+    DM.map.touchZoomRotate.disableRotation();
+    await new Promise(r => DM.map.once("load", r));
+    DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
+    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", filter:["==", ["get", "k"], "ride"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":5, "line-opacity":.9}});
+    DM.map.addLayer({id:"leg-walk", type:"line", source:"legs", filter:["==", ["get", "k"], "walk"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":4.5, "line-dasharray":[0.1, 1.8]}});
+    DM.map.addLayer({id:"leg-guess", type:"line", source:"legs", filter:["==", ["get", "k"], "guess"], paint:{"line-color":"#8C7F74", "line-width":2.5, "line-opacity":.6, "line-dasharray":[2, 2]}});
+  }
+  if(S.sheet !== s) return;
+  DM.map.resize();
+  const {stops, lines} = dayMapData(s.date), sig = s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
+  if(sig === DM.sig) return; const moved = DM.date !== s.date; DM.sig = sig; DM.date = s.date; DM.stops = stops;
+  DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
+  DM.markers.forEach(m => m.remove()); DM.markers = [];
+  for(const x of stops){ if(!x.ll) continue;
+    const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
+    DM.markers.push(new gl.Marker({element:el}).setLngLat(x.ll).setPopup(new gl.Popup({offset:18, closeButton:false}).setText(x.name)).addTo(DM.map)); }
+  const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
+  if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
+}
+function dayMapFocus(i){ const x = DM.stops[i]; if(!DM.map || !x?.ll) return; DM.map.flyTo({center:x.ll, zoom:Math.max(DM.map.getZoom(), 15)}); DM.markers.find(m => m.getElement().title === x.name)?.togglePopup(); }
 function vGuide(s){
   const n = GUIDE.length, i = Math.max(0, Math.min(n - 1, s.pos || 0)), last = i === n - 1;
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
@@ -2562,7 +2668,7 @@ function travelResultMatches(s,r){
   });
 }
 /* route options found for each travel gap; kept on the phone so reopening the app does not search again */
-const TRAVEL_CACHE='mytrip-travel-cache',TRAVEL_TTL=14*864e5;
+const TRAVEL_CACHE='mytrip-travel-cache2',TRAVEL_TTL=14*864e5;
 const travelResultsCache=(()=>{const m=new Map();try{const o=JSON.parse(localStorage.getItem(TRAVEL_CACHE)||'[]');for(const [k,v] of o)if(v&&Date.now()-(v.at||0)<TRAVEL_TTL)m.set(k,v);}catch(_){}
   const set=m.set.bind(m);let t=0;m.set=(k,v)=>{set(k,{...v,at:Date.now()});while(m.size>120)m.delete(m.keys().next().value);clearTimeout(t);t=setTimeout(()=>{try{localStorage.setItem(TRAVEL_CACHE,JSON.stringify([...m]));}catch(_){}},300);return m;};return m;})();
 function travelCacheKey(leg){return JSON.stringify([S.me,S.trip.id,leg.date,leg.key,leg.from,leg.to,travelTimezone(leg)]);}
@@ -2586,7 +2692,10 @@ async function runTravelPrefetch(){
         try{
           const result=await api('travelOptions',{ai:false,tripId,...q,fromId:leg.fromId,toId:leg.toId,from:leg.from,to:leg.to});
           if(!travelResultMatches(q,result))throw {code:'travel_date_mismatch'};
-          travelResultsCache.set(key,{result,selectedIndex:leg.saved?(result.routes||[]).findIndex(r=>travelModeFor(r)===sd.mode&&r.minutes===Number(sd.durationMinutes)):-1});
+          const sel=leg.saved?(result.routes||[]).findIndex(r=>travelModeFor(r)===sd.mode&&r.minutes===Number(sd.durationMinutes)):-1;
+          travelResultsCache.set(key,{result,selectedIndex:sel});
+          const pick=leg.saved&&!sd.poly&&((result.routes||[])[sel]||(result.routes||[]).find(r=>travelModeFor(r)===sd.mode));
+          if(pick?.poly)store.updateItem(tripId,leg.saved.id,{data:{poly:pick.poly,a:pick.a||null,b:pick.b||null}}).catch(()=>{});   // saved before routes kept their line
           const sh=S.sheet;if(sh?.kind==='travel-leg'&&sh.cacheKey===key&&!sh.lookup&&!sh.lookupBusy&&!sh.chosen){sh.lookup=result;sh.time=result.time;sh.lookupKey=travelQueryKey(sh);sh.lookupError='';render();}
         }catch(e){travelPrefetch.failed.add(key);if(['travel_quota','offline','not_connected','auth_required','travel_maps_unavailable'].includes(e?.code))return;}
         await new Promise(r=>setTimeout(r,600));
@@ -2621,14 +2730,14 @@ function applyTravelChoice(ai,index){
   const s=S.sheet;if(s?.kind!=='travel-leg'||!s.lookup||s.lookupKey!==travelQueryKey(s))return;
   const choice=ai?s.lookup.advice:s.lookup.routes?.[index];if(!choice)return;
   const factual=ai?s.lookup.routes?.[0]:choice;
-  if(factual){s.mode=travelModeFor(factual);s.minutes=factual.minutes;s.note=travelRouteNote(factual);}
+  if(factual){s.mode=travelModeFor(factual);s.minutes=factual.minutes;s.note=travelRouteNote(factual);s.poly=factual.poly||'';s.pa=factual.a||null;s.pb=factual.b||null;}
   else{s.mode=choice.mode;s.minutes=choice.minutes;s.note=choice.note;}
   s.travelSource=ai?'AI วิเคราะห์จาก Google Maps · เวลาประมาณ':'Google Maps · เวลาประมาณ';
   s.travelCheckedAt=s.lookup.checkedAt;s.selectedIndex=ai?0:index;s.chosen=true;s.lookupKey=travelQueryKey(s);travelResultsCache.set(s.cacheKey,{result:s.lookup,selectedIndex:s.selectedIndex});render();
 }
 
 function openTravelSheet(leg){
-  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,memo:d.memo||'',mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||travelDepartureHint(leg),note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||'',chosen:!!leg.saved,approximateRoutes:true,departTime:leg.saved?.time||'',cacheKey:travelCacheKey(leg)};const cached=travelResultsCache.get(S.sheet.cacheKey);if(cached){S.sheet.lookup=cached.result;S.sheet.time=cached.result.time;S.sheet.lookupKey=travelQueryKey(S.sheet);if(cached.selectedIndex>=0)applyTravelChoice(false,cached.selectedIndex);else render();}else{render();lookupTravel();}
+  const d=leg.saved?.data||{};S.sheet={kind:'travel-leg',tripId:S.trip.id,date:leg.date,key:leg.key,memo:d.memo||'',poly:d.poly||'',pa:d.a||null,pb:d.b||null,mode:d.mode||'ขนส่งสาธารณะ',minutes:d.durationMinutes??'',time:leg.saved?.time||travelDepartureHint(leg),note:leg.saved?.sub||'',timezone:d.timezone||travelTimezone(leg),travelSource:d.travelSource||'',travelCheckedAt:d.travelCheckedAt||'',chosen:!!leg.saved,approximateRoutes:true,departTime:leg.saved?.time||'',cacheKey:travelCacheKey(leg)};const cached=travelResultsCache.get(S.sheet.cacheKey);if(cached){S.sheet.lookup=cached.result;S.sheet.time=cached.result.time;S.sheet.lookupKey=travelQueryKey(S.sheet);if(cached.selectedIndex>=0)applyTravelChoice(false,cached.selectedIndex);else render();}else{render();lookupTravel();}
 }
 function editManualTravel(it){
   if(!it?.data?.legKey)return false;const leg=manualTravelLegs(it.date).find(l=>l.saved?.id===it.id);if(!leg)return false;openTravelSheet(leg);return true;
@@ -2644,7 +2753,7 @@ async function saveTravelLeg(){
   const leg=manualTravelLegs(s.date).find(l=>l.key===s.key);if(!leg){toast('ลำดับสถานที่เปลี่ยนแล้ว');return;}
   const minutes=s_(s.minutes)===''?null:Number(s.minutes);
   if(minutes!==null&&(!Number.isInteger(minutes)||minutes<1||minutes>1440)){toast('ระบุเวลาระหว่าง 1–1440 นาที');return;}
-  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId,timezone:s.timezone||'',travelSource:s.travelSource||'',travelCheckedAt:s.travelCheckedAt||'',memo:s_(s.memo)};
+  const data={from:leg.from,to:leg.to,mode:s.mode,durationMinutes:minutes,legKey:leg.key,legFromId:leg.fromId,legToId:leg.toId,timezone:s.timezone||'',travelSource:s.travelSource||'',travelCheckedAt:s.travelCheckedAt||'',memo:s_(s.memo),poly:s.chosen?(s.poly||''):'',a:s.chosen?s.pa||null:null,b:s.chosen?s.pb||null:null};
   s.busy=true;render();
   try{
     let id=leg.saved?.id;
@@ -3175,6 +3284,7 @@ function vSheet(){
   if(s.kind === "travel-leg")return vTravelLeg(s);
   if(s.kind === "copy-share")return vCopyShare(s);
   if(s.kind === "guide")return vGuide(s);
+  if(s.kind === "day-map")return vDayMap(s);
   if(s.kind === "copy-in")return vCopyIn(s);
   if(s.kind === "idea-recommend")return vIdeaRecommend(s);
   if(s.kind === "day-ideas") return "";
@@ -3279,6 +3389,7 @@ function render(){
   lockOverlayPage(overlayLocked);document.documentElement.classList.toggle("lock",overlayLocked);   // measure the pinned header before anything stops the page scrolling
   document.body.style.overflow = modalSheet ? "hidden" : "";
   if(S.sheet && S.sheet.kind === "doc") docMount();
+  if(S.sheet?.kind === "day-map") dayMapMount();
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
 }
@@ -4163,6 +4274,9 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
+    case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today()}; render(); break;
+    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.day = i; render(); } break;
+    case "day-map-stop": dayMapFocus(Number(el.dataset.i)); break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
     case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render.pendingGuide = false; render(); } break;
@@ -4328,7 +4442,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-14-lean1";
+const BUILD = "2026-11-17-map2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

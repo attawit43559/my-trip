@@ -1354,7 +1354,8 @@ function travelRoutes_(raw, tz, date, requested){
     if(dep?.value&&Utilities.formatDate(new Date(dep.value*1000),dep.time_zone||tz,'yyyy-MM-dd')!==date)return null;
     if(transit.length&&requested){const earliest=requested.getTime()-60000,latest=requested.getTime()+48*3600000;const times=[dep,...transit.map(s=>s.transit_details.departure_time)];if(times.some(x=>!x?.value||x.value*1000<earliest||x.value*1000>latest))return null;}
     const steps=(leg.steps||[]).slice(0,20).map(s=>{const t=s.transit_details||{},line=t.line||{};return {mode:s.travel_mode,line:line.short_name||line.name||'',vehicle:line.vehicle?.type||'',instruction:text(s.html_instructions),minutes:Math.ceil((s.duration?.value||0)/60),from:t.departure_stop?.name||'',to:t.arrival_stop?.name||'',departure:clock(t.departure_time),arrival:clock(t.arrival_time),departureAt:t.departure_time?.value?new Date(t.departure_time.value*1000).toISOString():''};});
-    return {departureAt:dep?.value?new Date(dep.value*1000).toISOString():'',arrivalAt:leg.arrival_time?.value?new Date(leg.arrival_time.value*1000).toISOString():'',minutes:Math.ceil(((leg.duration_in_traffic||leg.duration)?.value||0)/60),departure:clock(leg.departure_time),arrival:clock(leg.arrival_time),scheduled:transit.length>0&&transit.every(s=>!!s.transit_details.departure_time?.value),steps,copyright:text(route.copyrights),warnings:(route.warnings||[]).map(text).slice(0,3)};
+    const ll=x=>x&&x.lat!=null?[+x.lat.toFixed(5),+x.lng.toFixed(5)]:null;   // the route's line and ends, for the day map
+    return {poly:String(route.overview_polyline?.points||'').slice(0,12000),a:ll(leg.start_location),b:ll(leg.end_location),departureAt:dep?.value?new Date(dep.value*1000).toISOString():'',arrivalAt:leg.arrival_time?.value?new Date(leg.arrival_time.value*1000).toISOString():'',minutes:Math.ceil(((leg.duration_in_traffic||leg.duration)?.value||0)/60),departure:clock(leg.departure_time),arrival:clock(leg.arrival_time),scheduled:transit.length>0&&transit.every(s=>!!s.transit_details.departure_time?.value),steps,copyright:text(route.copyrights),warnings:(route.warnings||[]).map(text).slice(0,3)};
   }).filter(r=>r&&r.minutes>0);
 }
 function travelLookup_(req, ai){
@@ -1365,13 +1366,13 @@ function travelLookup_(req, ai){
   const days=(depart.getTime()-Date.now())/86400000;if(days < -7||days>100)throw new Error('travel_date_range');
   const from=travelPoint_(tripId,req.fromId,String(req.from||'')),to=travelPoint_(tripId,req.toId,String(req.to||''));
   const mode=req.mode==='เดิน'?'WALKING':['ขับรถ','แท็กซี่'].includes(req.mode)?'DRIVING':'TRANSIT';
-  const cache=CacheService.getScriptCache(),key='travel2:'+planRevision_([{id:tripId,from,to,date,time,tz,mode}]);
+  const cache=CacheService.getScriptCache(),key='travel3:'+planRevision_([{id:tripId,from,to,date,time,tz,mode}]);
   let result=cache.get(key);result=result?JSON.parse(result):null;
   if(!result){
     travelQuota_();
     let raw;try{raw=Maps.newDirectionFinder().setOrigin(from).setDestination(to).setMode(Maps.DirectionFinder.Mode[mode]).setDepart(depart).setAlternatives(true).setLanguage('th').getDirections();}catch(e){throw new Error('travel_maps_unavailable');}
     result={source:'Google Maps',date,time,timezone:tz,checkedAt:new Date().toISOString(),requestedDepartureAt:depart.toISOString(),routes:travelRoutes_(raw,tz,date,depart),status:raw.status||'UNKNOWN'};
-    cache.put(key,JSON.stringify(result),300);
+    try{cache.put(key,JSON.stringify(result),21600);}catch(e){}   // 6 h: the same leg asked again (other phone, map) costs no Maps call
   }
   if(ai)travelAdviceFor_(req,result);
   return result;
