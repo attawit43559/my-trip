@@ -227,21 +227,26 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dial-label{background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
 .dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
 .dial-map .dial-btn{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
-.day-map{background:var(--bg);z-index:40}.dm-top{display:flex;align-items:center;gap:8px;padding:8px 12px}.dm-day{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}.dm-day b{font-family:var(--display);font-weight:500;font-size:17px;min-width:150px;text-align:center}
-.dm-arrow{width:40px;height:40px;border:0;border-radius:999px;background:var(--tile);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}.dm-arrow:disabled{opacity:.3}.flip{display:inline-flex;transform:scaleX(-1)}
+.day-map{background:var(--tile);z-index:40;padding-top:0}
 .dm-slot{position:relative;flex:1 1 auto;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:var(--tile)}.dm-slot .dm-map{position:absolute;inset:0;height:auto}
 .dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
-.dm-list{list-style:none;margin:6px 0 0;padding:0 12px;flex:0 0 auto;height:132px;margin-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);overflow-y:auto;overscroll-behavior:contain}
-.dm-list button{width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:14px;color:var(--ink);text-align:left;min-height:44px;padding:0 2px}
-.dm-list button:disabled{color:var(--muted)}
-.dm-list .dm-leg{min-height:36px;padding-left:8px;font-size:13px;color:var(--move);gap:14px}.dm-leg svg{flex:none}.dm-leg.on{background:#FFF1DC;color:#A85A00;border-radius:12px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
 .dm-drop{width:30px;height:40px;position:relative;cursor:pointer;filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.25))}.dm-drop svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--deep)}
 .dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
-.trip-map{position:relative;height:210px;border-radius:28px;overflow:hidden;background:var(--tile)}
-.hm-slot{position:absolute;inset:0}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
+.trip-map{position:relative;flex:none;height:210px;border-radius:28px;overflow:hidden;background:var(--soft,var(--tile))}
+.hm-slot{position:absolute;top:0;left:0;right:0;height:210px}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
 .hm-slot .maplibregl-ctrl-bottom-right{bottom:52px}
-.hm-tap{position:absolute;inset:0;z-index:1;border:0;padding:0;background:none;cursor:pointer}
+.trip-bar,.trip-map{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.trip-map.grow{animation:hmGrow .34s cubic-bezier(.2,.8,.2,1) var(--ad,0s) both}.trip-map.grow .hm-slot,.trip-map.grow .hm-ov{animation:hmFade .34s ease-out var(--ad,0s) both}
+.trip-map.shrink{animation:hmShrink .23s cubic-bezier(.4,0,.6,1) forwards}.trip-map.shrink .hm-ov{opacity:0;transition:opacity .15s}
+.trip-bar.pop>*{animation:hmFade .26s ease-out var(--ad,0s) both}
+@keyframes hmGrow{from{height:108px}to{height:210px}}@keyframes hmShrink{from{height:210px}to{height:108px}}@keyframes hmFade{from{opacity:0}}
+.day-map{animation:dmIn .26s cubic-bezier(.2,.8,.2,1)}.day-map.closing{animation:dmOut .18s ease-in forwards}
+@keyframes dmIn{from{opacity:0;transform:scale(.94)}}@keyframes dmOut{to{opacity:0;transform:scale(.94)}}
+.day-map .dm-slot{position:absolute;inset:0;margin:0;border-radius:0;min-height:0}
+.dm-ov-t{top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;right:70px}.dm-ov-r{top:calc(env(safe-area-inset-top,0px) + 12px);right:12px}
+.day-map .hm-ov .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
+@media (prefers-reduced-motion:reduce){.trip-map.grow,.trip-map.shrink,.day-map,.day-map.closing,.trip-bar.pop>*{animation-duration:.01s}}
 .hm-ov{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;min-width:0}
 .trip-map .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
 .hm-title{min-width:0;background:rgba(255,255,255,.94);color:#2B211C;border-radius:16px;padding:5px 12px;box-shadow:0 2px 8px rgba(43,33,28,.13);line-height:1.25}
@@ -898,6 +903,7 @@ const itemIcon = it => {
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
   expand:'<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
+  collapse:'<path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7"/>',
   map:'<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4zM9 4v13.5M15 6.5V20"/>',
   refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   globe:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
@@ -1172,7 +1178,7 @@ async function refreshTrip(id){
     s.style.transition=anim?'opacity .2s,transform .25s ease':'none';s.style.opacity=d>14?Math.min(1,(d-14)/30):0;s.style.transform=`translateY(${Math.max(0,d/2-11)}px)`;
     s.classList.toggle('spin',loading);c.setAttribute('stroke-dasharray',loading?'70 100':`${Math.min(80,d/GO*80)} 100`);s.classList.toggle('ready',d>=GO&&!loading);};
   document.addEventListener('touchstart',e=>{y0=null;dy=0;if(busy||e.touches.length!==1||window.scrollY>2||!page())return;
-    if(document.querySelector('.scrim')||e.target.closest?.('.dock-body,.sheet,.dock.open,input,textarea,select,.exp-seg,[data-swipe],[data-guide-view]'))return;
+    if(document.querySelector('.scrim')||e.target.closest?.('.dock-body,.sheet,.dock.open,input,textarea,select,.exp-seg,[data-swipe],[data-guide-view],.hm-slot'))return;
     y0=e.touches[0].clientY;t0=Date.now();},{passive:true});
   document.addEventListener('touchmove',e=>{if(y0==null)return;const d=e.touches[0].clientY-y0;
     if(d<=0||window.scrollY>2||(dy===0&&Date.now()-t0>350)){y0=null;if(dy)show(0,{anim:true});dy=0;return;}   // a long press is a drag, not a pull
@@ -2264,13 +2270,14 @@ function vTrip(){
   /* map mode: the header card shows the day on a small map; tapping a travel row lights its route up */
   const mapHead = !!(S.mapMode && tab === "" && d);
   if(mapHead){ S.hm ||= {date:"", leg:""}; if(S.hm.date !== d){ S.hm.date = d; S.hm.leg = ""; S.hm.err = ""; } }
-  const head = mapHead ? `<section class="trip-map"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
-      <button class="hm-tap" data-act="map-expand" aria-label="ขยายแผนที่"></button>
+  /* grow into the map, or the cover settling back; a redraw part way through carries on from where it was */
+  const anim = S.hmAnim && Date.now() - S.hmAnim.at < 400 ? S.hmAnim.k : "", animAt = anim ? ` style="--ad:-${Date.now() - S.hmAnim.at}ms"` : "";
+  const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim === "grow" ? " grow" : ""}"${animAt} title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
       <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title"><b>${esc(t.name)}</b><small>${esc(dLong(d))} · วันที่ ${S.day + 1}</small></div></div>
       <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
       <div class="hm-ov" style="bottom:10px;left:10px"><div class="hm-tog" role="group" aria-label="หัวทริป"><button type="button" data-act="map-mode" data-on="0" aria-pressed="false">ภาพปก</button><button type="button" class="on" data-act="map-mode" data-on="1" aria-pressed="true">แผนที่</button></div></div>
       <div class="hm-ov" style="bottom:10px;right:10px"><button class="round" data-act="map-expand" aria-label="ขยายแผนที่เต็มจอ">${ic("expand",18)}</button></div>
-    </section>` : `<section class="trip-bar cv-${tone(t.id)}">${tripArt(d && d >= today() ? wxFor(d) : null)}
+    </section>` : `<section class="trip-bar cv-${tone(t.id)}${anim === "pop" ? " pop" : ""}"${animAt} title="แตะสองครั้งเพื่อดูแผนที่">${tripArt(d && d >= today() ? wxFor(d) : null)}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span>${tbWx(d)}</div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
@@ -2489,22 +2496,36 @@ function dayMapData(date){
   return {stops, lines, rows};
 }
 function vDayMap(s){
-  const ds = tripDates(S.trip), i = ds.indexOf(s.date), {stops, rows} = dayMapData(s.date);
   return `<div class="big-sheet day-map" role="dialog" aria-modal="true" aria-label="แผนที่">
-    <div class="dm-top"><span class="dm-day"><button class="dm-arrow" data-act="day-map-day" data-d="-1" aria-label="วันก่อน" ${i > 0 ? "" : "disabled"}><span class="flip">${ic("chev",18)}</span></button>
-      <b>${esc(dLong(s.date))}</b>
-      <button class="dm-arrow" data-act="day-map-day" data-d="1" aria-label="วันถัดไป" ${i < ds.length - 1 ? "" : "disabled"}>${ic("chev",18)}</button></span>
-      <button class="round" data-act="close-sheet" aria-label="ปิดแผนที่">${ic("close")}</button></div>
     <div class="dm-slot" id="dm-slot">${s.err ? `<p class="muted small dm-msg">${esc(s.err)}</p>` : ""}</div>
-    <ol class="dm-list">${stops.length ? rows.map(r => { if(r.leg) return `<li><button type="button" class="dm-leg${s.leg === r.leg ? " on" : ""}" data-act="day-map-leg" data-leg="${r.leg}" ${r.has ? "" : "disabled"}>${ic(/เดิน/.test(r.mode) ? "walk" : /แท็กซี่|ขับรถ/.test(r.mode) ? "taxi" : "bus",14)}<span class="grow">${esc(r.label || "การเดินทาง")}</span>${r.has ? "" : `<small class="muted">กำลังหาเส้นทาง</small>`}</button></li>`;
-      const x = stops[r.stop]; return `<li><button type="button" data-act="day-map-stop" data-i="${r.stop}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`; }).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
+    <div class="hm-ov dm-ov-t"><div class="hm-title"><b>${esc(S.trip?.name || "")}</b><small>${esc(dLong(s.date))}</small></div></div>
+    <div class="hm-ov dm-ov-r"><button class="round" data-act="map-collapse" aria-label="ย่อแผนที่">${ic("collapse",18)}</button></div>
   </div>`;
 }
 /* the map is shown either full screen (the day-map sheet) or small in the trip header (map mode) */
 const dmCtx = () => S.sheet?.kind === "day-map" ? S.sheet : document.getElementById("hm-slot") && S.hm?.date ? S.hm : null;
-const dmPad = s => s === S.hm ? {top:100, bottom:58, left:44, right:44} : 60;
-function dmInteract(on){ const m = DM.map; if(!m || DM.live === on) return; DM.live = on;
-  for(const h of ["dragPan", "scrollZoom", "boxZoom", "doubleClickZoom", "touchZoomRotate", "keyboard"]) on ? m[h].enable() : m[h].disable(); }
+const dmPad = s => s === S.hm ? {top:100, bottom:58, left:44, right:44} : {top:110, bottom:70, left:50, right:50};
+/* the small map pans and pinch-zooms; a double tap there switches back to the cover, so it does not zoom */
+function dmInteract(full){ const m = DM.map; if(!m || DM.live === full) return; DM.live = full;
+  for(const h of ["scrollZoom", "boxZoom", "doubleClickZoom", "keyboard"]) full ? m[h].enable() : m[h].disable(); m.dragPan.enable(); m.touchZoomRotate.enable(); }
+/* switch the trip header between the cover and the map, growing or shrinking smoothly */
+function mapModeSwitch(on){
+  if(on === !!S.mapMode) return;
+  try { localStorage.setItem("mytrip-mapmode", on ? "1" : ""); } catch(_){}
+  if(S.sheet?.kind === "trip-more") S.sheet = null;
+  if(on){ S.mapMode = true; S.hmAnim = {k:"grow", at:Date.now()}; if(S.catTab){ selectTab(""); return; } render(); return; }
+  render(); const m = document.querySelector(".trip-map");
+  if(!m){ S.mapMode = false; render(); return; }
+  m.classList.add("shrink"); setTimeout(() => { S.mapMode = false; S.hmAnim = {k:"pop", at:Date.now()}; render(); }, 220);
+}
+{ let down = null, last = 0, lx = 0, ly = 0;
+  document.addEventListener("pointerdown", e => { const h = e.isPrimary && S.view === "trip" && e.target.closest?.(".trip-bar,.trip-map");
+    down = h && !e.target.closest("button,a,.maplibregl-ctrl,.maplibregl-marker") ? {x:e.clientX, y:e.clientY, t:Date.now()} : null; if(!down) last = 0; }, {passive:true});
+  document.addEventListener("pointerup", e => { const d = down; down = null; if(!d || !e.isPrimary) return;
+    if(Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12 || Date.now() - d.t > 320){ last = 0; return; }   // a drag or a long press
+    const now = Date.now(); if(now - last < 340 && Math.hypot(e.clientX - lx, e.clientY - ly) < 40){ last = 0; mapModeSwitch(!S.mapMode); }
+    else { last = now; lx = e.clientX; ly = e.clientY; } }, {passive:true});
+  document.addEventListener("pointercancel", () => { down = null; last = 0; }, {passive:true}); }
 /* in map mode the travel row whose route is lit up is lit up too */
 function hmMark(){
   const s = S.hm, on = s && document.getElementById("hm-slot") && s.leg ? manualTravelLegs(s.date)[+s.leg.slice(1)]?.saved?.id : "";
@@ -2522,16 +2543,17 @@ async function dayMapMount(){
   if(!DM.map){
     DM.map = new gl.Map({container:DM.box, style, center:[139.76, 35.68], zoom:11, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false});
     DM.map.touchZoomRotate.disableRotation();
-    await new Promise(r => DM.map.once("load", r));
+    DM.ready = new Promise(r => DM.map.once("load", r));
+    await DM.ready;
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
     DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#17808A", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
     DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":3.5, "line-dasharray":[2, 1.4]}});
   }
+  await DM.ready; if(!DM.map.getSource("legs")) return;   // another redraw is still setting the map up
   if(dmCtx() !== s) return;
   DM.map.resize(); dmInteract(!head);
   const where = head ? "head" : "sheet", {stops, lines} = dayMapData(s.date), sig = where + s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
   if(DM.date !== s.date) setTimeout(() => dayMapFill(s.date), 300);
-  if(s.leg == null && !head){ const first = lines[0]; s.leg = first ? first.properties.id : ""; document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); }   // start with the first leg; tap others in turn
   const nLL = stops.filter(x => x.ll).length;
   if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL || DM.where !== where; DM.where = where; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
@@ -2581,7 +2603,7 @@ async function dayMapFill(date){
 function dayMapLeg(id){
   const s = dmCtx(); if(!s) return;
   s.leg = s.leg === id ? "" : id; DM.legShown = s.leg;   // tap again to see the whole day
-  document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); hmMark();
+  hmMark();
   if(!DM.map || DM.where !== (s === S.hm ? "head" : "sheet")) return;
   DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
   DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
@@ -2595,7 +2617,6 @@ function hmLegTap(it){
   if(i < 0 || s.leg === id || !dayMapData(s.date).lines.some(f => f.properties.id === id)) return false;
   dayMapLeg(id); return true;
 }
-function dayMapFocus(i){ const x = DM.stops[i]; if(!DM.map || !x?.ll) return; DM.map.flyTo({center:x.ll, zoom:Math.max(DM.map.getZoom(), 15)}); DM.markers.find(m => m.getElement().title === x.name)?.togglePopup(); }
 function vGuide(s){
   const n = GUIDE.length, i = Math.max(0, Math.min(n - 1, s.pos || 0)), last = i === n - 1;
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
@@ -4407,13 +4428,10 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
-    case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:null}; render(); break;
-    case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.sheet.leg = null; S.day = i; render(); } break;
-    case "map-mode": { const on = el.dataset.on != null ? el.dataset.on === "1" : !S.mapMode; S.mapMode = on; try { localStorage.setItem("mytrip-mapmode", on ? "1" : ""); } catch(_){}
-      if(on && S.catTab){ selectTab(""); break; } S.sheet = null; render(); break; }
-    case "map-expand": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:S.hm?.leg || null}; render(); break;
-    case "day-map-stop": dayMapFocus(Number(el.dataset.i)); break;
-    case "day-map-leg": dayMapLeg(el.dataset.leg); break;
+    case "map-mode": mapModeSwitch(el.dataset.on != null ? el.dataset.on === "1" : !S.mapMode); break;
+    case "map-expand": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:S.hm?.leg || ""}; render(); break;
+    case "map-collapse": { const v = document.querySelector(".day-map"), sh = S.sheet; if(!v || v.classList.contains("closing")) break; v.classList.add("closing");
+      setTimeout(() => { if(S.sheet === sh){ S.sheet = null; render(); } }, 170); break; }
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
     case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render.pendingGuide = false; render(); } break;
@@ -4580,7 +4598,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode1";
+const BUILD = "2026-11-17-mapmode2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
