@@ -377,9 +377,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
 .exp-sheet.steady{animation:none}
-/* moving between the number pad and the letter keyboard, iPhone slides the page; this sheet is moved along with it
-   straight away in script (pinExp), instead of a frame late through --vvt */
-.scrim.exp-scrim{top:0;will-change:transform}
+/* the expense sheet stays put at the top of the screen; its fields are focused without iPhone's page slide (see touchend below) */
+.scrim.exp-scrim{top:0}
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
@@ -3917,7 +3916,6 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
     const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
     const h = exp && typing && fit.minH ? Math.min(vv.height, fit.minH) : vv.height; fit.minH = exp && typing ? h : 0;
     const r = document.documentElement.style; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
-    pinExp();
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
     const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
     const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
@@ -3932,10 +3930,11 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
   document.addEventListener("focusout", () => { fit.left = Date.now(); setTimeout(onChange, 520); });
-  /* the expense sheet rides along with iPhone's slide in the same moment it happens (not a frame later), so it looks still */
-  function pinExp(){ const sc = document.querySelector(".exp-scrim"); if(sc) sc.style.transform = `translateY(${vv.offsetTop}px)`; }
-  vv.addEventListener("scroll", pinExp); vv.addEventListener("resize", pinExp); window.addEventListener("scroll", pinExp, {passive:true});
-  document.addEventListener("focusin", e => { if(e.target.closest?.(".exp-sheet")) pinExp(); });
+  /* iPhone slides the page when a field is tapped (and reports where the slide will end before it has moved, so following it
+     makes the sheet drop and climb back). In the expense sheet the fields are already above the keyboard, so the tap focuses
+     the field itself without that slide */
+  document.addEventListener("touchend", e => { const el = e.target.closest?.(".exp-sheet input:not([type=hidden])");
+    if(!el || document.activeElement === el || e.touches.length) return; e.preventDefault(); el.focus({preventScroll:true}); }, {passive:false});
 })();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
@@ -4507,7 +4506,7 @@ document.addEventListener("click", async e => {
     case "sheet-confirm-no": S.sheet.confirm = false; render(); break;
     case "join-confirm": confirmJoin(); break;
     case "exp-cancel": S.sheet = null; render(); break;
-    case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
+    case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus({preventScroll:true}); }, 60); break;
     case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = S.sheet.cur = el.dataset.cur; break; }
     case "exp-view": { if(S.segSwiped){ S.segSwiped = false; break; } let b = el; if(b.classList.contains("on")){ const o = [...b.parentNode.querySelectorAll("button")].find(x => x !== b); if(o) b = o; } try { localStorage.setItem("mytrip-exp-view", b.dataset.cur); } catch(_){} segSlide(b); setTimeout(render, 280); break; }
     case "exp-pick": { const o = (S.expUI ||= {pick:""}); o.pick = o.pick === el.dataset.id ? "" : el.dataset.id; render(); break; }
@@ -4621,7 +4620,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp12";
+const BUILD = "2026-11-17-exp13";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
