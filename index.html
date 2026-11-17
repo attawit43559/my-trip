@@ -2415,7 +2415,7 @@ function dayMapData(date){
     const it = e.it, d = it.data || {};
     if(it.type === "flight"){   // the airport: landing (arrival row, or a flight with plans after it) or leaving
       const land = e.phase === "arr" || (arrDateOf(it) === date && entries.slice(k + 1).some(x => ["place", "stay"].includes(x.it.type) && !x.night));
-      const end = land ? "to" : "from", ll = d[end + "Lat"] != null && d[end + "Lat"] !== "" ? [+d[end + "Lon"], +d[end + "Lat"]] : null;
+      const end = land ? "to" : "from", ll = d.airV === 2 && d[end + "Lat"] != null && d[end + "Lat"] !== "" ? [+d[end + "Lon"], +d[end + "Lat"]] : null;
       stops.push({id:it.id, name:(land ? "ถึง " : "ออกจาก ") + [d[end], d[end + "City"]].filter(Boolean).join(" "), air:true, n:0, tone:"t-flight", ll}); return;
     }
     if(!["place", "stay"].includes(it.type)) return;
@@ -2480,7 +2480,9 @@ async function dayMapFill(date){
     const need = dayMapData(date).stops.filter(x => !x.ll && !DMF.asked.has(x.id)).map(x => x.id);
     if(need.length){ need.forEach(id => DMF.asked.add(id));
       try { const r = await api("placeCoords", {tripId, ids:need});
-        for(const [id, ll] of Object.entries(r.coords || {})){ const it = S.items.find(i => i.id === id); if(it && !llOf(it.data)){ it.data = {...(it.data || {}), lat:ll.lat, lon:ll.lon}; store.updateItem(tripId, id, {data:{lat:ll.lat, lon:ll.lon}}).catch(() => {}); changed = true; } }
+        for(const [id, ll] of Object.entries(r.coords || {})){ const it = S.items.find(i => i.id === id); if(!it) continue;
+          if(it.type === "flight"){ it.data = {...(it.data || {}), ...ll}; changed = true; continue; }   // saved on the server already
+          if(!llOf(it.data)){ it.data = {...(it.data || {}), lat:ll.lat, lon:ll.lon}; changed = true; } }
       } catch(_){} }
     if(changed && still()) dayMapMount();
     for(const leg of manualTravelLegs(date)){
@@ -4473,7 +4475,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map4";
+const BUILD = "2026-11-17-map5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
