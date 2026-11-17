@@ -249,8 +249,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 @media (prefers-reduced-motion:reduce){.trip-map.grow,.trip-map.shrink,.day-map,.day-map.closing,.trip-bar.pop>*{animation-duration:.01s}}
 .hm-ov{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;min-width:0}
 .trip-map .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
-.hm-title{min-width:0;background:rgba(255,255,255,.94);color:#2B211C;border-radius:16px;padding:5px 12px;box-shadow:0 2px 8px rgba(43,33,28,.13);line-height:1.25}
-.hm-title b{display:block;font-family:var(--display);font-weight:500;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hm-title small{display:block;font-size:11.5px;color:#6E6259}
+.hm-title{min-width:0;background:rgba(255,255,255,.72);color:#5A4E46;border-radius:999px;padding:3px 10px;font-size:12px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.dm-slot .maplibregl-ctrl-attrib,.hm-slot .maplibregl-ctrl-attrib{font-size:10px;line-height:1.3;max-width:calc(100% - 20px)}
+.maplibregl-ctrl-attrib.maplibregl-compact{min-height:20px;opacity:.75}.maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button{width:20px;height:20px;background-size:16px}
 .entry.entry-move.map-on{background:#FFF1DC;border-radius:14px}.entry-move.map-on .ttl,.entry-move.map-on .move-ic{color:#A85A00}
 .dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
 .dm-pin svg{width:14px;height:14px}
@@ -2271,7 +2272,7 @@ function vTrip(){
   /* grow into the map, or the cover settling back; a redraw part way through carries on from where it was */
   const anim = S.hmAnim && Date.now() - S.hmAnim.at < 400 ? S.hmAnim.k : "", animAt = anim ? ` style="--ad:-${Date.now() - S.hmAnim.at}ms"` : "";
   const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim === "grow" ? " grow" : ""}"${animAt} title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
-      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title"><b>${esc(t.name)}</b><small>${esc(dLong(d))} · วันที่ ${S.day + 1}</small></div></div>
+      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title">${esc(t.name)} · ${esc(dLong(d))}</div></div>
       <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
       <div class="hm-ov" style="bottom:10px;right:10px"><button class="round" data-act="map-expand" aria-label="ขยายแผนที่เต็มจอ">${ic("expand",18)}</button></div>
     </section>` : `<section class="trip-bar cv-${tone(t.id)}${anim === "pop" ? " pop" : ""}"${animAt} title="แตะสองครั้งเพื่อดูแผนที่">${tripArt(d && d >= today() ? wxFor(d) : null)}
@@ -2495,10 +2496,12 @@ function dayMapData(date){
 function vDayMap(s){
   return `<div class="big-sheet day-map" role="dialog" aria-modal="true" aria-label="แผนที่">
     <div class="dm-slot" id="dm-slot">${s.err ? `<p class="muted small dm-msg">${esc(s.err)}</p>` : ""}</div>
-    <div class="hm-ov dm-ov-t"><div class="hm-title"><b>${esc(S.trip?.name || "")}</b><small>${esc(dLong(s.date))}</small></div></div>
+    <div class="hm-ov dm-ov-t"><div class="hm-title">${esc(S.trip?.name || "")} · ${esc(dLong(s.date))}</div></div>
     <div class="hm-ov dm-ov-r"><button class="round" data-act="map-collapse" aria-label="ย่อแผนที่">${ic("collapse",18)}</button></div>
   </div>`;
 }
+/* the map credit (needed by OpenStreetMap) stays a small i, and opens only when tapped */
+function dmAttribSmall(){ const a = DM.box?.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact"); if(a){ a.removeAttribute("open"); a.classList.remove("maplibregl-compact-show"); } }
 /* the map is shown either full screen (the day-map sheet) or small in the trip header (map mode) */
 const dmCtx = () => S.sheet?.kind === "day-map" ? S.sheet : document.getElementById("hm-slot") && S.hm?.date ? S.hm : null;
 const dmPad = s => s === S.hm ? {top:100, bottom:58, left:44, right:44} : {top:110, bottom:70, left:50, right:50};
@@ -2541,6 +2544,7 @@ async function dayMapMount(){
     DM.map = new gl.Map({container:DM.box, style, center:[139.76, 35.68], zoom:11, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false});
     DM.map.touchZoomRotate.disableRotation();
     DM.ready = new Promise(r => DM.map.once("load", r));
+    DM.map.on("resize", dmAttribSmall); DM.map.once("load", dmAttribSmall);
     await DM.ready;
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
     DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#17808A", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
@@ -2548,7 +2552,7 @@ async function dayMapMount(){
   }
   await DM.ready; if(!DM.map.getSource("legs")) return;   // another redraw is still setting the map up
   if(dmCtx() !== s) return;
-  DM.map.resize(); dmInteract(!head);
+  DM.map.resize(); dmAttribSmall(); dmInteract(!head);
   const where = head ? "head" : "sheet", {stops, lines} = dayMapData(s.date), sig = where + s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
   if(DM.date !== s.date) setTimeout(() => dayMapFill(s.date), 300);
   const nLL = stops.filter(x => x.ll).length;
@@ -4595,7 +4599,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode3";
+const BUILD = "2026-11-17-mapmode4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
