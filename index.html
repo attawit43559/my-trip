@@ -377,6 +377,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
 .exp-sheet.steady{animation:none}
+/* iPhone briefly drops and re-raises the keyboard when moving between the number pad and the letter keyboard:
+   the sheet glides instead of following that dip (a quick down-and-up barely moves it) */
+.scrim.exp-scrim{transition:top .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
@@ -3913,7 +3916,10 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
        while typing there it only moves up, never back down, until the keyboard is put away */
     const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
     const h = exp && typing && fit.minH ? Math.min(vv.height, fit.minH) : vv.height; fit.minH = exp && typing ? h : 0;
-    const r = document.documentElement.style; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
+    const r = document.documentElement.style, set = () => { r.setProperty("--vvh", (exp && fit.minH ? Math.min(vv.height, fit.minH) : vv.height) + "px"); r.setProperty("--vvt", vv.offsetTop + "px"); };
+    clearTimeout(fit.wait);
+    if(exp && Date.now() - (fit.left || 0) < 700) fit.wait = setTimeout(set, 180);   // moving between fields: wait for the keyboard to settle, then glide once
+    else set();
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
     const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
     const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
@@ -4024,7 +4030,7 @@ function vExpAdd(s){
   let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
   const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
+  return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
     <form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
         <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
@@ -4613,7 +4619,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp7";
+const BUILD = "2026-11-17-exp9";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
