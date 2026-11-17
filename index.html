@@ -3913,7 +3913,11 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
     /* in the expense sheet, moving between the amount (number pad) and the name (letters, a taller keyboard) would bounce the sheet:
        while typing there it only moves up, never back down, until the keyboard is put away */
     const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
-    const h = exp && typing && fit.minH ? Math.min(vv.height, fit.minH) : vv.height; fit.minH = exp && typing ? h : 0;
+    /* the tallest keyboard seen on this phone is remembered, so even the first move to the letters does not nudge the sheet */
+    const kbUp = vv.height < window.innerHeight * .8, keyKey = "mytrip-kb-" + window.innerHeight;
+    let known = 1e9;
+    if(exp && typing && kbUp) try { known = Math.min(+(localStorage.getItem(keyKey) || 1e9), Math.round(vv.height)); localStorage.setItem(keyKey, known); } catch(_){}
+    const h = exp && typing ? Math.min(vv.height, fit.minH || 1e9, known) : vv.height; fit.minH = exp && typing ? h : 0;
     const r = document.documentElement.style; r.setProperty("--vvh", h + "px");
     if(!(exp && Date.now() - (fit.left || 0) < 480)) r.setProperty("--vvt", vv.offsetTop + "px");   // hold still while moving between its fields
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
@@ -3934,7 +3938,9 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
      makes the sheet drop and climb back). In the expense sheet the fields are already above the keyboard, so the tap focuses
      the field itself without that slide */
   document.addEventListener("touchend", e => { const el = e.target.closest?.(".exp-sheet input:not([type=hidden])");
-    if(!el || document.activeElement === el || e.touches.length) return; e.preventDefault(); el.focus({preventScroll:true}); }, {passive:false});
+    if(!el || document.activeElement === el || e.touches.length) return;
+    if(!document.activeElement?.closest?.(".exp-sheet")) return;   // the first tap opens the keyboard the usual way, sliding up like everywhere else
+    e.preventDefault(); el.focus({preventScroll:true}); }, {passive:false});
 })();
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
@@ -4620,7 +4626,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp14";
+const BUILD = "2026-11-17-exp15";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
