@@ -2410,13 +2410,19 @@ const llOf = d => d && d.lat !== "" && d.lat != null && isFinite(+d.lat) && isFi
 function dayMapData(date){
   const legs = manualTravelLegs(date), at = {}, stops = [];
   for(const l of legs){ const d = l.saved?.data || {}; if(d.a) at[l.fromId] ||= [d.a[1], d.a[0]]; if(d.b) at[l.toId] ||= [d.b[1], d.b[0]]; }
-  let n = 0;
-  for(const e of dayEntries(date)){
-    const it = e.it; if(!["place", "stay"].includes(it.type)) continue;
-    if(stops.some(x => x.id === it.id) && it.type === "stay") continue;
-    const ll = llOf(it.data) || at[it.id] || null;
-    stops.push({id:it.id, name:it.title || "", stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
-  }
+  let n = 0; const entries = dayEntries(date);
+  entries.forEach((e, k) => {
+    const it = e.it, d = it.data || {};
+    if(it.type === "flight"){   // the airport: landing (arrival row, or a flight with plans after it) or leaving
+      const land = e.phase === "arr" || (arrDateOf(it) === date && entries.slice(k + 1).some(x => ["place", "stay"].includes(x.it.type) && !x.night));
+      const end = land ? "to" : "from", ll = d[end + "Lat"] != null && d[end + "Lat"] !== "" ? [+d[end + "Lon"], +d[end + "Lat"]] : null;
+      stops.push({id:it.id, name:(land ? "ถึง " : "ออกจาก ") + [d[end], d[end + "City"]].filter(Boolean).join(" "), air:true, n:0, tone:"t-flight", ll}); return;
+    }
+    if(!["place", "stay"].includes(it.type)) return;
+    if(stops.some(x => x.id === it.id) && it.type === "stay") return;
+    const ll = llOf(d) || at[it.id] || null;
+    stops.push({id:it.id, name:(e.start ? "เริ่มจาก " : "") + (it.title || ""), stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
+  });
   const lines = [];
   for(const l of legs){ const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
     if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride"}, geometry:{type:"LineString", coordinates:decodePoly(d.poly)}});
@@ -2431,7 +2437,7 @@ function vDayMap(s){
       <button class="dm-arrow" data-act="day-map-day" data-d="1" aria-label="วันถัดไป" ${i < ds.length - 1 ? "" : "disabled"}>${ic("chev",18)}</button></span>
       <button class="round" data-act="close-sheet" aria-label="ปิดแผนที่">${ic("close")}</button></div>
     <div class="dm-slot" id="dm-slot">${s.err ? `<p class="muted small dm-msg">${esc(s.err)}</p>` : ""}</div>
-    <ol class="dm-list">${stops.length ? stops.map((x, k) => `<li><button type="button" data-act="day-map-stop" data-i="${k}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
+    <ol class="dm-list">${stops.length ? stops.map((x, k) => `<li><button type="button" data-act="day-map-stop" data-i="${k}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
   </div>`;
 }
 async function dayMapMount(){
@@ -2459,7 +2465,7 @@ async function dayMapMount(){
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
   DM.markers.forEach(m => m.remove()); DM.markers = [];
   for(const x of stops){ if(!x.ll) continue;
-    const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
+    const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.air ? ic("flight",14) : x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
     DM.markers.push(new gl.Marker({element:el}).setLngLat(x.ll).setPopup(new gl.Popup({offset:18, closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
   if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
@@ -4467,7 +4473,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map3";
+const BUILD = "2026-11-17-map4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

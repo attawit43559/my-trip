@@ -1392,8 +1392,19 @@ ACTIONS.placeCoords=req=>{
   const trip=(find_(TRIPS,tripId)||{}).obj||{},near=String(trip.destination||'').slice(0,80),out={};
   const ids=(Array.isArray(req.ids)?req.ids:[]).map(String).slice(0,15);
   for(const id of ids){
-    const row=find_(ITEMS,id);if(!row||row.tripId!==tripId||!['place','stay'].includes(row.obj.type))continue;
-    const it=row.obj,d=it.data||{};if(d.lat!=null&&d.lat!==''&&isFinite(Number(d.lat))){out[id]={lat:Number(d.lat),lon:Number(d.lon)};continue;}
+    const row=find_(ITEMS,id);if(!row||row.tripId!==tripId||!['place','stay','flight'].includes(row.obj.type))continue;
+    const it=row.obj,d=it.data||{};
+    if(it.type==='flight'){   // both airports
+      const ends={};let stop=false;
+      for(const k of ['from','to']){
+        if(d[k+'Lat']!=null&&d[k+'Lat']!==''){ends[k+'Lat']=Number(d[k+'Lat']);ends[k+'Lon']=Number(d[k+'Lon']);continue;}
+        const q=[d[k],'airport',d[k+'City']].filter(Boolean).join(' ').slice(0,200);if(!d[k]&&!d[k+'City'])continue;
+        let g;try{travelQuota_();g=Maps.newGeocoder().setLanguage('en').geocode(q);}catch(e){stop=String(e.message).indexOf('travel_quota')>=0;break;}
+        const loc=g&&g.status==='OK'&&g.results&&g.results[0]&&g.results[0].geometry.location;if(loc){ends[k+'Lat']=+loc.lat.toFixed(6);ends[k+'Lon']=+loc.lng.toFixed(6);}
+      }
+      if(Object.keys(ends).length){out[id]=ends;withLock_(()=>{const cur=find_(ITEMS,id);if(!cur)return;const o=cur.obj;o.data=Object.assign({},o.data||{},ends);upsert_(ITEMS,id,tripId,o);});}
+      if(stop)break;continue;
+    }if(d.lat!=null&&d.lat!==''&&isFinite(Number(d.lat))){out[id]={lat:Number(d.lat),lon:Number(d.lon)};continue;}
     const q=[it.title,d.address||near].filter(Boolean).join(', ').slice(0,300);if(!q)continue;
     let g;try{travelQuota_();g=Maps.newGeocoder().setLanguage('en').geocode(q);}catch(e){if(String(e.message).indexOf('travel_quota')>=0)break;continue;}
     const loc=g&&g.status==='OK'&&g.results&&g.results[0]&&g.results[0].geometry.location;if(!loc)continue;
