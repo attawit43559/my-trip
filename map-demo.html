@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Map demo</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#2B211C;--muted:#6E6259;--bg:#FFFDF9;--line:#EFE9E0}
@@ -27,11 +27,11 @@
 <body>
 <div class="wrap">
   <h1>แผนที่วันที่ 25 พ.ย.</h1>
-  <div class="seg"><button data-s="voyager" class="on">แบบสะอาด</button><button data-s="osm">OpenStreetMap</button><button data-s="light">โทนอ่อน</button></div>
+  <div class="seg"><button data-s="positron" class="on">โทนอ่อน</button><button data-s="liberty">สีสด</button><button data-s="osm">OSM ดั้งเดิม</button></div>
   <div id="map"></div>
   <ol id="list"></ol>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 const STOPS = [
   {n:"Shinagawa Prince Hotel", k:"stay", ll:[35.6282,139.7365]},
@@ -43,26 +43,23 @@ const STOPS = [
 ];
 const MODE = ["รถไฟ · 18 นาที","เดิน · 5 นาที","รถไฟ · 22 นาที","เดิน · 6 นาที","เดิน · 7 นาที"];
 const COLOR = {stay:"#7B5BA6",place:"#3E9B3C",food:"#D4891C",cafe:"#A86A3D"};
-const TILES = {
-  voyager:["https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png","© OpenStreetMap © CARTO"],
-  osm:["https://tile.openstreetmap.org/{z}/{x}/{y}.png","© OpenStreetMap"],
-  light:["https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png","© OpenStreetMap © CARTO"]
+const STYLES = {
+  positron:"https://tiles.openfreemap.org/styles/positron",
+  liberty:"https://tiles.openfreemap.org/styles/liberty",
+  osm:{version:8,sources:{o:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"o",type:"raster",source:"o"}]}
 };
-const map = L.map("map",{zoomControl:false,attributionControl:true});
-let layer = null;
-function tiles(k){ if(layer) map.removeLayer(layer); layer = L.tileLayer(TILES[k][0],{attribution:TILES[k][1],maxZoom:19,subdomains:"abcd"}).addTo(map);
-  document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",b.dataset.s===k)); }
-document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>tiles(b.dataset.s));
-tiles("voyager");
-const icon = (i,s) => L.divIcon({className:"",html:`<div class="pin" style="background:${COLOR[s.k]}">${s.k==="stay"?"⌂":i}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
-STOPS.forEach((s,i)=>L.marker(s.ll,{icon:icon(i,s)}).addTo(map).bindTooltip(s.n));
-map.fitBounds(STOPS.map(s=>s.ll),{padding:[34,34]});
-// route along real roads for the demo (the app would use the route Google already found for each leg)
-(async()=>{ for(let i=0;i<STOPS.length-1;i++){ const a=STOPS[i].ll,b=STOPS[i+1].ll, walk=/เดิน/.test(MODE[i]);
-  try{ const r=await (await fetch(`https://router.project-osrm.org/route/v1/${walk?"foot":"driving"}/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`)).json();
-    const line=r.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-    L.polyline(line,{color:"#2B61B2",weight:5,opacity:.85,dashArray:walk?"2 8":null,lineCap:"round"}).addTo(map);
-  }catch(e){ L.polyline([a,b],{color:"#2B61B2",weight:4,opacity:.6,dashArray:"6 8"}).addTo(map); } } })();
+const map = new maplibregl.Map({container:"map",style:STYLES.positron,bounds:new maplibregl.LngLatBounds(STOPS.map(s=>[s.ll[1],s.ll[0]])),fitBoundsOptions:{padding:40},attributionControl:{compact:true}});
+let lines = [];
+async function routes(){ lines=[]; for(let i=0;i<STOPS.length-1;i++){ const a=STOPS[i].ll,b=STOPS[i+1].ll, walk=/เดิน/.test(MODE[i]);
+  try{ const r=await (await fetch(`https://router.project-osrm.org/route/v1/${walk?"foot":"driving"}/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`)).json(); lines.push({walk,coords:r.routes[0].geometry.coordinates}); }
+  catch(e){ lines.push({walk,coords:[[a[1],a[0]],[b[1],b[0]]]}); } } }
+function draw(){ lines.forEach((l,i)=>{ const id="r"+i; if(map.getSource(id)) return;
+  map.addSource(id,{type:"geojson",data:{type:"Feature",geometry:{type:"LineString",coordinates:l.coords}}});
+  map.addLayer({id,type:"line",source:id,layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#2B61B2","line-width":5,"line-opacity":.85,...(l.walk?{"line-dasharray":[0.2,2]}:{})}}); }); }
+const ready = routes();
+map.on("style.load", async () => { await ready; draw(); });
+STOPS.forEach((s,i)=>{ const el=document.createElement("div"); el.className="pin"; el.style.background=COLOR[s.k]; el.textContent=s.k==="stay"?"⌂":i; new maplibregl.Marker({element:el}).setLngLat([s.ll[1],s.ll[0]]).setPopup(new maplibregl.Popup({offset:16,closeButton:false}).setText(s.n)).addTo(map); });
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ map.setStyle(STYLES[b.dataset.s]); document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b)); });
 document.getElementById("list").innerHTML = STOPS.map((s,i)=>`<li><span class="pin" style="background:${COLOR[s.k]}">${s.k==="stay"?"⌂":i}</span>${s.n}</li>${MODE[i]?`<li class="leg">${MODE[i]}</li>`:""}`).join("");
 </script>
 </body>
