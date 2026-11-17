@@ -27,7 +27,7 @@
 <body>
 <div class="wrap">
   <h1>แผนที่วันที่ 25 พ.ย.</h1>
-  <div class="seg"><button data-s="positron" class="on">โทนอ่อน</button><button data-s="liberty">สีสด</button><button data-s="osm">OSM ดั้งเดิม</button></div>
+  <div class="seg"><button data-s="positron">โทนอ่อน</button><button data-s="middle" class="on">กลางๆ</button><button data-s="liberty">สีสด</button></div>
   <div id="map"></div>
   <ol id="list"></ol>
 </div>
@@ -48,18 +48,33 @@ const STYLES = {
   liberty:"https://tiles.openfreemap.org/styles/liberty",
   osm:{version:8,sources:{o:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"o",type:"raster",source:"o"}]}
 };
+/* "กลางๆ": the colourful style with softer roads, water and parks */
+async function middleStyle(){
+  const st = await (await fetch(STYLES.liberty)).json();
+  const soft = {motorway:"#F6CF8E", trunk:"#F8DCA6", primary:"#FBE7BF", secondary:"#FDF0D3", tertiary:"#FFFFFF"};
+  for(const l of st.layers){ const id = l.id, p = l.paint || (l.paint = {});
+    if(l.type === "line" && /road|highway|bridge|tunnel/.test(id) && !/casing|outline|rail|path|pedestrian/.test(id)){
+      const k = Object.keys(soft).find(k => id.includes(k)); if(k) p["line-color"] = soft[k]; }
+    if(/water/.test(id) && l.type === "fill") p["fill-color"] = "#CFE3F2";
+    if(/water/.test(id) && l.type === "line") p["line-color"] = "#CFE3F2";
+    if(/park|landuse_park|wood|grass/.test(id) && l.type === "fill") p["fill-color"] = "#E3EFD9";
+    if(id === "background") p["background-color"] = "#F7F5F1";
+  }
+  return st;
+}
 const map = new maplibregl.Map({container:"map",style:STYLES.positron,bounds:new maplibregl.LngLatBounds(STOPS.map(s=>[s.ll[1],s.ll[0]])),fitBoundsOptions:{padding:40},attributionControl:{compact:true}});
 let lines = [];
 async function routes(){ lines=[]; for(let i=0;i<STOPS.length-1;i++){ const a=STOPS[i].ll,b=STOPS[i+1].ll, walk=/เดิน/.test(MODE[i]);
   try{ const r=await (await fetch(`https://router.project-osrm.org/route/v1/${walk?"foot":"driving"}/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`)).json(); lines.push({walk,coords:r.routes[0].geometry.coordinates}); }
   catch(e){ lines.push({walk,coords:[[a[1],a[0]],[b[1],b[0]]]}); } } }
-function draw(){ lines.forEach((l,i)=>{ const id="r"+i; if(map.getSource(id)) return;
+function draw(){ lines.forEach((l,i)=>{ const id="r"+i; if(map.getSource(id)) return; if(!map.isStyleLoaded()) return;
   map.addSource(id,{type:"geojson",data:{type:"Feature",geometry:{type:"LineString",coordinates:l.coords}}});
   map.addLayer({id,type:"line",source:id,layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#2B61B2","line-width":5,"line-opacity":.85,...(l.walk?{"line-dasharray":[0.2,2]}:{})}}); }); }
 const ready = routes();
 map.on("style.load", async () => { await ready; draw(); });
 STOPS.forEach((s,i)=>{ const el=document.createElement("div"); el.className="pin"; el.style.background=COLOR[s.k]; el.textContent=s.k==="stay"?"⌂":i; new maplibregl.Marker({element:el}).setLngLat([s.ll[1],s.ll[0]]).setPopup(new maplibregl.Popup({offset:16,closeButton:false}).setText(s.n)).addTo(map); });
-document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ map.setStyle(STYLES[b.dataset.s]); document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b)); });
+map.once("load", async () => map.setStyle(await middleStyle()));
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=async()=>{ map.setStyle(b.dataset.s === "middle" ? await middleStyle() : STYLES[b.dataset.s]); document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b)); });
 document.getElementById("list").innerHTML = STOPS.map((s,i)=>`<li><span class="pin" style="background:${COLOR[s.k]}">${s.k==="stay"?"⌂":i}</span>${s.n}</li>${MODE[i]?`<li class="leg">${MODE[i]}</li>`:""}`).join("");
 </script>
 </body>
