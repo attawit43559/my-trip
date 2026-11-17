@@ -229,8 +229,9 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dial-map .dial-btn{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
 .dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
-.dm-drop{width:30px;height:40px;position:relative;cursor:pointer;filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.25))}.dm-drop svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--deep)}
-.dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
+.dm-drop{width:30px;height:40px;position:relative;cursor:pointer}.dm-drop>svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--soft);stroke:#FFFFFF;stroke-width:1.6;overflow:visible;filter:drop-shadow(0 1px 2px rgba(43,33,28,.22))}
+.dm-name{position:absolute;left:29px;top:7px;max-width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:500;color:rgba(43,33,28,.62);text-shadow:0 0 2px #fff,0 0 3px #fff,0 0 4px #fff;pointer-events:none}.dm-name.off{visibility:hidden}
+.dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--deep);font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
 .trip-map{--hmh:min(46svh,420px);position:relative;flex:none;height:var(--hmh);border-radius:28px;overflow:hidden;background:var(--soft,var(--tile))}
 .hm-slot{position:absolute;top:0;left:0;right:0;height:var(--hmh)}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
 .trip-bar,.trip-map{touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -2468,6 +2469,12 @@ function dayMapData(date){
   return {stops, lines, rows};
 }
 /* the map credit (needed by OpenStreetMap) stays a small i, and opens only when tapped */
+function dmLabels(){
+  const shown = [];
+  for(const m of DM.markers){ const b = m.getElement().querySelector(".dm-name"); if(!b) continue; b.classList.remove("off");
+    const r = b.getBoundingClientRect(), hit = shown.some(o => r.left < o.right && r.right > o.left && r.top < o.bottom && r.bottom > o.top);
+    if(hit) b.classList.add("off"); else shown.push(r); }
+}
 function dmAttribSmall(){ const a = DM.box?.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact"); if(a){ a.removeAttribute("open"); a.classList.remove("maplibregl-compact-show"); } }
 /* map mode: the trip header shows the day on a map */
 const dmCtx = () => document.getElementById("hm-slot") && S.hm?.date ? S.hm : null;
@@ -2511,7 +2518,7 @@ async function dayMapMount(){
     DM.map = new gl.Map({container:DM.box, style, center:[139.76, 35.68], zoom:11, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false});
     DM.map.touchZoomRotate.disableRotation();
     DM.ready = new Promise(r => DM.map.once("load", r));
-    DM.map.on("resize", dmAttribSmall); DM.map.once("load", dmAttribSmall);
+    DM.map.on("resize", dmAttribSmall); DM.map.on("moveend", dmLabels); DM.map.once("load", dmAttribSmall);
     await DM.ready;
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
     DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#17808A", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
@@ -2530,12 +2537,13 @@ async function dayMapMount(){
   const placed = new Set();
   for(const x of stops){ if(!x.ll || placed.has(x.id)) continue; placed.add(x.id);
     const el = document.createElement("div"); el.className = "dm-drop " + x.tone; el.title = x.name;
-    el.innerHTML = `<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39C15 39 2 24.5 2 15a13 13 0 0 1 26 0c0 9.5-13 24-13 24z"/></svg><span>${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span>`;
+    el.innerHTML = `<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39C15 39 2 24.5 2 15a13 13 0 0 1 26 0c0 9.5-13 24-13 24z"/></svg><span>${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><b class="dm-name">${esc(x.name.replace(/^(เริ่มจาก|กลับ|ถึง|ออกจาก) /, ""))}</b>`;
     DM.markers.push(new gl.Marker({element:el, anchor:"bottom"}).setLngLat(x.ll).setPopup(new gl.Popup({offset:[0, -34], closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
   const sel = s.leg && lines.find(f => f.properties.id === s.leg);
   if(sel && (moved || DM.legShown !== s.leg)){ DM.legShown = s.leg; const c = sel.geometry.coordinates; DM.map.fitBounds(c.reduce((b, p) => b.extend(p), new gl.LngLatBounds(c[0], c[0])), {padding:dmPad(s), maxZoom:16, duration:0}); }
   else if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:head ? dmPad(s) : {top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
+  requestAnimationFrame(dmLabels);
 }
 /* the day shown first: find pins for places with no coordinates, and the route line of legs saved before lines were kept */
 const DMF = {busy:false, asked:new Set()};
@@ -4561,7 +4569,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode5";
+const BUILD = "2026-11-17-mapmode6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
