@@ -279,7 +279,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .cat-list li+li{border-top:1px solid var(--line)}
 .cat-row{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 0;border:0;background:none;text-align:left;color:var(--muted)}
 .cat-row .grow{color:var(--ink)}
-.cat-row .ttl{font-weight:500;font-size:14px}
+.cat-row .ttl{font-weight:500;font-size:14px}.cat-row-ic{gap:12px;min-height:60px}.cat-row-ic .thumb{flex:none}
 .cat-add{align-self:flex-start;min-height:40px;padding:0 12px;border-radius:999px;border:0;background:var(--accent-soft);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .drop.compact{flex-direction:row;justify-content:center;gap:10px;padding:16px;border-radius:20px}
@@ -1598,7 +1598,7 @@ function catRow(it){
     const when = it.type === "stay"
       ? `${dShort(it.date)} – ${dShort(it.endDate)}`
       : `${dShort(it.date)}${it.time ? " · " + it.time : ""}`;
-    return swipeItem(it, "c:" + it.id, `<button class="cat-row" data-act="item" data-id="${esc(it.id)}"><span class="dot-sm t-${it.type}" aria-hidden="true"></span><span class="grow"><span class="ttl">${esc(briefName(it.title))}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
+    return swipeItem(it, "c:" + it.id, `<button class="cat-row cat-row-ic" data-act="item" data-id="${esc(it.id)}"><span class="thumb tc ${toneOf(it)}" aria-hidden="true">${ic(itemIcon(it),20)}</span><span class="grow"><span class="ttl">${esc(briefName(it.title))}</span><br><span class="muted small">${esc(when)}${it.type !== "stay" && subOf(it) ? " · " + esc(subOf(it)) : ""}</span></span>${ic("chev",18)}</button>`);
 }
 function filteredIdeas(){return S.items.filter(i => i.type === "idea" && (!S.ideaFilter||(i.data||{}).kind===S.ideaFilter) && (!S.ideaQuery || (briefName(i.title)+" "+(i.data||{}).kind).toLocaleLowerCase().includes(S.ideaQuery.trim().toLocaleLowerCase()))).sort((a,b) => (!!plannedFrom(a.id) - !!plannedFrom(b.id)) || (a.createdAt||0) - (b.createdAt||0));}
 function selectTab(k, landed){
@@ -4646,7 +4646,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp20";
+const BUILD = "2026-11-17-info1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
