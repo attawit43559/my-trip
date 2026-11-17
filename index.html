@@ -251,8 +251,6 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .trip-map .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
 .hm-title{min-width:0;background:rgba(255,255,255,.94);color:#2B211C;border-radius:16px;padding:5px 12px;box-shadow:0 2px 8px rgba(43,33,28,.13);line-height:1.25}
 .hm-title b{display:block;font-family:var(--display);font-weight:500;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hm-title small{display:block;font-size:11.5px;color:#6E6259}
-.hm-tog{display:flex;background:rgba(255,255,255,.94);border-radius:999px;padding:3px;box-shadow:0 2px 8px rgba(43,33,28,.13)}
-.hm-tog button{border:0;background:none;font:inherit;font-size:12.5px;min-height:32px;padding:0 12px;border-radius:999px;color:#6E6259}.hm-tog button.on{background:#2B211C;color:#fff}
 .entry.entry-move.map-on{background:#FFF1DC;border-radius:14px}.entry-move.map-on .ttl,.entry-move.map-on .move-ic{color:#A85A00}
 .dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
 .dm-pin svg{width:14px;height:14px}
@@ -2275,7 +2273,6 @@ function vTrip(){
   const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim === "grow" ? " grow" : ""}"${animAt} title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
       <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title"><b>${esc(t.name)}</b><small>${esc(dLong(d))} · วันที่ ${S.day + 1}</small></div></div>
       <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
-      <div class="hm-ov" style="bottom:10px;left:10px"><div class="hm-tog" role="group" aria-label="หัวทริป"><button type="button" data-act="map-mode" data-on="0" aria-pressed="false">ภาพปก</button><button type="button" class="on" data-act="map-mode" data-on="1" aria-pressed="true">แผนที่</button></div></div>
       <div class="hm-ov" style="bottom:10px;right:10px"><button class="round" data-act="map-expand" aria-label="ขยายแผนที่เต็มจอ">${ic("expand",18)}</button></div>
     </section>` : `<section class="trip-bar cv-${tone(t.id)}${anim === "pop" ? " pop" : ""}"${animAt} title="แตะสองครั้งเพื่อดูแผนที่">${tripArt(d && d >= today() ? wxFor(d) : null)}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
@@ -4598,7 +4595,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode2";
+const BUILD = "2026-11-17-mapmode3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
