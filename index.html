@@ -376,7 +376,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.exp-sheet.steady{animation:none}.scrim.exp-scrim.glide{transition:height .3s cubic-bezier(.2,.8,.2,1)}
+.exp-sheet.steady{animation:none}.scrim.exp-scrim.glide{transition:height .42s cubic-bezier(.25,.8,.25,1)}
+#app>main.screen.kb-lift{transition:transform .42s cubic-bezier(.25,.8,.25,1)}
 /* the expense sheet follows the visible area like the other sheets; moving between its fields is done without iPhone's page slide (see touchend below) */
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
@@ -3530,7 +3531,7 @@ function lockOverlayPage(locked){
     overlayScrollY=window.scrollY;body.style.position='fixed';body.style.top=-overlayScrollY+'px';body.style.left='0';body.style.right='0';body.style.width='100%';
     pinShift=0;if(tt){const fix=n=>requestAnimationFrame(()=>{const t=document.querySelector('.trip-top');if(!t||overlayScrollY===null)return;const d=Math.round(was-t.getBoundingClientRect().top);if(Math.abs(d)>1){pinShift+=d;holdPin();}if(n)fix(n-1);});fix(2);}}
   else if(locked)holdPin();
-  else if(!locked&&overlayScrollY!==null){pinShift=0;const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
+  else if(!locked&&overlayScrollY!==null){pinShift=0;const pg=document.querySelector('#app > main.screen.kb-lift');if(pg){pg.classList.remove('kb-lift');pg.style.transform='';}const tt=document.querySelector('.trip-top');if(tt){tt.style.position='';tt.style.top='';}const y=overlayScrollY;overlayScrollY=null;body.style.position='';body.style.top='';body.style.left='';body.style.right='';body.style.width='';window.scrollTo({top:y,behavior:'instant'});}
 }
 const TOUCH_UI=matchMedia('(pointer:coarse)').matches;   // phones: the time wheel is open while its field has focus
 function render(){
@@ -3912,16 +3913,22 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
   const fit = () => {
     /* in the expense sheet, moving between the amount (number pad) and the name (letters, a taller keyboard) would bounce the sheet:
        while typing there it only moves up, never back down, until the keyboard is put away */
-    const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || Date.now() - (fit.left || 0) < 500;
+    const kbUp = vv.height < window.innerHeight * .8;
+    const exp = !!document.querySelector(".exp-sheet"), typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || (kbUp && Date.now() - (fit.left || 0) < 500);   // once the keyboard is down, let go at once
     /* the tallest keyboard seen on this phone is remembered, so even the first move to the letters does not nudge the sheet */
-    const kbUp = vv.height < window.innerHeight * .8, keyKey = "mytrip-kb-" + window.innerHeight;
+    const keyKey = "mytrip-kb-" + window.innerHeight;
     let known = 1e9;
     if(exp && typing && kbUp) try { known = Math.min(+(localStorage.getItem(keyKey) || 1e9), Math.round(vv.height)); localStorage.setItem(keyKey, known); } catch(_){}
     const h = exp && typing ? Math.min(vv.height, fit.minH || 1e9, known) : vv.height; fit.minH = exp && typing ? h : 0;
     /* iPhone opens the letter keyboard in one jump when the page does not need to scroll (it scrolls, smoothly, only for the number
        pad here): in that case the expense sheet glides to its new place itself, so both fields open and close the same way */
     const sc = exp && document.querySelector(".exp-scrim");
-    if(sc && Math.abs(h - (fit.lastH || h)) > 80 && Math.round(vv.offsetTop) === Math.round(fit.lastT || 0)){ sc.classList.add("glide"); clearTimeout(fit.g); fit.g = setTimeout(() => sc.classList.remove("glide"), 360); }
+    if(sc && Math.abs(h - (fit.lastH || h)) > 80 && Math.round(vv.offsetTop) === Math.round(fit.lastT || 0)){
+      sc.classList.add("glide"); clearTimeout(fit.g); fit.g = setTimeout(() => sc.classList.remove("glide"), 460);
+      /* and the page behind slides up with it, the way iPhone slides the page for the number pad */
+      const pg = document.querySelector("#app > main.screen");
+      if(pg){ pg.classList.add("kb-lift"); pg.style.transform = h < (fit.lastH || h) ? `translateY(${Math.round(h - fit.lastH)}px)` : ""; }
+    }
     fit.lastH = h; fit.lastT = vv.offsetTop;
     const r = document.documentElement.style; r.setProperty("--vvh", h + "px");
     if(!(exp && Date.now() - (fit.left || 0) < 480)) r.setProperty("--vvt", vv.offsetTop + "px");   // hold still while moving between its fields
@@ -4631,7 +4638,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp17";
+const BUILD = "2026-11-17-exp18";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
