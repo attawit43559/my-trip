@@ -226,7 +226,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 @media (prefers-reduced-motion:reduce){.dial-item,.dial-item .dial-label,.closing .dial-item{animation-duration:.01s;animation-delay:0s}}
 .dial-label{background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
 .dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
-.dial-map .dial-btn{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
+.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
 .dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
 .dm-drop{width:30px;height:40px;position:relative;cursor:pointer}.dm-drop>svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--soft);stroke:#FFFFFF;stroke-width:1.6;overflow:visible;filter:drop-shadow(0 1px 2px rgba(43,33,28,.22))}
@@ -1356,7 +1356,7 @@ async function confirmCopy(){
 }
 /* ⋯ opens a column of round buttons hanging from it, each with its name beside it */
 function vTripMore(s){
-  const items = [["map-mode", "map", S.mapMode ? "ภาพปกทริป" : "โหมดแผนที่", "dial-map"], ["trip-edit", "edit", "แก้ไขชื่อ / วันเที่ยว"], ["export-open", "image", "ส่งออกแผนเที่ยว"],
+  const items = [["trip-edit", "edit", "แก้ไขชื่อ / วันเที่ยว"], ["export-open", "image", "ส่งออกแผนเที่ยว"],
     ["invite", "users", "ผู้ร่วมทริป / ชวนเพื่อน"], ["copy-share", "share", "แชร์แผนให้เพื่อนคัดลอก"], ["account", "info", "บัญชีและการตั้งค่า"]];
   if(ownOn(tripDates(S.trip)).length || planNotes(tripDates(S.trip)).length) items.push(["clear-open", "trash", "ล้างแผน…", "dial-danger"]);
   return `<div class="scrim dial-scrim" data-act="close-sheet"><div class="dial" role="menu" aria-label="เพิ่มเติม" style="top:${s.top || 90}px;right:${s.right || 16}px">
@@ -4435,7 +4435,6 @@ document.addEventListener("click", async e => {
     case "clear-open": S.sheet = {kind:"clear", scope:"day"}; render(); break;
     case "clear-scope": S.sheet.scope = el.dataset.k; render(); break;
     case "clear-run": clearPlan();break;
-    case "map-mode": mapModeSwitch(el.dataset.on != null ? el.dataset.on === "1" : !S.mapMode); break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
     case "guide-step": guideGo((S.sheet?.pos || 0) + Number(el.dataset.d || 1)); break;
     case "guide-done": try { localStorage.setItem("mytrip-guide-seen", "1"); } catch(_){} if(S.sheet?.kind === "guide"){ S.sheet = null; render.pendingGuide = false; render(); } break;
@@ -4602,7 +4601,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode8";
+const BUILD = "2026-11-17-mapmode9";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
