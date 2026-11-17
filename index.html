@@ -210,9 +210,20 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .sheet.float input[type=date]{width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none}
 .plan-code{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.04em;text-align:center;background:var(--tile);border-radius:16px;padding:14px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
 .row-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px}
-.dial-scrim{background:rgba(43,33,28,.28);display:block}.dial{position:fixed;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.dial-item{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;font:inherit;color:var(--ink);opacity:0;transform:translateY(-8px);animation:dialIn .22s ease-out forwards;animation-delay:calc(var(--i) * 30ms)}
-@keyframes dialIn{to{opacity:1;transform:none}}
+.dial-scrim{background:rgba(43,33,28,.28);display:block;animation:dialFade .25s ease-out}.dial-scrim.closing{animation:dialFadeOut .3s ease-in forwards}
+@keyframes dialFade{from{background:rgba(43,33,28,0)}}@keyframes dialFadeOut{to{background:rgba(43,33,28,0)}}
+.dial{position:fixed;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+/* each button starts tucked behind ⋯ and slides down to its place; closing folds them back up, last one first */
+.dial-item{--dy:calc(-1 * (var(--i) * 56px + 34px));display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;font:inherit;color:var(--ink);
+  opacity:0;transform:translateY(var(--dy)) scale(.35);transform-origin:right center;animation:dialIn .42s cubic-bezier(.2,.9,.25,1.15) forwards;animation-delay:calc(var(--i) * 28ms)}
+.dial-item .dial-label{opacity:0;transform:translateX(10px);animation:dialLabel .25s ease-out forwards;animation-delay:calc(var(--i) * 28ms + 140ms)}
+@keyframes dialIn{60%{opacity:1}to{opacity:1;transform:none}}
+@keyframes dialLabel{to{opacity:1;transform:none}}
+.closing .dial-item{opacity:1;transform:none;animation:dialOut .26s cubic-bezier(.5,0,.75,.2) forwards;animation-delay:calc((6 - var(--i)) * 18ms)}
+.closing .dial-item .dial-label{animation:dialLabelOut .12s ease-in forwards}
+@keyframes dialOut{to{opacity:0;transform:translateY(var(--dy)) scale(.35)}}
+@keyframes dialLabelOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(10px)}}
+@media (prefers-reduced-motion:reduce){.dial-item,.dial-item .dial-label,.closing .dial-item{animation-duration:.01s;animation-delay:0s}}
 .dial-label{background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
 .dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
 .dial-map .dial-btn{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
@@ -1190,7 +1201,7 @@ async function prepFile(f){
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide","day-map"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide","day-map","trip-more"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -4371,7 +4382,8 @@ document.addEventListener("click", async e => {
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
     case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
-    case "close-sheet": if(S.sheet?.kind==="doc"&&S.sheet.back){S.sheet=S.sheet.back;render();break;} S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
+    case "close-sheet": if(S.sheet?.kind==="trip-more"){ const sc=document.querySelector(".dial-scrim"); if(sc&&!sc.classList.contains("closing")){ sc.classList.add("closing"); const sh=S.sheet; setTimeout(()=>{ if(S.sheet===sh){ S.sheet=null; render(); } },300); } break; }   // the buttons fold back into ⋯ first
+      if(S.sheet?.kind==="doc"&&S.sheet.back){S.sheet=S.sheet.back;render();break;} S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
     case "taxi-open": taxiOpen(el.dataset.id); break;
     case "sos-open": sosOpen(false); if(sosNeedsLocal()) sosLocalize(); sosAutoLoad(); break;
@@ -4523,7 +4535,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-dial1";
+const BUILD = "2026-11-17-dial2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
