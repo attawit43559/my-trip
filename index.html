@@ -377,7 +377,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
 .scrim.exp-scrim{align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 0;box-sizing:border-box}
-.exp-sheet{padding-top:6px;padding-bottom:16px}.exp-sheet .exp-amt-box{padding-top:8px}
+.exp-sheet{padding-top:6px;padding-bottom:16px}.exp-sheet.steady{animation:none}.exp-sheet .exp-amt-box{padding-top:8px}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
 .exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none;caret-color:transparent}
 .exp-big::placeholder{color:var(--muted);opacity:.45;transition:color .15s,opacity .15s}.exp-big:focus::placeholder{color:var(--ink);opacity:1}
@@ -1215,7 +1215,7 @@ async function prepFile(f){
 
 /* ---------- helpers ---------- */
 function toast(msg){ S.toast = msg; render(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast=""; render(); }, 2600); }
-const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide","trip-more"].includes(S.sheet.kind) || !!S.sheet.edit));
+const busyForm = () => ["new","review","upload"].includes(S.view) || S.catTab === "help" || (S.sheet && (["place","move","idea","trip-edit","doc","taxi","sos","sos-doctor","guide","trip-more","exp-add"].includes(S.sheet.kind) || !!S.sheet.edit));
 /* background refreshes wait while someone is scrolling the bottom panel, so the list doesn't jump under their finger */
 let panelScrollAt = 0;
 document.addEventListener("scroll", e => { if(e.target && e.target.classList && e.target.classList.contains("dock-body")) panelScrollAt = Date.now(); }, true);
@@ -4016,15 +4016,16 @@ function expWhen(at){ if(!at) return ""; const d = new Date(at); return d.toLoca
 function vExpAdd(s){
   const it = s.id ? S.items.find(i => i.id === s.id) : null, d = (it && it.data) || {};
   let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
-  const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = d.cur || (curs.includes(last) ? last : curs[0]);
+  const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
   /* a card at the top of the visible area: the keyboard opens below it (a sheet at the bottom jumps up and down with the keyboard);
      if iPhone still slides the page up for the keyboard, the card follows the visible area so it stays on screen */
-  return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet float exp-sheet" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
+  const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
+  return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet float exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
     <form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
-        <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" value="${d.amount != null ? esc(String(d.amount)) : ""}">
+        <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
         ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
-      <label class="exp-what"><span class="muted small">ค่าอะไร</span><input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" value="${esc(it ? it.title || "" : "")}"></label>
+      <label class="exp-what"><span class="muted small">ค่าอะไร</span><input id="exp-what" name="what" maxlength="60" placeholder="เช่น ราเมน, ตั๋วรถไฟ" data-bind="sheet:what" value="${esc(s.what ?? (it ? it.title || "" : ""))}"></label>
       <p class="muted small" style="margin:-6px 0 0">บันทึกในชื่อ ${esc(it ? expName(d.by) : (S.myName || "ฉัน"))}</p>
       <div class="exp-actions"><button type="button" class="exp-btn exp-btn-back" data-act="exp-cancel">${ic("close",19)}ยกเลิก</button><button type="submit" class="exp-btn exp-btn-add">${ic("check",19)}บันทึก</button></div>
     </form>
@@ -4495,7 +4496,7 @@ document.addEventListener("click", async e => {
     case "join-confirm": confirmJoin(); break;
     case "exp-cancel": S.sheet = null; render(); break;
     case "exp-add": S.swipeOpen = null; S.delAsk = null; S.sheet = {kind:"exp-add", id:el.dataset.id || ""}; render(); setTimeout(() => { const f = document.getElementById("exp-amt"); if(f && !el.dataset.id) f.focus(); }, 60); break;
-    case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = el.dataset.cur; break; }
+    case "exp-cur": { const f = el.closest("form"); segSlide(el); f.elements.cur.value = S.sheet.cur = el.dataset.cur; break; }
     case "exp-view": { if(S.segSwiped){ S.segSwiped = false; break; } let b = el; if(b.classList.contains("on")){ const o = [...b.parentNode.querySelectorAll("button")].find(x => x !== b); if(o) b = o; } try { localStorage.setItem("mytrip-exp-view", b.dataset.cur); } catch(_){} segSlide(b); setTimeout(render, 280); break; }
     case "exp-pick": { const o = (S.expUI ||= {pick:""}); o.pick = o.pick === el.dataset.id ? "" : el.dataset.id; render(); break; }
     case "exp-who": { const o = (S.expUI || {}); const it = S.items.find(i => i.id === o.pick); if(!it) break; const all = expPeople(), cur = new Set(expSplitOf(it, all)), u = el.dataset.u;
@@ -4608,7 +4609,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp3";
+const BUILD = "2026-11-17-exp4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
