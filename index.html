@@ -233,7 +233,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dm-name{position:absolute;left:29px;top:7px;max-width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:500;color:rgba(43,33,28,.62);text-shadow:0 0 2px #fff,0 0 3px #fff,0 0 4px #fff;pointer-events:none}.dm-name.off{visibility:hidden}
 .dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--deep);font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
 .trip-map{--hmh:min(46svh,420px);position:relative;flex:none;height:var(--hmh);border-radius:28px;overflow:hidden;background:var(--soft,var(--tile))}
-.hm-slot{position:absolute;top:0;left:0;right:0;height:var(--hmh)}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
+.hm-slot{position:absolute;top:0;left:0;right:0;height:var(--hmh);contain:strict}.hm-slot .dm-map{transition:opacity .3s ease-out}.hm-slot .dm-map.wait{opacity:0}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
 .trip-bar,.trip-map{touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .trip-map .hm-cover{position:absolute;top:0;left:0;right:0;height:var(--hmfrom);z-index:3;pointer-events:none;margin:0}
 .trip-map.grow{animation:hmGrow .48s cubic-bezier(.32,.72,0,1) var(--ad,0s) both}
@@ -1600,6 +1600,7 @@ function selectTab(k, landed){
   const cur = ["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "";
   k = k || "";
   S.tabFrom = landed ? TRIP_TABS.findIndex(x => x[0] === k) : Math.max(0, TRIP_TABS.findIndex(x => x[0] === cur));
+  hmTabAnim(cur, k);
   S.catTab = k; S.sheet = null; S.dockHidden = false;
   if(k === "planning") S.planner ||= {query:"", filter:""};
   render(); if(k !== cur) window.scrollTo(0,0);
@@ -2259,27 +2260,33 @@ function vTrip(){
       ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
-  /* map mode: the header card shows the day on a small map; tapping a travel row lights its route up */
-  const mapHead = !!(S.mapMode && tab === "" && d);
-  if(mapHead){ S.hm ||= {date:"", leg:""}; if(S.hm.date !== d){ S.hm.date = d; S.hm.leg = ""; S.hm.err = ""; } }
-  /* the cover grows into the map (and back): the cover fades over the map while the card changes height;
-     a redraw part way through carries on from where it was */
-  const anim = S.hmAnim && Date.now() - S.hmAnim.at < 600 ? S.hmAnim.k : "", animAt = `--hmfrom:${S.coverH || 108}px${anim ? `;--ad:-${Date.now() - S.hmAnim.at}ms` : ""}`;
-  const cover = (cls, live) => `<section class="trip-bar cv-${tone(t.id)}${cls}" ${live ? `title="แตะสองครั้งเพื่อดูแผนที่"` : `aria-hidden="true" inert`}>${tripArt(d && d >= today() ? wxFor(d) : null)}
-      <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
-      <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span>${tbWx(d)}</div>
-      <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
-    </section>`;
-  const head = mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim ? " " + anim : ""}" style="${animAt}" title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
-      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title">${esc(t.name)} · ${esc(dLong(d))}</div></div>
-      <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
-      ${anim ? cover(" hm-cover", false) : ""}
-    </section>` : cover("", true);
+  const head = tripHead(t, d, tab);
   return `<main class="screen has-tabbar">
     <div class="trip-top">
     ${head}${pin ? `<div class="pin-cal">${pin}</div>` : ""}</div>
     <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
   </main>${tabBar(tab)}`;
+}
+function tripCover(t, d, cls, live){ return `<section class="trip-bar cv-${tone(t.id)}${cls}" ${live ? `title="แตะสองครั้งเพื่อดูแผนที่"` : `aria-hidden="true" inert`}>${tripArt(d && d >= today() ? wxFor(d) : null)}
+      <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
+      <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span>${tbWx(d)}</div>
+      <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
+    </section>`; }
+/* the trip header: the cover, or in map mode the day on a small map (tapping a travel row lights its route up) */
+function tripHead(t, d, tab){
+  /* map mode: the header card shows the day on a small map; tapping a travel row lights its route up */
+  const anim = S.hmAnim && Date.now() - S.hmAnim.at < 600 ? S.hmAnim.k : "";
+  const mapHead = !!(S.mapMode && d && (tab === "" || anim === "shrink"));   // on another page the map only shows while it shrinks away
+  if(mapHead){ S.hm ||= {date:"", leg:""}; if(S.hm.date !== d){ S.hm.date = d; S.hm.leg = ""; S.hm.err = ""; } }
+  /* the cover grows into the map (and back): the cover fades over the map while the card changes height;
+     a redraw part way through carries on from where it was */
+  const animAt = `--hmfrom:${S.coverH || 113}px${anim ? `;--ad:-${Date.now() - S.hmAnim.at}ms` : ""}`;
+  const cover = (cls, live) => tripCover(t, d, cls, live);
+  return mapHead ? `<section class="trip-map cv-${tone(t.id)}${anim ? " " + anim : ""}" style="${animAt}" title="แตะสองครั้งเพื่อกลับเป็นภาพปก"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
+      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title">${esc(t.name)} · ${esc(dLong(d))}</div></div>
+      <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
+      ${anim ? cover(" hm-cover", false) : ""}
+    </section>` : cover("", true);
 }
 /* the floating glass tab bar: four pages, a pill that slides to the one chosen (tap, or slide a finger along the bar) */
 const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["help","AI","spark"],["money","ค่าใช้จ่าย","wallet"],["info","ข้อมูล","file"]];
@@ -2488,16 +2495,32 @@ const dmPad = () => ({top:90, bottom:30, left:44, right:44});
 function dmInteract(full){ const m = DM.map; if(!m || DM.live === full) return; DM.live = full;
   for(const h of ["scrollZoom", "boxZoom", "doubleClickZoom", "keyboard"]) full ? m[h].enable() : m[h].disable(); m.dragPan.enable(); m.touchZoomRotate.enable(); }
 /* switch the trip header between the cover and the map, growing or shrinking smoothly */
+const curTab = () => ["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "";
+function hmSwapHead(){
+  const el = document.querySelector(".trip-top > .trip-map, .trip-top > .trip-bar"), t = S.trip;
+  if(!el || S.view !== "trip" || !t){ render(); return; }
+  el.outerHTML = tripHead(t, tripDates(t)[S.day], curTab()); dayMapMount();
+}
+/* leaving the map page shrinks the map back into the cover; coming back grows it again */
+function hmTabAnim(from, to){
+  if(!S.mapMode || !S.trip || !tripDates(S.trip)[S.day] || (from === "") === (to === "")) return;
+  if(to === ""){ S.hmAnim = {k:"grow", at:Date.now()}; return; }
+  const a = S.hmAnim = {k:"shrink", at:Date.now()};
+  setTimeout(() => { if(S.hmAnim === a){ S.hmAnim = null; hmSwapHead(); } }, 400);
+}
 function mapModeSwitch(on){
   if(on === !!S.mapMode) return;
   try { localStorage.setItem("mytrip-mapmode", on ? "1" : ""); } catch(_){}
-  if(S.sheet?.kind === "trip-more") S.sheet = null;
   const bar = document.querySelector(".trip-bar:not(.hm-cover)"); if(bar) S.coverH = bar.offsetHeight;   // the map grows from (and shrinks back to) the cover's own height
-  if(on){ S.mapMode = true; S.hmAnim = {k:"grow", at:Date.now()}; if(S.catTab){ selectTab(""); return; } render(); return; }
+  const menu = S.sheet?.kind === "trip-more"; if(menu) S.sheet = null;
+  if(on){ S.mapMode = true; if(curTab()){ selectTab(""); return; } S.hmAnim = {k:"grow", at:Date.now()}; menu ? render() : hmSwapHead(); return; }
   if(S.hmAnim?.k === "shrink") return;
   if(!document.querySelector(".trip-map")){ S.mapMode = false; render(); return; }
-  const a = S.hmAnim = {k:"shrink", at:Date.now()}; render();
-  setTimeout(() => { if(S.hmAnim !== a) return; S.mapMode = false; S.hmAnim = null; render(); }, 400);
+  const a = S.hmAnim = {k:"shrink", at:Date.now()}, m = document.querySelector(".trip-map");
+  if(menu) render();
+  else { m.style.setProperty("--ad", "0ms"); m.style.setProperty("--hmfrom", (S.coverH || 113) + "px"); m.classList.add("shrink");   // change the map card in place: no redraw as it starts
+    m.insertAdjacentHTML("beforeend", tripCover(S.trip, tripDates(S.trip)[S.day], " hm-cover", false)); }
+  setTimeout(() => { if(S.hmAnim !== a) return; S.mapMode = false; S.hmAnim = null; hmSwapHead(); }, 400);
 }
 { let down = null, last = 0, lx = 0, ly = 0;
   document.addEventListener("pointerdown", e => { const h = e.isPrimary && S.view === "trip" && e.target.closest?.(".trip-bar,.trip-map");
@@ -2515,8 +2538,10 @@ function hmMark(){
 async function dayMapMount(){
   hmMark();
   const s = dmCtx(), head = true, slot = document.getElementById("hm-slot"); if(!s || !slot) return;
-  if(!DM.box){ DM.box = document.createElement("div"); DM.box.className = "dm-map"; }
+  if(!DM.box){ DM.box = document.createElement("div"); DM.box.className = "dm-map wait"; }
   slot.prepend(DM.box);   // the map lives in one box that is moved into each redraw, so it is not rebuilt
+  const left = S.hmAnim ? 480 - (Date.now() - S.hmAnim.at) : 0;   // while the card grows or shrinks, only the picture moves; the map work waits
+  if(left > 0){ clearTimeout(DM.later); DM.later = setTimeout(dayMapMount, left); return; }
   let gl, style;
   try { [gl, style] = await Promise.all([dayMapLib(), dayMapStyle()]); }
   catch(_){ if(dmCtx() === s && !s.err){ s.err = "ต้องใช้อินเทอร์เน็ตเพื่อโหลดแผนที่"; render(); } return; }
@@ -2532,6 +2557,7 @@ async function dayMapMount(){
     DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":3.5, "line-dasharray":[2, 1.4]}});
   }
   await DM.ready; if(!DM.map.getSource("legs")) return;   // another redraw is still setting the map up
+  DM.box.classList.remove("wait");   // the first map fades in once it is ready
   if(dmCtx() !== s) return;
   DM.map.resize(); dmAttribSmall(); dmInteract(!head);
   const where = head ? "head" : "sheet", {stops, lines} = dayMapData(s.date), sig = where + s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
@@ -4576,7 +4602,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode7";
+const BUILD = "2026-11-17-mapmode8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
