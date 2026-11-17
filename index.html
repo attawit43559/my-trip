@@ -376,7 +376,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.exp-sheet.steady{animation:none}.exp-sheet{position:relative}.kbrec-copy{position:absolute;left:12px;top:10px;z-index:3;border:0;border-radius:999px;background:var(--tile);color:var(--muted);font:inherit;font-size:11px;padding:4px 10px}.scrim.exp-scrim.glide{transition:height .45s cubic-bezier(.33,1,.68,1),top .45s cubic-bezier(.33,1,.68,1)}
+.exp-sheet.steady{animation:none}
 /* the expense sheet follows the visible area like the other sheets; moving between its fields is done without iPhone's page slide (see touchend below) */
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
@@ -3909,6 +3909,20 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
 /* iPhone: when the keyboard opens, fit sheets to the visible area above it */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
+  const KB_KEY = () => "mytrip-kb-" + window.innerHeight;
+  /* the visible area changes in one step; the expense sheet then travels to its new place with one smooth movement
+     (a transform, drawn by the graphics chip, instead of resizing the frame on every step) */
+  let lastH = 0;
+  const placeSheet = (h, top) => {
+    const r = document.documentElement.style, sh = document.querySelector(".exp-sheet");
+    if(!sh){ lastH = 0; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", top + "px"); return; }
+    if(Math.abs(h - (lastH || window.innerHeight)) < 80){ lastH = h; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", top + "px"); return; }
+    const from = sh.getBoundingClientRect().top;   // where it is now (part way through a movement too)
+    r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", top + "px"); lastH = h;
+    const d = from - sh.getBoundingClientRect().top; if(Math.abs(d) < 2) return;
+    sh.style.transition = "none"; sh.style.transform = `translateY(${d}px)`; sh.getBoundingClientRect();
+    sh.style.transition = "transform .42s cubic-bezier(.32,.72,0,1)"; sh.style.transform = "";
+  };
   const fit = () => {
     /* The expense sheet (one model for every case, see expKeys below):
        - iPhone never slides the page for its fields (they are focused with preventScroll), it only shrinks the visible area;
@@ -3917,14 +3931,11 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
        - when the keyboard comes up or goes down, the sheet glides there, the same way for both fields. */
     const exp = !!document.querySelector(".exp-sheet"), kbUp = vv.height < window.innerHeight * .8;
     let h = vv.height;
-    if(exp && kbUp){ const key = "mytrip-kb-" + window.innerHeight; let tall = h;
-      try { tall = Math.min(+(localStorage.getItem(key) || 1e9), h); localStorage.setItem(key, tall); } catch(_){}
+    if(exp && kbUp){ let tall = h;
+      try { tall = Math.min(+(localStorage.getItem(KB_KEY()) || 1e9), h); localStorage.setItem(KB_KEY(), tall); } catch(_){}
       h = tall; }
-    const sc = exp && document.querySelector(".exp-scrim");
-    /* (just opened: it starts from the full screen) */
-    if(sc && Math.abs(h - (fit.lastH || window.innerHeight)) > 80){ sc.classList.add("glide"); clearTimeout(fit.g); fit.g = setTimeout(() => sc.classList.remove("glide"), 520); }
-    fit.lastH = exp ? h : 0;
-    const r = document.documentElement.style; r.setProperty("--vvh", h + "px"); r.setProperty("--vvt", vv.offsetTop + "px");
+    placeSheet(h, vv.offsetTop);
+    const r = document.documentElement.style;
     // keyboard height: the bottom bar and its panel sit on top of the keyboard instead of behind it
     const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
     const kb = editing?Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)):0;
@@ -3942,25 +3953,10 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
      fields move differently: smooth for one, a jump for the other) */
   document.addEventListener("touchend", e => { const el = e.target.closest?.(".exp-sheet input:not([type=hidden])");
     if(!el || document.activeElement === el || e.touches.length) return;
-    e.preventDefault(); el.focus({preventScroll:true}); }, {passive:false});
+    e.preventDefault(); el.focus({preventScroll:true});
+    if(vv.height >= window.innerHeight * .8){ let tall = 0; try { tall = +(localStorage.getItem(KB_KEY()) || 0); } catch(_){}
+      if(tall) placeSheet(tall, 0); } }, {passive:false});
 })();
-/* TEMP recorder (to be removed): every frame for 1.5 s after a field in the expense sheet gains or loses focus, what iPhone reports
-   and where the sheet actually is on screen; "คัดลอกข้อมูล" copies it so it can be pasted into the chat */
-const KBREC = {runs:[]};
-function kbRecStart(what){
-  const vv = window.visualViewport; if(!vv) return;
-  const run = {what, rows:[]}, t0 = performance.now(); KBREC.runs.push(run); if(KBREC.runs.length > 8) KBREC.runs.shift();
-  const step = () => { const t = Math.round(performance.now() - t0), sh = document.querySelector(".exp-sheet"), sc = document.querySelector(".exp-scrim"), pg = document.querySelector("#app > main.screen");
-    const r = sh?.getBoundingClientRect(), q = sc?.getBoundingClientRect(), g = pg?.getBoundingClientRect();
-    run.rows.push([t, Math.round(vv.height), Math.round(vv.offsetTop), Math.round(scrollY), r ? Math.round(r.top) : "", r ? Math.round(r.bottom) : "", q ? Math.round(q.top) : "", q ? Math.round(q.height) : "", g ? Math.round(g.top) : "", (document.activeElement?.id || "-")].join(","));
-    if(t < 1500) requestAnimationFrame(step); };
-  requestAnimationFrame(step);
-}
-document.addEventListener("focusin", e => { if(e.target.closest?.(".exp-sheet")) kbRecStart("in:" + e.target.id); });
-document.addEventListener("focusout", e => { if(e.target.closest?.(".exp-sheet")) kbRecStart("out:" + e.target.id); });
-document.addEventListener("click", e => { if(!e.target.closest?.(".kbrec-copy")) return;
-  const txt = "ih=" + innerHeight + "\nt,vvH,vvTop,scrollY,sheetTop,sheetBottom,scrimTop,scrimH,pageTop,focus\n" + KBREC.runs.map(r => "## " + r.what + "\n" + r.rows.join("\n")).join("\n");
-  navigator.clipboard?.writeText(txt).then(() => toast("คัดลอกข้อมูลแล้ว ไปวางในแชตได้เลย"), () => toast("คัดลอกไม่ได้")); });
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
@@ -4057,7 +4053,7 @@ function vExpAdd(s){
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
   const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
   return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
-    <button type="button" class="kbrec-copy">คัดลอกข้อมูล</button><form data-form="exp" class="stack exp-form" autocomplete="off">
+    <form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
         <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
         ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
@@ -4645,7 +4641,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-kb1";
+const BUILD = "2026-11-17-kb2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
