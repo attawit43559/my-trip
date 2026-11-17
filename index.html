@@ -376,7 +376,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.exp-sheet.steady{animation:none}.scrim.exp-scrim.glide{transition:height .42s cubic-bezier(.25,.8,.25,1)}
+.exp-sheet.steady{animation:none}.exp-sheet{position:relative}.kbrec-copy{position:absolute;left:12px;top:10px;z-index:3;border:0;border-radius:999px;background:var(--tile);color:var(--muted);font:inherit;font-size:11px;padding:4px 10px}.scrim.exp-scrim.glide{transition:height .42s cubic-bezier(.25,.8,.25,1)}
 #app>main.screen.kb-lift{transition:transform .42s cubic-bezier(.25,.8,.25,1)}
 /* the expense sheet follows the visible area like the other sheets; moving between its fields is done without iPhone's page slide (see touchend below) */
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
@@ -3954,6 +3954,23 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
     if(!document.activeElement?.closest?.(".exp-sheet")) return;   // the first tap opens the keyboard the usual way, sliding up like everywhere else
     e.preventDefault(); el.focus({preventScroll:true}); }, {passive:false});
 })();
+/* TEMP recorder (to be removed): every frame for 1.5 s after a field in the expense sheet gains or loses focus, what iPhone reports
+   and where the sheet actually is on screen; "คัดลอกข้อมูล" copies it so it can be pasted into the chat */
+const KBREC = {runs:[]};
+function kbRecStart(what){
+  const vv = window.visualViewport; if(!vv) return;
+  const run = {what, rows:[]}, t0 = performance.now(); KBREC.runs.push(run); if(KBREC.runs.length > 8) KBREC.runs.shift();
+  const step = () => { const t = Math.round(performance.now() - t0), sh = document.querySelector(".exp-sheet"), sc = document.querySelector(".exp-scrim"), pg = document.querySelector("#app > main.screen");
+    const r = sh?.getBoundingClientRect(), q = sc?.getBoundingClientRect(), g = pg?.getBoundingClientRect();
+    run.rows.push([t, Math.round(vv.height), Math.round(vv.offsetTop), Math.round(scrollY), r ? Math.round(r.top) : "", r ? Math.round(r.bottom) : "", q ? Math.round(q.top) : "", q ? Math.round(q.height) : "", g ? Math.round(g.top) : "", (document.activeElement?.id || "-")].join(","));
+    if(t < 1500) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+document.addEventListener("focusin", e => { if(e.target.closest?.(".exp-sheet")) kbRecStart("in:" + e.target.id); });
+document.addEventListener("focusout", e => { if(e.target.closest?.(".exp-sheet")) kbRecStart("out:" + e.target.id); });
+document.addEventListener("click", e => { if(!e.target.closest?.(".kbrec-copy")) return;
+  const txt = "ih=" + innerHeight + "\nt,vvH,vvTop,scrollY,sheetTop,sheetBottom,scrimTop,scrimH,pageTop,focus\n" + KBREC.runs.map(r => "## " + r.what + "\n" + r.rows.join("\n")).join("\n");
+  navigator.clipboard?.writeText(txt).then(() => toast("คัดลอกข้อมูลแล้ว ไปวางในแชตได้เลย"), () => toast("คัดลอกไม่ได้")); });
 document.addEventListener("focusout", e => {
   if(!(e.target.dataset && e.target.dataset.suggest !== undefined)) return;
   setTimeout(() => { if(Date.now() - sugHold > 800) closeSuggest(); else setTimeout(closeSuggest, 900); }, 150);
@@ -4050,7 +4067,7 @@ function vExpAdd(s){
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
   const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
   return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
-    <form data-form="exp" class="stack exp-form" autocomplete="off">
+    <button type="button" class="kbrec-copy">คัดลอกข้อมูล</button><form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
         <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
         ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
@@ -4638,7 +4655,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp18";
+const BUILD = "2026-11-17-rec1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
