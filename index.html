@@ -234,10 +234,21 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dm-list{list-style:none;margin:6px 0 0;padding:0 12px;flex:0 0 auto;height:132px;margin-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);overflow-y:auto;overscroll-behavior:contain}
 .dm-list button{width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:14px;color:var(--ink);text-align:left;min-height:44px;padding:0 2px}
 .dm-list button:disabled{color:var(--muted)}
-.dm-list .dm-leg{min-height:36px;padding-left:8px;font-size:13px;color:var(--ai,#2B61B2);gap:14px}.dm-leg svg{flex:none}.dm-leg.on{background:#FFF1DC;color:#A85A00;border-radius:12px}
+.dm-list .dm-leg{min-height:36px;padding-left:8px;font-size:13px;color:var(--move);gap:14px}.dm-leg svg{flex:none}.dm-leg.on{background:#FFF1DC;color:#A85A00;border-radius:12px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
 .dm-drop{width:30px;height:40px;position:relative;cursor:pointer;filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.25))}.dm-drop svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--deep)}
 .dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
+.trip-map{position:relative;height:210px;border-radius:28px;overflow:hidden;background:var(--tile)}
+.hm-slot{position:absolute;inset:0}.hm-slot .dm-map{position:absolute;inset:0;height:auto}.hm-slot .dm-msg{font-size:13px;color:var(--muted)}
+.hm-slot .maplibregl-ctrl-bottom-right{bottom:52px}
+.hm-tap{position:absolute;inset:0;z-index:1;border:0;padding:0;background:none;cursor:pointer}
+.hm-ov{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;min-width:0}
+.trip-map .round{background:rgba(255,255,255,.94);color:#2B211C;box-shadow:0 2px 8px rgba(43,33,28,.16)}
+.hm-title{min-width:0;background:rgba(255,255,255,.94);color:#2B211C;border-radius:16px;padding:5px 12px;box-shadow:0 2px 8px rgba(43,33,28,.13);line-height:1.25}
+.hm-title b{display:block;font-family:var(--display);font-weight:500;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hm-title small{display:block;font-size:11.5px;color:#6E6259}
+.hm-tog{display:flex;background:rgba(255,255,255,.94);border-radius:999px;padding:3px;box-shadow:0 2px 8px rgba(43,33,28,.13)}
+.hm-tog button{border:0;background:none;font:inherit;font-size:12.5px;min-height:32px;padding:0 12px;border-radius:999px;color:#6E6259}.hm-tog button.on{background:#2B211C;color:#fff}
+.entry.entry-move.map-on{background:#FFF1DC;border-radius:14px}.entry-move.map-on .ttl,.entry-move.map-on .move-ic{color:#A85A00}
 .dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
 .dm-pin svg{width:14px;height:14px}
 .guide-scrim{align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
@@ -886,6 +897,7 @@ const itemIcon = it => {
 /* the day a memo was put into the plan, from the place made from it */
 const plannedFrom = id => S.items.find(i => i.type === "place" && (i.data||{}).fromIdea === id);
 const IC = {
+  expand:'<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
   map:'<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4zM9 4v13.5M15 6.5V20"/>',
   refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   globe:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
@@ -984,6 +996,7 @@ function spanOf(items){
 const S = {
   view:"loading", me:null, myName:"", trips:[], tripsReady:false,
   tripId:null, trip:null, items:[], day:0,
+  mapMode:(() => { try { return localStorage.getItem("mytrip-mapmode") === "1"; } catch(_){ return false; } })(), hm:null,
   newTrip:{ name:"", destination:"", start:"", end:"" },
   upload:null, review:null, sheet:null, toast:"", joinCode:"", joinTrip:null, joinMissing:false
 };
@@ -1345,7 +1358,7 @@ async function confirmCopy(){
 }
 /* ⋯ opens a column of round buttons hanging from it, each with its name beside it */
 function vTripMore(s){
-  const items = [["day-map", "map", "แผนที่วันนี้", "dial-map"], ["trip-edit", "edit", "แก้ไขชื่อ / วันเที่ยว"], ["export-open", "image", "ส่งออกแผนเที่ยว"],
+  const items = [["map-mode", "map", S.mapMode ? "ภาพปกทริป" : "โหมดแผนที่", "dial-map"], ["trip-edit", "edit", "แก้ไขชื่อ / วันเที่ยว"], ["export-open", "image", "ส่งออกแผนเที่ยว"],
     ["invite", "users", "ผู้ร่วมทริป / ชวนเพื่อน"], ["copy-share", "share", "แชร์แผนให้เพื่อนคัดลอก"], ["account", "info", "บัญชีและการตั้งค่า"]];
   if(ownOn(tripDates(S.trip)).length || planNotes(tripDates(S.trip)).length) items.push(["clear-open", "trash", "ล้างแผน…", "dial-danger"]);
   return `<div class="scrim dial-scrim" data-act="close-sheet"><div class="dial" role="menu" aria-label="เพิ่มเติม" style="top:${s.top || 90}px;right:${s.right || 16}px">
@@ -2248,13 +2261,23 @@ function vTrip(){
       ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
-  return `<main class="screen has-tabbar">
-    <div class="trip-top">
-    <section class="trip-bar cv-${tone(t.id)}">${tripArt(d && d >= today() ? wxFor(d) : null)}
+  /* map mode: the header card shows the day on a small map; tapping a travel row lights its route up */
+  const mapHead = !!(S.mapMode && tab === "" && d);
+  if(mapHead){ S.hm ||= {date:"", leg:""}; if(S.hm.date !== d){ S.hm.date = d; S.hm.leg = ""; S.hm.err = ""; } }
+  const head = mapHead ? `<section class="trip-map"><div class="hm-slot" id="hm-slot">${S.hm.err ? `<p class="dm-msg">${esc(S.hm.err)}</p>` : ""}</div>
+      <button class="hm-tap" data-act="map-expand" aria-label="ขยายแผนที่"></button>
+      <div class="hm-ov" style="top:10px;left:10px;right:60px"><button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button><div class="hm-title"><b>${esc(t.name)}</b><small>${esc(dLong(d))} · วันที่ ${S.day + 1}</small></div></div>
+      <div class="hm-ov" style="top:10px;right:10px"><button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button></div>
+      <div class="hm-ov" style="bottom:10px;left:10px"><div class="hm-tog" role="group" aria-label="หัวทริป"><button type="button" data-act="map-mode" data-on="0" aria-pressed="false">ภาพปก</button><button type="button" class="on" data-act="map-mode" data-on="1" aria-pressed="true">แผนที่</button></div></div>
+      <div class="hm-ov" style="bottom:10px;right:10px"><button class="round" data-act="map-expand" aria-label="ขยายแผนที่เต็มจอ">${ic("expand",18)}</button></div>
+    </section>` : `<section class="trip-bar cv-${tone(t.id)}">${tripArt(d && d >= today() ? wxFor(d) : null)}
       <button class="round" data-act="home" aria-label="กลับไปทริปของฉัน">${ic("back")}</button>
       <div class="tb-text"><h1>${esc(t.name)}</h1><span class="muted small">${esc(rangeLabel(t))}</span>${tbWx(d)}</div>
       <button class="round" data-act="trip-more" aria-label="เพิ่มเติม">${ic("more",20)}</button>
-    </section>${pin ? `<div class="pin-cal">${pin}</div>` : ""}</div>
+    </section>`;
+  return `<main class="screen has-tabbar">
+    <div class="trip-top">
+    ${head}${pin ? `<div class="pin-cal">${pin}</div>` : ""}</div>
     <section class="stack page page-${tab||"home"}" style="gap:14px">${page}</section>
   </main>${tabBar(tab)}`;
 }
@@ -2477,29 +2500,40 @@ function vDayMap(s){
       const x = stops[r.stop]; return `<li><button type="button" data-act="day-map-stop" data-i="${r.stop}" ${x.ll ? "" : "disabled"}><span class="dm-pin ${x.tone}">${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span><span class="grow">${esc(x.name)}</span>${x.ll ? "" : `<small class="muted">ไม่มีพิกัด</small>`}</button></li>`; }).join("") : `<li class="muted small" style="padding:14px 4px">ยังไม่มีสถานที่ในวันนี้</li>`}</ol>
   </div>`;
 }
+/* the map is shown either full screen (the day-map sheet) or small in the trip header (map mode) */
+const dmCtx = () => S.sheet?.kind === "day-map" ? S.sheet : document.getElementById("hm-slot") && S.hm?.date ? S.hm : null;
+const dmPad = s => s === S.hm ? {top:100, bottom:58, left:44, right:44} : 60;
+function dmInteract(on){ const m = DM.map; if(!m || DM.live === on) return; DM.live = on;
+  for(const h of ["dragPan", "scrollZoom", "boxZoom", "doubleClickZoom", "touchZoomRotate", "keyboard"]) on ? m[h].enable() : m[h].disable(); }
+/* in map mode the travel row whose route is lit up is lit up too */
+function hmMark(){
+  const s = S.hm, on = s && document.getElementById("hm-slot") && s.leg ? manualTravelLegs(s.date)[+s.leg.slice(1)]?.saved?.id : "";
+  document.querySelectorAll(".day-list .entry-move").forEach(b => b.classList.toggle("map-on", !!on && b.dataset.id === on));
+}
 async function dayMapMount(){
-  const s = S.sheet, slot = document.getElementById("dm-slot"); if(!slot || s?.kind !== "day-map") return;
+  hmMark();
+  const s = dmCtx(), head = s === S.hm, slot = document.getElementById(head ? "hm-slot" : "dm-slot"); if(!s || !slot) return;
   if(!DM.box){ DM.box = document.createElement("div"); DM.box.className = "dm-map"; }
   slot.prepend(DM.box);   // the map lives in one box that is moved into each redraw, so it is not rebuilt
   let gl, style;
   try { [gl, style] = await Promise.all([dayMapLib(), dayMapStyle()]); }
-  catch(_){ if(S.sheet === s && !s.err){ s.err = "ต้องใช้อินเทอร์เน็ตเพื่อโหลดแผนที่"; render(); } return; }
-  if(S.sheet !== s) return;
+  catch(_){ if(dmCtx() === s && !s.err){ s.err = "ต้องใช้อินเทอร์เน็ตเพื่อโหลดแผนที่"; render(); } return; }
+  if(dmCtx() !== s) return;
   if(!DM.map){
     DM.map = new gl.Map({container:DM.box, style, center:[139.76, 35.68], zoom:11, attributionControl:{compact:true}, dragRotate:false, pitchWithRotate:false});
     DM.map.touchZoomRotate.disableRotation();
     await new Promise(r => DM.map.once("load", r));
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
-    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
+    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#17808A", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
     DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":3.5, "line-dasharray":[2, 1.4]}});
   }
-  if(S.sheet !== s) return;
-  DM.map.resize();
-  const {stops, lines} = dayMapData(s.date), sig = s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
+  if(dmCtx() !== s) return;
+  DM.map.resize(); dmInteract(!head);
+  const where = head ? "head" : "sheet", {stops, lines} = dayMapData(s.date), sig = where + s.date + JSON.stringify(stops.map(x => [x.id, x.ll, x.n])) + lines.length + lines.map(f => f.geometry.coordinates.length).join();
   if(DM.date !== s.date) setTimeout(() => dayMapFill(s.date), 300);
-  if(s.leg == null){ const first = lines[0]; s.leg = first ? first.properties.id : ""; document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); }   // start with the first leg; tap others in turn
+  if(s.leg == null && !head){ const first = lines[0]; s.leg = first ? first.properties.id : ""; document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); }   // start with the first leg; tap others in turn
   const nLL = stops.filter(x => x.ll).length;
-  if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
+  if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL || DM.where !== where; DM.where = where; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
   DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]); DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
   DM.markers.forEach(m => m.remove()); DM.markers = [];
@@ -2510,14 +2544,14 @@ async function dayMapMount(){
     DM.markers.push(new gl.Marker({element:el, anchor:"bottom"}).setLngLat(x.ll).setPopup(new gl.Popup({offset:[0, -34], closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
   const sel = s.leg && lines.find(f => f.properties.id === s.leg);
-  if(sel && (moved || DM.legShown !== s.leg)){ DM.legShown = s.leg; const c = sel.geometry.coordinates; DM.map.fitBounds(c.reduce((b, p) => b.extend(p), new gl.LngLatBounds(c[0], c[0])), {padding:60, maxZoom:16, duration:0}); }
-  else if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:{top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
+  if(sel && (moved || DM.legShown !== s.leg)){ DM.legShown = s.leg; const c = sel.geometry.coordinates; DM.map.fitBounds(c.reduce((b, p) => b.extend(p), new gl.LngLatBounds(c[0], c[0])), {padding:dmPad(s), maxZoom:16, duration:0}); }
+  else if(moved && pts.length){ const b = pts.reduce((b, p) => b.extend(p), new gl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:head ? dmPad(s) : {top:50, bottom:40, left:40, right:40}, maxZoom:15, duration:0}); }
 }
 /* the day shown first: find pins for places with no coordinates, and the route line of legs saved before lines were kept */
 const DMF = {busy:false, asked:new Set()};
 async function dayMapFill(date){
   if(DMF.busy || !CONNECTED || !navigator.onLine || !S.trip) return; DMF.busy = true;
-  const tripId = S.trip.id, still = () => S.sheet?.kind === "day-map" && S.sheet.date === date && S.trip?.id === tripId;
+  const tripId = S.trip.id, still = () => dmCtx()?.date === date && S.trip?.id === tripId;
   let changed = false;
   try {
     const need = dayMapData(date).stops.filter(x => !x.ll && !DMF.asked.has(x.id)).map(x => x.id);
@@ -2545,13 +2579,21 @@ async function dayMapFill(date){
   } finally { DMF.busy = false; }
 }
 function dayMapLeg(id){
-  const s = S.sheet; if(s?.kind !== "day-map" || !DM.map) return;
+  const s = dmCtx(); if(!s) return;
   s.leg = s.leg === id ? "" : id; DM.legShown = s.leg;   // tap again to see the whole day
-  document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg));
+  document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg)); hmMark();
+  if(!DM.map || DM.where !== (s === S.hm ? "head" : "sheet")) return;
   DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
   DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
   const f = s.leg && dayMapData(s.date).lines.find(x => x.properties.id === s.leg), pts = f ? f.geometry.coordinates : DM.stops.filter(x => x.ll).map(x => x.ll);
-  if(pts.length){ const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:60, maxZoom:16}); }
+  if(pts.length){ const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:dmPad(s), maxZoom:16}); }
+}
+/* map mode, tapping a travel row: the first tap shows its route on the map, a second tap opens it */
+function hmLegTap(it){
+  const s = S.hm; if(it?.type !== "move" || !s || !document.getElementById("hm-slot")) return false;
+  const i = manualTravelLegs(s.date).findIndex(l => l.saved?.id === it.id), id = "L" + i;
+  if(i < 0 || s.leg === id || !dayMapData(s.date).lines.some(f => f.properties.id === id)) return false;
+  dayMapLeg(id); return true;
 }
 function dayMapFocus(i){ const x = DM.stops[i]; if(!DM.map || !x?.ll) return; DM.map.flyTo({center:x.ll, zoom:Math.max(DM.map.getZoom(), 15)}); DM.markers.find(m => m.getElement().title === x.name)?.togglePopup(); }
 function vGuide(s){
@@ -3479,7 +3521,7 @@ function render(){
   lockOverlayPage(overlayLocked);document.documentElement.classList.toggle("lock",overlayLocked);   // measure the pinned header before anything stops the page scrolling
   document.body.style.overflow = modalSheet ? "hidden" : "";
   if(S.sheet && S.sheet.kind === "doc") docMount();
-  if(S.sheet?.kind === "day-map") dayMapMount();
+  if(S.view === "trip") dayMapMount();
   if(S.view === "login") mountGoogleButton();
   fitAreas(); updateSync();fitPlannerPanel();
 }
@@ -4367,6 +4409,9 @@ document.addEventListener("click", async e => {
     case "clear-run": clearPlan();break;
     case "day-map": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:null}; render(); break;
     case "day-map-day": if(S.sheet?.kind === "day-map"){ const ds = tripDates(S.trip), i = Math.max(0, Math.min(ds.length - 1, ds.indexOf(S.sheet.date) + Number(el.dataset.d))); S.sheet.date = ds[i]; S.sheet.leg = null; S.day = i; render(); } break;
+    case "map-mode": { const on = el.dataset.on != null ? el.dataset.on === "1" : !S.mapMode; S.mapMode = on; try { localStorage.setItem("mytrip-mapmode", on ? "1" : ""); } catch(_){}
+      if(on && S.catTab){ selectTab(""); break; } S.sheet = null; render(); break; }
+    case "map-expand": S.sheet = {kind:"day-map", date:tripDates(S.trip)[S.day] || today(), leg:S.hm?.leg || null}; render(); break;
     case "day-map-stop": dayMapFocus(Number(el.dataset.i)); break;
     case "day-map-leg": dayMapLeg(el.dataset.leg); break;
     case "guide-open": S.sheet = {kind:"guide", pos:0}; render(); break;
@@ -4381,7 +4426,7 @@ document.addEventListener("click", async e => {
     case "export-open": S.sheet = {kind:"export", scope:"day", files:null, busy:""}; render(); break;
     case "export-run": exportRun(el.dataset.k); break;
     case "export-share": exportShare(); break;
-    case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
+    case "item": {const it=S.items.find(i=>i.id===el.dataset.id);if(hmLegTap(it))break;if(editManualTravel(it))break;S.sheet={kind:"item",id:el.dataset.id,confirm:false};render();break;}
     case "close-sheet": if(S.sheet?.kind==="trip-more"){ const sc=document.querySelector(".dial-scrim"); if(sc&&!sc.classList.contains("closing")){ sc.classList.add("closing"); const sh=S.sheet; setTimeout(()=>{ if(S.sheet===sh){ S.sheet=null; render(); } },200); } break; }   // the buttons fold back into ⋯ first
       if(S.sheet?.kind==="doc"&&S.sheet.back){S.sheet=S.sheet.back;render();break;} S.sheet?.lookupCtl?.abort();S.sheet?.ctl?.abort();S.sheet = null; render(); break;
     case "doc-open": docOpen(el.dataset.id, Number(el.dataset.n) || 0); break;
@@ -4535,7 +4580,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-dial5";
+const BUILD = "2026-11-17-mapmode1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
