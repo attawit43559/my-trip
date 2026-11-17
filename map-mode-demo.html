@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Map mode demo</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2B211C;--muted:#6E6259;--bg:#FFFDF9;--line:#EFE9E0;--tile:#F6F1EA;--route:#17808A}
+  body{margin:0;background:#E9E3DA;font-family:Prompt,sans-serif;color:var(--ink)}
+  .phone{width:390px;height:844px;margin:16px auto;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+  .top{padding:14px 16px 8px}
+  .mapcard{position:relative;height:var(--h,230px);border-radius:28px;overflow:hidden;background:var(--tile)}
+  .map{position:absolute;inset:0}
+  .ov{position:absolute;display:flex;align-items:center;gap:8px;z-index:3}
+  .round{width:40px;height:40px;border-radius:999px;border:0;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(43,33,28,.15);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .title{background:rgba(255,255,255,.92);border-radius:16px;padding:6px 12px;box-shadow:0 2px 8px rgba(43,33,28,.12)}
+  .title b{display:block;font-family:Mitr,sans-serif;font-weight:500;font-size:17px;line-height:1.2}.title small{font-size:11.5px;color:var(--muted)}
+  .chip{background:rgba(255,255,255,.92);border-radius:999px;padding:6px 12px;font-size:12.5px;box-shadow:0 2px 8px rgba(43,33,28,.12);display:flex;align-items:center;gap:6px}
+  .days{display:flex;gap:6px;overflow:hidden;padding:10px 0 4px}
+  .days span{flex:none;width:46px;height:52px;border-radius:16px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Mitr,sans-serif;font-size:18px;box-shadow:0 1px 3px rgba(43,33,28,.06)}
+  .days span small{font-family:Prompt;font-size:10.5px;color:var(--muted)}
+  .days span.on{background:#FFB020}
+  .list{margin:6px 16px;background:#fff;border-radius:24px;padding:6px 14px}
+  .row{display:flex;align-items:center;gap:12px;min-height:46px;font-size:14px}
+  .row .t{width:46px;font-family:Mitr,sans-serif;font-size:14px}
+  .pin{width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
+  .leg{display:flex;align-items:center;gap:10px;min-height:36px;padding-left:58px;font-size:13px;color:var(--route);border-radius:12px}
+  .leg.on{background:#FFF1DC;color:#A85A00}
+  .tabbar{position:absolute;left:12px;right:12px;bottom:14px;height:62px;border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 4px 18px rgba(43,33,28,.1);display:flex;align-items:center;justify-content:space-around;font-size:11px;color:#9A8D82}
+  .tabbar b{color:var(--ink)}
+  .drop{width:24px;height:32px;position:relative;filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.25))}
+  .drop svg{position:absolute;inset:0;width:24px;height:32px}
+  .drop span{position:absolute;left:0;right:0;top:4px;text-align:center;color:#fff;font:600 11.5px Prompt}
+  .tog{display:flex;background:rgba(255,255,255,.92);border-radius:999px;padding:3px;box-shadow:0 2px 8px rgba(43,33,28,.12)}
+  .tog i{font-style:normal;font-size:12px;padding:4px 10px;border-radius:999px;color:var(--muted)}.tog i.on{background:#2B211C;color:#fff}
+</style>
+</head>
+<body>
+<div class="phone" id="ph">
+  <div class="top">
+    <div class="mapcard" id="card">
+      <div class="map" id="map"></div>
+      <div class="ov" style="top:10px;left:10px"><button class="round" aria-label="กลับ">‹</button><div class="title"><b>เที่ยวโตเกียว</b><small>พ. 25 พ.ย. · วันที่ 3</small></div></div>
+      <div class="ov" style="top:10px;right:10px"><button class="round" aria-label="เพิ่มเติม">⋯</button></div>
+      <div class="ov" style="bottom:10px;right:10px"><button class="round" aria-label="ขยาย"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button></div>
+      <div class="ov" style="bottom:10px;left:10px"><div class="tog"><i>ภาพปก</i><i class="on">แผนที่</i></div></div>
+    </div>
+    <div class="days" id="days"></div>
+  </div>
+  <div class="list" id="list"></div>
+  <div class="tabbar"><b>หน้าหลัก</b><span>วางแผน</span><span>AI</span><span>ค่าใช้จ่าย</span><span>ข้อมูล</span></div>
+</div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const q = new URLSearchParams(location.search), H = q.get("h") || "230", ROUTE = "#" + (q.get("c") || "17808A"), SEL = q.get("sel") || "1";
+document.getElementById("card").style.setProperty("--h", H + "px");
+document.documentElement.style.setProperty("--route", ROUTE);
+const STOPS = [
+  {n:"Shinagawa Prince Hotel", k:"stay", ll:[35.6282,139.7365], t:"09:00"},
+  {n:"Tokyo Tower", k:"place", ll:[35.6586,139.7454], t:"10:00"},
+  {n:"Ichiran Shibuya", k:"food", ll:[35.6614,139.7010], t:"12:30"},
+  {n:"Shibuya Sky", k:"place", ll:[35.6585,139.7024], t:"15:00"}
+];
+const MODE = ["รถไฟ · 18 นาที","รถไฟ · 22 นาที","เดิน · 6 นาที"];
+const COLOR = {stay:"#7B5BA6",place:"#3E9B3C",food:"#C98A12"};
+const SOFT = {stay:"#EFE6F7",place:"#E2F5E2",food:"#FFF1CC"};
+document.getElementById("days").innerHTML = ["23","24","25","26","27","28","29"].map((d,i)=>`<span class="${d==="25"?"on":""}">${d}${i===0?"<small>พ.ย.</small>":""}</span>`).join("");
+document.getElementById("list").innerHTML = STOPS.map((s,i)=>`<div class="row"><span class="t">${s.t}</span><span class="pin" style="background:${SOFT[s.k]};color:${COLOR[s.k]}">${s.k==="stay"?"⌂":"●"}</span>${i===0?"ออกจาก ":""}${s.n}</div>${MODE[i]?`<div class="leg ${String(i)===SEL?"on":""}">🚆 ${MODE[i]}</div>`:""}`).join("");
+const map = new maplibregl.Map({container:"map",style:"https://tiles.openfreemap.org/styles/liberty",center:[139.727,35.648],zoom:12.2,attributionControl:false});
+map.on("load", async () => {
+  const st = map.getStyle();
+  for(const l of st.layers){ const id=l.id;
+    if(l.type==="line"&&/^(road|tunnel|bridge)_/.test(id)){ const c=/casing/.test(id)?(/service|minor|street/.test(id)?"#E0D8CE":"#EAB886"):/motorway/.test(id)?"#FBCB8A":/trunk_primary|link/.test(id)?"#FDE2AA":/secondary_tertiary/.test(id)?"#FFF1CF":null; if(c) map.setPaintProperty(id,"line-color",c); }
+    if(/water/.test(id)&&l.type==="fill") map.setPaintProperty(id,"fill-color","#BCD8EE");
+    if(/park|wood|grass/.test(id)&&l.type==="fill") map.setPaintProperty(id,"fill-color","#D6EAC6"); }
+  const feats = [];
+  for(let i=0;i<STOPS.length-1;i++){ const a=STOPS[i].ll,b=STOPS[i+1].ll, walk=/เดิน/.test(MODE[i]);
+    try{ const r=await (await fetch(`https://router.project-osrm.org/route/v1/${walk?"foot":"driving"}/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`)).json(); feats.push({type:"Feature",properties:{id:String(i)},geometry:r.routes[0].geometry}); }catch(e){} }
+  map.addSource("legs",{type:"geojson",data:{type:"FeatureCollection",features:feats}});
+  map.addLayer({id:"base",type:"line",source:"legs",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":ROUTE,"line-width":2.5,"line-opacity":SEL?.35:.9,"line-dasharray":[2,1.6]}});
+  map.addLayer({id:"hi",type:"line",source:"legs",filter:["==",["get","id"],SEL],layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#FF8A00","line-width":3.5,"line-dasharray":[2,1.4]}});
+  STOPS.forEach((s,i)=>{ const el=document.createElement("div"); el.className="drop"; el.innerHTML=`<svg viewBox="0 0 30 40"><path fill="${COLOR[s.k]}" d="M15 39C15 39 2 24.5 2 15a13 13 0 0 1 26 0c0 9.5-13 24-13 24z"/></svg><span>${s.k==="stay"?"⌂":i}</span>`; new maplibregl.Marker({element:el,anchor:"bottom"}).setLngLat([s.ll[1],s.ll[0]]).addTo(map); });
+  document.body.dataset.ready = "1";
+});
+</script>
+</body>
+</html>
