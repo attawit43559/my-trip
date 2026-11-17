@@ -221,6 +221,8 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .dm-list button:disabled{color:var(--muted)}
 .dm-list .dm-leg{min-height:36px;padding-left:8px;font-size:13px;color:var(--ai,#2B61B2);gap:14px}.dm-leg svg{flex:none}.dm-leg.on{background:#FFF1DC;color:#A85A00;border-radius:12px}
 .dm-pin{flex:none;width:24px;height:24px;border-radius:999px;background:var(--deep);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;line-height:1}
+.dm-drop{width:30px;height:40px;position:relative;cursor:pointer;filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.25))}.dm-drop svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--deep)}
+.dm-drop span{position:absolute;left:0;right:0;top:6px;height:18px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;line-height:1}.dm-drop span svg{position:static;width:14px;height:14px;fill:none}
 .dm-pin.big{width:30px;height:30px;font-size:13.5px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.28);cursor:pointer;box-sizing:border-box}
 .dm-pin svg{width:14px;height:14px}
 .guide-scrim{align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 20px);box-sizing:border-box}
@@ -2435,17 +2437,19 @@ function dayMapData(date){
       stops.push({id:it.id, name:(land ? "ถึง " : "ออกจาก ") + [d[end], d[end + "City"]].filter(Boolean).join(" "), air:true, n:0, tone:"t-flight", ll}); return;
     }
     if(!["place", "stay"].includes(it.type)) return;
-    if(stops.some(x => x.id === it.id) && it.type === "stay") return;
-    const ll = llOf(d) || at[it.id] || null;
-    stops.push({id:it.id, name:(e.start ? "เริ่มจาก " : "") + (it.title || ""), stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
+    const ll = llOf(d) || at[it.id] || null, title = briefName(it.title || "");
+    stops.push({id:it.id, name:e.start ? "เริ่มจาก " + title : e.night ? "กลับ " + title : title, stay:it.type === "stay", n:it.type === "stay" ? 0 : ++n, tone:it.type === "stay" ? "t-stay" : toneOf(it), ll});
   });
   const lines = [], rows = [];
-  legs.forEach((l, i) => { const d = l.saved?.data || {}, walk = /เดิน/.test(d.mode || "");
-    if(d.poly) lines.push({type:"Feature", properties:{k:walk ? "walk" : "ride", id:"L" + i}, geometry:{type:"LineString", coordinates:smoothLine(decodePoly(d.poly))}}); });
+  const way = l => { const d = l.saved?.data; if(d) return {mode:d.mode || "", minutes:d.durationMinutes, poly:d.poly || ""};
+    const r = travelResultsCache.get(travelCacheKey(l))?.result?.routes?.[0]; return r ? {mode:travelModeFor(r), minutes:r.minutes, poly:r.poly || "", guess:true} : null; };   // not saved yet: the quickest route found
+  legs.forEach((l, i) => { const w = way(l);
+    if(w?.poly) lines.push({type:"Feature", properties:{id:"L" + i}, geometry:{type:"LineString", coordinates:smoothLine(decodePoly(w.poly))}}); });
   /* the list: each stop, then the way to the next one */
   stops.forEach((x, k) => { rows.push({stop:k});
     const i = legs.findIndex(l => l.fromId === x.id && stops[k + 1] && l.toId === stops[k + 1].id), l = legs[i];
-    if(l?.saved){ const d = l.saved.data || {}; rows.push({leg:"L" + i, has:!!d.poly, label:[d.mode, d.durationMinutes ? d.durationMinutes + " นาที" : ""].filter(Boolean).join(" · "), mode:d.mode || ""}); } });
+    const w = l && way(l); if(w) rows.push({leg:"L" + i, has:!!w.poly, label:(w.guess ? "แนะนำ " : "") + [w.mode, w.minutes ? w.minutes + " นาที" : ""].filter(Boolean).join(" · "), mode:w.mode});
+    else if(l) rows.push({leg:"L" + i, has:false, label:"ยังไม่ได้เลือกการเดินทาง", mode:""}); });
   return {stops, lines, rows};
 }
 function vDayMap(s){
@@ -2473,9 +2477,8 @@ async function dayMapMount(){
     DM.map.touchZoomRotate.disableRotation();
     await new Promise(r => DM.map.once("load", r));
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
-    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", filter:["==", ["get", "k"], "ride"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":3.5, "line-opacity":.85}});
-    DM.map.addLayer({id:"leg-walk", type:"line", source:"legs", filter:["==", ["get", "k"], "walk"], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":3, "line-opacity":.85, "line-dasharray":[0.1, 2]}});
-    DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":5}});
+    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#2B61B2", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
+    DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":3.5, "line-dasharray":[2, 1.4]}});
   }
   if(S.sheet !== s) return;
   DM.map.resize();
@@ -2485,11 +2488,13 @@ async function dayMapMount(){
   const nLL = stops.filter(x => x.ll).length;
   if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
-  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]); ["leg-ride", "leg-walk"].forEach(l => DM.map.setPaintProperty(l, "line-opacity", s.leg ? .3 : .85));
+  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]); DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
   DM.markers.forEach(m => m.remove()); DM.markers = [];
-  for(const x of stops){ if(!x.ll) continue;
-    const el = document.createElement("div"); el.className = "dm-pin big " + x.tone; el.innerHTML = x.air ? ic("flight",14) : x.stay ? ic("stay",14) : String(x.n); el.title = x.name;
-    DM.markers.push(new gl.Marker({element:el}).setLngLat(x.ll).setPopup(new gl.Popup({offset:18, closeButton:false}).setText(x.name)).addTo(DM.map)); }
+  const placed = new Set();
+  for(const x of stops){ if(!x.ll || placed.has(x.id)) continue; placed.add(x.id);
+    const el = document.createElement("div"); el.className = "dm-drop " + x.tone; el.title = x.name;
+    el.innerHTML = `<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39C15 39 2 24.5 2 15a13 13 0 0 1 26 0c0 9.5-13 24-13 24z"/></svg><span>${x.air ? ic("flight",13) : x.stay ? ic("stay",13) : x.n}</span>`;
+    DM.markers.push(new gl.Marker({element:el, anchor:"bottom"}).setLngLat(x.ll).setPopup(new gl.Popup({offset:[0, -34], closeButton:false}).setText(x.name)).addTo(DM.map)); }
   const pts = [...stops.filter(x => x.ll).map(x => x.ll), ...lines.flatMap(f => f.geometry.coordinates)];
   const sel = s.leg && lines.find(f => f.properties.id === s.leg);
   if(sel && (moved || DM.legShown !== s.leg)){ DM.legShown = s.leg; const c = sel.geometry.coordinates; DM.map.fitBounds(c.reduce((b, p) => b.extend(p), new gl.LngLatBounds(c[0], c[0])), {padding:60, maxZoom:16, duration:0}); }
@@ -2511,7 +2516,12 @@ async function dayMapFill(date){
       } catch(_){} }
     if(changed && still()) dayMapMount();
     for(const leg of manualTravelLegs(date)){
-      const sd = leg.saved?.data || {}; if(!still()) break; if(!leg.saved || sd.poly || DMF.asked.has("leg:" + leg.saved.id) || !leg.from || !leg.to) continue;
+      const sd = leg.saved?.data || {}; if(!still()) break; if(!leg.from || !leg.to) continue;
+      if(!leg.saved){ const key = travelCacheKey(leg); if(travelResultsCache.has(key) || DMF.asked.has(key)) continue; DMF.asked.add(key);
+        const q = {date:leg.date, time:travelDepartureHint(leg), timezone:travelTimezone(leg), mode:"ขนส่งสาธารณะ"};
+        try { const r = await api("travelOptions", {ai:false, tripId, ...q, fromId:leg.fromId, toId:leg.toId, from:leg.from, to:leg.to}); if(travelResultMatches(q, r)){ travelResultsCache.set(key, {result:r, selectedIndex:-1}); DM.sig = ""; if(still()) render(); } }
+        catch(e){ if(["travel_quota", "offline", "auth_required"].includes(e?.code)) break; } continue; }
+      if(sd.poly || DMF.asked.has("leg:" + leg.saved.id)) continue;
       DMF.asked.add("leg:" + leg.saved.id);
       const q = {date:leg.date, time:leg.saved.time || travelDepartureHint(leg), timezone:sd.timezone || travelTimezone(leg), mode:sd.mode || "ขนส่งสาธารณะ"};
       try { const r = await api("travelOptions", {ai:false, tripId, ...q, fromId:leg.fromId, toId:leg.toId, from:leg.from, to:leg.to});
@@ -2526,7 +2536,7 @@ function dayMapLeg(id){
   s.leg = s.leg === id ? "" : id; DM.legShown = s.leg;   // tap again to see the whole day
   document.querySelectorAll(".dm-leg").forEach(b => b.classList.toggle("on", b.dataset.leg === s.leg));
   DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
-  ["leg-ride", "leg-walk"].forEach(l => DM.map.setPaintProperty(l, "line-opacity", s.leg ? .3 : .85));
+  DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
   const f = s.leg && dayMapData(s.date).lines.find(x => x.properties.id === s.leg), pts = f ? f.geometry.coordinates : DM.stops.filter(x => x.ll).map(x => x.ll);
   if(pts.length){ const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:60, maxZoom:16}); }
 }
@@ -4511,7 +4521,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map7";
+const BUILD = "2026-11-17-map8";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
