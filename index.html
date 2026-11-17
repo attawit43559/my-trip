@@ -376,7 +376,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.exp-sheet.steady{animation:none}
+.exp-sheet.steady{animation:none}.exp-sheet{position:relative}.exp-dbg{position:absolute;left:10px;top:6px;margin:0;font:9px/1.25 ui-monospace,monospace;color:#9A8D82;pointer-events:none;white-space:pre;z-index:2}
 /* the expense sheet follows the visible area like the other sheets; moving between its fields is done without iPhone's page slide (see touchend below) */
 /* the number pad is shorter than the letter keyboard: the sheet's white carries on down behind it, so the page never shows in the gap */
 @media (max-width:560px){.sheet.exp-sheet{box-shadow:0 540px 0 500px var(--surface)}}
@@ -3933,6 +3933,13 @@ document.addEventListener("mousedown", e => { if(e.target.closest?.(".exp-sheet 
     clearTimeout(settle); settle = setTimeout(revealField, 160);
   };
   vv.addEventListener("resize", onChange); vv.addEventListener("scroll", onChange); fit();
+  /* TEMP: what iPhone reports while the expense sheet is open, shown in its corner (to be removed) */
+  const dbg = { t0:0, log:[] }, show = ev => { const el = document.querySelector(".exp-dbg"); if(!el) return; const now = performance.now();
+    if(ev === "focus") { dbg.t0 = now; dbg.log = []; }
+    dbg.log.push(`${ev} ${Math.round(now - dbg.t0)} h${Math.round(vv.height)} t${Math.round(vv.offsetTop)} y${Math.round(scrollY)} v${getComputedStyle(document.documentElement).getPropertyValue("--vvh").trim()}`);
+    el.textContent = BUILD + "\n" + dbg.log.slice(-9).join("\n"); };
+  vv.addEventListener("resize", () => show("rs")); vv.addEventListener("scroll", () => show("sc"));
+  document.addEventListener("focusin", e => { if(e.target.closest?.(".exp-sheet")) show("focus"); });
   document.addEventListener("focusout", () => { fit.left = Date.now(); setTimeout(onChange, 520); });
   /* iPhone slides the page when a field is tapped (and reports where the slide will end before it has moved, so following it
      makes the sheet drop and climb back). In the expense sheet the fields are already above the keyboard, so the tap focuses
@@ -4038,7 +4045,7 @@ function vExpAdd(s){
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = s.cur || d.cur || (curs.includes(last) ? last : curs[0]);
   const again = s.shown; s.shown = true;   // a redraw does not replay the card's entrance (it would move under the finger)
   return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet exp-sheet${again ? " steady" : ""}" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
-    <form data-form="exp" class="stack exp-form" autocomplete="off">
+    <pre class="exp-dbg" aria-hidden="true"></pre><form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
         <input id="exp-amt" class="exp-big" name="amount" inputmode="decimal" required placeholder="0" data-bind="sheet:amount" value="${esc(s.amount ?? (d.amount != null ? String(d.amount) : ""))}">
         ${curs.length > 1 ? expCurSeg(cur, "exp-cur", curs) : ""}<input type="hidden" name="cur" value="${esc(cur)}"></div>
@@ -4626,7 +4633,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp15";
+const BUILD = "2026-11-17-exp16dbg";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
