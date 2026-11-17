@@ -375,9 +375,10 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-actions{display:flex;gap:10px;margin-top:14px}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
-.exp-btn-add{background:#FFE7A8;color:#7A4A00}
+.exp-btn-add{background:var(--accent);color:var(--on-accent)}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
-.exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none}
+.exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none;caret-color:transparent}
+.exp-big::placeholder{color:var(--muted);opacity:.45;transition:color .15s,opacity .15s}.exp-big:focus::placeholder{color:var(--ink);opacity:1}
 .exp-amt-box .exp-seg button{font-size:14.5px;padding:6px 22px;min-height:40px}
 .exp-what{display:flex;flex-direction:column;gap:4px}.exp-what input:focus,.exp-big:focus{outline:none!important}.exp-what input:focus{border-bottom-color:var(--accent-line)!important}.exp-what input{border:0!important;border-bottom:1.5px solid var(--line)!important;border-radius:0!important;background:none!important;font-size:17px;padding:10px 0!important}
 .pick-day{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
@@ -4601,7 +4602,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-mapmode9";
+const BUILD = "2026-11-17-exp1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
