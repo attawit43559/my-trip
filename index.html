@@ -376,7 +376,7 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .exp-btn{flex:1;min-height:48px;border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}.exp-btn:disabled{opacity:.5}
 .exp-btn-line{background:#DDF5E3;color:#06833A}.exp-btn-back{background:var(--tile);color:var(--ink)}
 .exp-btn-add{background:var(--accent);color:var(--on-accent)}
-.scrim.exp-scrim{top:0;height:100%;align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 0;box-sizing:border-box}
+.scrim.exp-scrim{align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 0;box-sizing:border-box}
 .exp-sheet{padding-top:6px;padding-bottom:16px}.exp-sheet .exp-amt-box{padding-top:8px}
 .exp-form{gap:16px}.exp-amt-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
 .exp-big{width:100%;border:0!important;background:none!important;box-shadow:none!important;font-family:var(--display);font-size:46px!important;font-weight:500;text-align:center;color:var(--ink);padding:0!important;min-height:64px;outline:none;caret-color:transparent}
@@ -4017,7 +4017,8 @@ function vExpAdd(s){
   const it = s.id ? S.items.find(i => i.id === s.id) : null, d = (it && it.data) || {};
   let last = ""; try { last = localStorage.getItem("mytrip-cur") || ""; } catch(_){}
   const local = expLocal(), curs = local === "THB" ? ["THB"] : [local, "THB"], cur = d.cur || (curs.includes(last) ? last : curs[0]);
-  /* a card near the top: the keyboard opens below it, so nothing has to move (a sheet at the bottom jumps up and down with the keyboard) */
+  /* a card at the top of the visible area: the keyboard opens below it (a sheet at the bottom jumps up and down with the keyboard);
+     if iPhone still slides the page up for the keyboard, the card follows the visible area so it stays on screen */
   return `<div class="scrim exp-scrim" data-act="close-sheet"><div class="sheet float exp-sheet" role="dialog" aria-modal="true" aria-label="จดค่าใช้จ่าย" data-stop="1">
     <form data-form="exp" class="stack exp-form" autocomplete="off">
       <div class="exp-amt-box"><label for="exp-amt" class="muted small">จำนวนเงิน</label>
@@ -4607,7 +4608,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-exp2";
+const BUILD = "2026-11-17-exp3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
