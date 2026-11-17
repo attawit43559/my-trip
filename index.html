@@ -210,8 +210,12 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 .sheet.float input[type=date]{width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none}
 .plan-code{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.04em;text-align:center;background:var(--tile);border-radius:16px;padding:14px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
 .row-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px}
-.day-tools{display:flex;justify-content:flex-end;margin:-4px 2px 6px}
-.map-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2);font:inherit;font-size:13px;font-weight:600;padding:0 14px;min-height:34px}
+.dial-scrim{background:rgba(43,33,28,.28);display:block}.dial{position:fixed;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.dial-item{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;font:inherit;color:var(--ink);opacity:0;transform:translateY(-8px);animation:dialIn .22s ease-out forwards;animation-delay:calc(var(--i) * 30ms)}
+@keyframes dialIn{to{opacity:1;transform:none}}
+.dial-label{background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
+.dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
+.dial-map .dial-btn{background:var(--ai-soft,#E0ECFF);color:var(--ai,#2B61B2)}.dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
 .day-map{background:var(--bg);z-index:40}.dm-top{display:flex;align-items:center;gap:8px;padding:8px 12px}.dm-day{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}.dm-day b{font-family:var(--display);font-weight:500;font-size:17px;min-width:150px;text-align:center}
 .dm-arrow{width:40px;height:40px;border:0;border-radius:999px;background:var(--tile);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}.dm-arrow:disabled{opacity:.3}.flip{display:inline-flex;transform:scaleX(-1)}
 .dm-slot{position:relative;flex:1 1 auto;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:var(--tile)}.dm-slot .dm-map{position:absolute;inset:0;height:auto}
@@ -1328,16 +1332,14 @@ async function confirmCopy(){
     S.sheet = null; toast("คัดลอกแผนแล้ว"); openTrip(r.trip.id); refreshTrip(r.trip.id);
   } catch(e){ s.busy = false; if(S.sheet === s){ s.err = e && e.code === "offline" ? "ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง" : "คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง"; render(); } }
 }
-function vTripMore(){
-  return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="เพิ่มเติม" data-stop="1"><div class="hd"><h2>เพิ่มเติม</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic('close')}</button></div><div class="menu">
-    <button data-act="trip-edit">${ic("edit",20)}แก้ไขชื่อ / วันเที่ยว</button>
-    <button data-act="export-open">${ic("image",20)}ส่งออกแผนเที่ยว (PDF / รูป)</button>
-    <button data-act="sos-open">${ic("sos",20)}ข้อมูลฉุกเฉิน</button>
-    <button data-act="invite">${ic("users",20)}ผู้ร่วมทริป / ชวนเพื่อน</button>
-    <button data-act="copy-share">${ic("share",20)}แชร์แผนให้เพื่อนคัดลอก</button>
-    <button data-act="account">${ic("info",20)}บัญชีและการตั้งค่า</button>
-    ${ownOn(tripDates(S.trip)).length||planNotes(tripDates(S.trip)).length?`<button class="danger" data-act="clear-open">${ic('trash',20)}ล้างแผน…</button>`:''}
-  </div></div></div>`;
+/* ⋯ opens a column of round buttons hanging from it, each with its name beside it */
+function vTripMore(s){
+  const items = [["day-map", "map", "แผนที่วันนี้", "dial-map"], ["trip-edit", "edit", "แก้ไขชื่อ / วันเที่ยว"], ["export-open", "image", "ส่งออกแผนเที่ยว"],
+    ["invite", "users", "ผู้ร่วมทริป / ชวนเพื่อน"], ["copy-share", "share", "แชร์แผนให้เพื่อนคัดลอก"], ["account", "info", "บัญชีและการตั้งค่า"]];
+  if(ownOn(tripDates(S.trip)).length || planNotes(tripDates(S.trip)).length) items.push(["clear-open", "trash", "ล้างแผน…", "dial-danger"]);
+  return `<div class="scrim dial-scrim" data-act="close-sheet"><div class="dial" role="menu" aria-label="เพิ่มเติม" style="top:${s.top || 90}px;right:${s.right || 16}px">
+    ${items.map(([act, icon, label, cls], i) => `<button type="button" role="menuitem" class="dial-item ${cls || ""}" data-act="${act}" style="--i:${i}"><span class="dial-label">${label}</span><span class="dial-btn">${ic(icon, 20)}</span></button>`).join("")}
+  </div></div>`;
 }
 
 function tripFields(root, n){
@@ -2232,7 +2234,7 @@ function vTrip(){
   else page = `${!dates.length ? `<button class="add-dash t-place" data-act="trip-edit">${ic("plus",20)}ตั้งวันเที่ยว</button>` : `
       ${vSync()}
       ${isToday && next ? vNext(next) : ""}
-      ${entries.length ? `<div class="day-tools"><button type="button" class="map-btn" data-act="day-map">${ic("map",16)}แผนที่วันนี้</button></div><ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
+      ${entries.length ? `<ul class="day-list">${dailyEntryRows(entries,d,isToday?(next||"end"):null)}</ul>` : `<div class="card empty" style="padding:22px"><p class="muted small">ยังไม่มีแผนสำหรับวันนี้</p></div>`}`}
     ${loose.length ? `<div class="sec-h"><h2>นอกช่วงวันทริป</h2></div>
       <ul class="day-list">${loose.map(it => entryHtml({it, time:it.time, title:it.title, sub:dShort(it.date)})).join("")}</ul>` : ""}`;
   return `<main class="screen has-tabbar">
@@ -3367,7 +3369,7 @@ function vSheet(){
   if(s.kind === "day-ideas") return "";
   if(s.kind === "history") return vHistory(s);
   if(s.kind === "trip-menu") return vTripMenu(s);
-  if(s.kind === "trip-more") return vTripMore();
+  if(s.kind === "trip-more") return vTripMore(s);
   if(s.kind === "trip-edit") return vTripEdit(s);
   if(s.kind === "share-in") return vShareIn(s);
   if(s.kind === "account") return vAccount();
@@ -4306,7 +4308,7 @@ document.addEventListener("click", async e => {
     case "cal-week": S.calWeek = Math.max(0, (S.calWeek ?? Math.floor((parseD(tripDates(t)[0]).getDay() + S.day) / 7)) + Number(el.dataset.d)); render(); break;
     case "cal-open": S.calOpen = !S.calOpen; S.calWeek = null; render(); break;
     case "day": S.calOpen = false; S.calWeek = null; if(S.sheet?.kind==='day-ideas'&&S.sheet.busy)break;S.day = Math.max(0,Math.min(tripDates(t).length-1,Number(el.dataset.i)||0));if(S.sheet?.kind==='day-ideas')S.sheet.date=tripDates(t)[S.day];if(!["planning","help"].includes(S.catTab))S.catTab="";S.dockHidden=false;S.clearAsk = null;render();break;
-    case "trip-more": S.sheet={kind:"trip-more"};render();break;
+    case "trip-more": { const r = el.getBoundingClientRect(); S.sheet = {kind:"trip-more", top:Math.round(r.bottom + 10), right:Math.round(innerWidth - r.right)}; render(); break; }
     case "lang-toggle": el.classList.toggle("en"); setTimeout(() => setLang(LANG === "en" ? "th" : "en"), 220); break;
     case "tab": selectTab(el.dataset.k); break;
     case "help-run": helpRun(); break;
@@ -4521,7 +4523,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-17-map8";
+const BUILD = "2026-11-17-dial1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
