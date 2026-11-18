@@ -787,6 +787,13 @@ html.kb .tabbar{display:none}
 .help-note::placeholder{color:var(--muted)}
 .help-note:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .help-day-wait{padding:26px 0}
+.help-intro{background:var(--surface);border-radius:20px;padding:14px 16px;box-shadow:var(--lift)}.help-intro b{font-family:var(--display);font-weight:500;font-size:17px}.help-intro p{margin:4px 0 0;font-size:13.5px;color:var(--muted);line-height:1.5}
+.help-go-all{min-height:52px;font-size:16px}
+.help-prog{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.help-again-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}.help-again-row .link-btn{display:inline-flex;align-items:center;gap:4px}
+.tab{position:relative}.rv-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:9px;background:var(--line)}
+.rv-dot.ok{background:#3E9B3C}.rv-dot.warn{background:#E8820C}.rv-dot.err{background:#C4453B}
+.rv-dot.spin{background:none;border:2px solid var(--line);border-top-color:var(--ai,#2B61B2);width:9px;height:9px;top:4px;right:4px;box-sizing:border-box;animation:spin .8s linear infinite}
 .help-none{margin:4px 0}
 .help-adds{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .help-adds li{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:6px 6px 6px 10px;min-height:40px}
@@ -2119,33 +2126,38 @@ function helpRows(date){
       title:it.type === "move" && d.from && d.to ? d.from + " → " + d.to : (e.title || it.title), note:it.type === "place" ? s_(it.sub) : ""};
   });
 }
+/* Plan review: AI looks at one day per request, three at a time, starting with the day on screen;
+   each day appears as soon as it is ready (h.dayState: wait → busy → done / err) instead of after the whole trip */
 async function helpRun(oneDay){
-  const h = helpState(), t = S.trip; if(!t || h.step === "loading" || h.busyDay) return;
+  const h = helpState(), t = S.trip; if(!t || h.running) return;
   try { localStorage.setItem(helpPrefsKey(), JSON.stringify({pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:h.interests, likeNote:s_(h.likeNote)})); } catch(_){}
-  const dates = oneDay ? [oneDay] : tripDates(t), note = oneDay ? s_((h.notes || {})[oneDay]) : "";
-  if(oneDay && h.result) h.busyDay = oneDay; else h.step = "loading";
-  h.err = ""; h.ctl = new AbortController(); render();
-  try {
-    const res = await planCall(h, "planReview", {tripId:t.id, prefs:{pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(note ? {note} : {})}, days:dates.map(date => ({date, rows:helpRows(date), weather:wxText(date)}))});
-    if(S.help !== h) return;
-    if(h.result)h.result.revision=res.revision;
-    if(h.busyDay){
-      const got = (res.days || []).find(d => d.date === oneDay) || {date:oneDay, summary:"", tips:[]};
-      const i = h.result.days.findIndex(d => d.date === oneDay);
-      if(i >= 0) h.result.days[i] = got; else h.result.days.push(got);
-      h.busyDay = null;
-    } else {
-      h.result = res; h.step = "result";
-      // open on the first day that has something to fix
-      const all = tripDates(t), first = res.days.find(d => d.tips.some(tp => tp.kind !== "good"));
-      if(first && !(res.days.find(d => d.date === all[S.day]) || {tips:[]}).tips.some(tp => tp.kind !== "good")) S.day = Math.max(0, all.indexOf(first.date));
-    }
+  const all = tripDates(t), here = all[S.day] || all[0];
+  const dates = oneDay ? [oneDay] : [here, ...all.filter(d => d !== here)];
+  if(!oneDay || !h.result){ h.result = {days:[], revision:h.result?.revision || null}; h.dayState = {}; all.forEach(d => h.dayState[d] = "wait"); }
+  dates.forEach(d => h.dayState[d] = "wait");
+  h.step = "result"; h.err = ""; h.running = true; if(!h.ctl || h.ctl.signal.aborted) h.ctl = new AbortController();
+  render();
+  const prefs = {pace:h.pace, adults:h.adults, children:h.children, elders:h.elders, interests:s_(h.likeNote) ? [...h.interests, s_(h.likeNote)] : h.interests, ...(s_(h.note) ? {note:s_(h.note)} : {})};
+  const queue = dates.slice(), errs = [];
+  const one = async date => {
+    h.dayState[date] = "busy"; render();
+    try {
+      const res = await planCall(h, "planReview", {tripId:t.id, prefs, days:[{date, rows:helpRows(date), weather:wxText(date)}]});
+      if(S.help !== h) return;
+      const got = (res.days || []).find(d => d.date === date) || {date, summary:"", tips:[]};
+      const i = h.result.days.findIndex(d => d.date === date); if(i >= 0) h.result.days[i] = got; else h.result.days.push(got);
+      if(res.revision) h.result.revision = res.revision;
+      h.dayState[date] = "done";
+    } catch(e){ if(S.help !== h) return; h.dayState[date] = e && e.code === "cancelled" ? "wait" : "err"; errs.push(e); }
     render();
-  } catch(e){
-    if(S.help !== h) return;
-    h.busyDay = null;
-    h.step = h.result ? "result" : "ask"; h.err = e && e.code === "cancelled" ? "" : String(e && e.code) === "rate_limited" ? "AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00" : /^ai_error_5|ai_busy/.test(String(e && e.code)) ? "ตอนนี้ AI ใช้งานหนาแน่น ลองใหม่อีกสักครู่นะครับ" : aiErr(e); render();
-  }
+  };
+  const worker = async () => { while(queue.length && !h.ctl.signal.aborted && S.help === h) await one(queue.shift()); };
+  await Promise.all([worker(), worker(), worker()]);
+  if(S.help !== h) return;
+  h.running = false; if(h.ctl.signal.aborted) h.ctl = null;
+  const e = errs.find(x => x && x.code !== "cancelled");
+  if(e && !dates.some(d => h.dayState[d] === "done")) h.err = String(e.code) === "rate_limited" ? "AI ใช้ครบโควตาฟรีแล้ว ลองใหม่หลังประมาณ 15:00" : /^ai_error_5|ai_busy/.test(String(e.code)) ? "ตอนนี้ AI คนใช้เยอะ ลองใหม่อีกครั้ง" : e.code === "offline" ? "ต้องต่ออินเทอร์เน็ตก่อน" : "AI ดูแผนไม่สำเร็จ ลองใหม่อีกครั้ง";
+  render();
 }
 async function helpFix(di,ti,fi){
   const h=S.help,t=S.trip,tip=h&&h.result&&h.result.days[di]?.tips[ti];if(!tip||tip.applied||tip.busy||!t)return;
@@ -2174,7 +2186,7 @@ function vHelpPage(){
   const h = helpState(), dates = tripDates(S.trip);
   h.notes ||= {};
   const wrap = body => `<div class="help-page">${body}</div>`;
-  if(h.step === "loading") return wrap(`<div class="ai-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังอ่านแผนทั้ง ${dates.length} วัน…</p><p class="muted small">ใช้เวลาประมาณ 20 วินาที – 2 นาที</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`);
+  const noteBox = `<textarea class="grow-area help-note" rows="1" maxlength="300" placeholder="บอก AI เพิ่ม (ถ้ามี) เช่น ไม่อยากเดินเยอะ" data-bind="help:note" aria-label="ข้อความถึง AI">${esc(h.note || "")}</textarea>`;
   if(h.step === "result" && h.result){
     const date = dates[S.day] || dates[0], di = h.result.days.findIndex(d => d.date === date), day = di >= 0 ? h.result.days[di] : null;
     const tipHtml = (tp, ti) => { const [icn, tone, label] = HELP_KIND[tp.kind] || HELP_KIND.tip;
@@ -2184,20 +2196,29 @@ function vHelpPage(){
             ${tp.applied ? `<span class="help-done">${ic("check",14)}เพิ่มลงแผนแล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังเพิ่ม…" : "เพิ่มทั้งหมด"}</button>`}</div></div>`;
           return `<div class="help-tip${tp.applied ? " done" : ""}"><span class="thumb-sm ${tone}" aria-hidden="true">${ic(icn,16)}</span><div class="grow"><span class="help-kind">${esc(label)}</span><p>${esc(tp.text)}</p>
             ${tp.fix.length ? (tp.applied ? `<span class="help-done">${ic("check",14)}แก้แล้ว</span>` : `<button type="button" class="soft-btn help-fix" data-act="help-fix" data-i="${di}" data-j="${ti}" ${tp.busy ? "disabled" : ""}>${tp.busy ? "กำลังแก้…" : "แก้ให้เลย"}</button>`) : ""}</div></div>`; };
-    const busy = h.busyDay === date;
-    const body = busy ? `<div class="ai-wait help-day-wait"><div class="spinner" role="status" aria-label="กำลังอ่านแผน"></div><p>AI กำลังดูวันนี้อีกรอบ…</p><button class="link-btn" data-act="help-stop">หยุด</button></div>`
-      : day && day.tips.length ? day.tips.map(tipHtml).join("") : `<p class="muted small help-none">ไม่มีคำแนะนำสำหรับวันนี้</p>`;
+    const st = (h.dayState || {})[date] || "wait", n = dates.length, done = dates.filter(d => (h.dayState || {})[d] === "done").length;
+    const body = st === "done" ? (day && day.tips.length ? day.tips.map(tipHtml).join("") : `<p class="muted small help-none">ไม่มีคำแนะนำสำหรับวันนี้</p>`)
+      : st === "err" || (st === "wait" && !h.running) ? `<p class="muted small help-none">${st === "err" ? "AI ดูวันนี้ไม่สำเร็จ" : "ยังไม่ได้ดูวันนี้"}</p>`
+      : `<div class="ai-wait help-day-wait"><div class="spinner" role="status" aria-label="กำลังดูแผนวันนี้"></div><p>${st === "busy" ? "AI กำลังดูวันนี้…" : "รอคิว อีกสักครู่จะถึงวันนี้"}</p></div>`;
     return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-      <section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(date)}"><b>วันที่ ${S.day + 1} · ${esc(dShort(date))}</b>${ic("chev",16)}</button>${day && day.summary && !busy ? `<span class="help-sum">${esc(day.summary)}</span>` : ""}</div>${body}</section>
-      <textarea class="grow-area help-note" rows="1" maxlength="300" placeholder="ข้อความถึง AI เช่น ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="ข้อความถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>
-      ${helpButtons(h, date)}`);
+      ${h.running ? `<div class="help-prog" role="status"><span class="spinner sm" aria-hidden="true"></span><span class="grow">ดูแล้ว ${done} จาก ${n} วัน · วันที่เหลือจะขึ้นมาเรื่อยๆ</span><button type="button" class="link-btn" data-act="help-stop">หยุด</button></div>` : ""}
+      <section class="help-day"><div class="help-day-h"><button type="button" class="help-go" data-act="help-goto" data-d="${esc(date)}"><b>วันที่ ${S.day + 1} · ${esc(dShort(date))}</b>${ic("chev",16)}</button>${day && day.summary && st === "done" ? `<span class="help-sum">${esc(day.summary)}</span>` : ""}</div>${body}</section>
+      ${noteBox}
+      ${h.running ? "" : `<div class="help-again-row"><button type="button" class="link-btn" data-act="help-day-run" data-d="${esc(date)}">${ic("spark",14)}${st === "done" ? "ดูวันนี้อีกครั้ง" : "ดูวันนี้"}</button><button type="button" class="link-btn" data-act="help-run">${ic("spark",14)}ดูใหม่ทุกวัน</button></div>`}`);
   }
-  const date = dates[S.day] || dates[0] || "";
+  if(!dates.length) return wrap(`<p class="muted small">ตั้งวันเที่ยวก่อน</p>`);
   return wrap(`${h.err ? `<div class="err" role="alert">${esc(h.err)}</div>` : ""}
-    ${date ? `<textarea class="grow-area help-note" rows="1" maxlength="300" placeholder="ข้อความถึง AI เช่น ไม่อยากเดินเยอะ" data-bind="help:notes.${esc(date)}" aria-label="ข้อความถึง AI สำหรับวันนี้">${esc((h.notes || {})[date] || "")}</textarea>${helpButtons(h, date)}` : `<p class="muted small">ตั้งวันเที่ยวก่อน</p>`}`);
+    <div class="help-intro"><b>ให้ AI ช่วยดูแผน</b><p>AI จะดูทีละวันว่าแน่นไป ไม่ทันเวลา หรือขาดมื้อไหม แล้วแนะนำพร้อมปุ่มแก้ให้</p></div>
+    ${noteBox}
+    <button type="button" class="btn primary help-go-all" data-act="help-run">${ic("spark",17)}ดูแผนทุกวัน</button>`);
 }
-function helpButtons(h, date){
-  return `<div class="help-actions ai-btns"><button type="button" class="soft-btn" data-act="help-day-run" data-d="${esc(date)}" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}วันที่ ${parseD(date).getDate()}</button><button type="button" class="soft-btn help-again" data-act="help-run" ${h.busyDay || h.step === "loading" ? "disabled" : ""}>${ic("spark",16)}ทั้งหมด</button></div>`;
+/* the day strip on the review page: a dot per day shows how the review of that day stands */
+function helpDot(date){
+  const h = S.catTab === "help" && S.aiMode === "review" && S.help && S.trip && S.help.tripId === S.trip.id && S.help.dayState ? S.help : null;
+  const st = h && h.dayState[date]; if(!st) return "";
+  if(st === "busy") return `<i class="rv-dot spin" aria-hidden="true"></i>`;
+  if(st === "done"){ const d = (h.result?.days || []).find(x => x.date === date), warn = d && d.tips.some(tp => tp.kind !== "good" && !tp.applied); return `<i class="rv-dot ${warn ? "warn" : "ok"}" aria-hidden="true"></i>`; }
+  return `<i class="rv-dot ${st === "err" ? "err" : "wait"}" aria-hidden="true"></i>`;
 }
 /* trip days laid out as a Sunday-first calendar, 7 per row */
 /* trip days laid out as a Sunday-first calendar, 7 per row.
@@ -2210,7 +2231,7 @@ function calendar(dates){
   const trail = (7 - (lead + dates.length) % 7) % 7;
   const after = Array.from({length:trail}, (_,k) => addDays(last, k + 1));
   const out = x => `<span class="tab out" aria-hidden="true"><b>${parseD(x).getDate()}</b></span>`;
-  const cells = [...before.map(out), ...dates.map((x,i) => `<button class="tab${x < today() ? " past" : ""}" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}${x < today() ? " ผ่านไปแล้ว" : ""}" data-act="day" data-i="${i}"><b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`), ...after.map(out)];
+  const cells = [...before.map(out), ...dates.map((x,i) => `<button class="tab${x < today() ? " past" : ""}" role="tab" aria-selected="${i===S.day}" aria-label="วันที่ ${i+1} ${esc(dLong(x))}${x < today() ? " ผ่านไปแล้ว" : ""}" data-act="day" data-i="${i}">${helpDot(x)}<b>${parseD(x).getDate()}</b>${parseD(x).getDate()===1 || i===0 ? `<span>${MON[parseD(x).getMonth()]}</span>` : ""}</button>`), ...after.map(out)];
   const weeks = Math.ceil(cells.length / 7), long = dates.length > 14;
   const head = `<div class="cal-head" aria-hidden="true">${DOW.map(d => `<span>${d}</span>`).join("")}</div>`;
   if(!long) return `<div class="cal">${head}<div class="tabs" role="tablist" aria-label="เลือกวัน">${cells.join("")}</div></div>`;
@@ -4646,7 +4667,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-18-exp21";
+const BUILD = "2026-11-18-rv1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
