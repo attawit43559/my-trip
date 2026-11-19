@@ -674,12 +674,13 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
 /* sliding a finger along the bar: the pill swells into a clear lens, bigger than the bar, that magnifies the page under it;
    letting go, it shrinks back into the pill with a small bounce */
-.tabbar.drag .tab-pill{translate:var(--x) 0;transition:scale .24s cubic-bezier(.3,1.4,.5,1),background .2s,box-shadow .2s;scale:var(--sx,1.3) var(--sy,1.42);
-  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 55%,rgba(255,255,255,.1));
+.tabbar.drag .tab-pill{translate:var(--x) 0;transition:scale .3s cubic-bezier(.3,1.35,.5,1),background-color .28s ease-out,border-color .28s,box-shadow .28s ease-out;scale:var(--sx,1.3) var(--sy,1.42);
+  background-color:rgba(255,255,255,0);
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.08),inset 0 0 0 2px rgba(255,255,255,.35),inset 0 0 10px rgba(150,190,255,.18),0 12px 28px rgba(43,33,28,.18),0 2px 6px rgba(43,33,28,.10)}
-.tabbar.press:not(.drag) .tab-pill{scale:1.06}
+.tabbar.drag.lens-in .tab-pill{transition:translate .26s cubic-bezier(.3,1.2,.5,1),scale .3s cubic-bezier(.3,1.35,.5,1),background-color .28s ease-out,border-color .28s,box-shadow .28s ease-out}
 /* at rest the chosen page sits on a flat, soft grey (like LINE); the clear glass only shows while the finger slides */
-.tabbar:not(.drag) .tab-pill{background:rgba(43,33,28,.075);border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 1px rgba(255,255,255,.45);-webkit-backdrop-filter:none;backdrop-filter:none}
+.tabbar:not(.drag) .tab-pill{background-color:rgba(43,33,28,.075);border-color:rgba(255,255,255,.35);
+  box-shadow:inset 0 0 0 0 rgba(255,255,255,0),inset 0 0 0 0 rgba(43,33,28,0),inset 0 0 0 0 rgba(255,255,255,0),inset 0 1px 1px rgba(255,255,255,.45),0 0 0 rgba(43,33,28,0),0 0 0 rgba(43,33,28,0)}
 .tabbar:not(.drag) .tab-pill::before,.tabbar:not(.drag) .tab-pill::after{opacity:0}
 .tab-pill::before,.tab-pill::after{transition:opacity .25s}
 .tabbar.drag button.hot{transform:scale(1.12) translateY(-1px)}
@@ -927,10 +928,10 @@ const IC = {
   search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M16 16l5 5"/>',
   back:'<path d="M15 6l-6 6 6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
   sparkF:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" style="fill:currentColor"/><path d="M19 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" style="fill:currentColor"/>',
-  homeF:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" style="fill:currentColor"/><path d="M9.5 21v-6h5v6" style="stroke:var(--tab-cut);fill:var(--tab-cut)"/>',
-  calendarF:'<rect x="3" y="5" width="18" height="16" rx="2" style="fill:currentColor"/><path d="M7 3v4M17 3v4"/><path d="M3 11h18M7 15h2M13 15h2" style="stroke:var(--tab-cut)"/>',
+  homeF:'<path d="M3 10.1 12 2.8l9 7.3V20a2 2 0 0 1-2 2h-4.5v-6.5h-5V22H5a2 2 0 0 1-2-2z" style="fill:currentColor;fill-rule:evenodd;stroke:none"/>',
+  calendarF:'<path d="M2 7a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3z M4 10.2h16v1.6H4z M6.2 14.2h3.6v1.6H6.2z M12.2 14.2h3.6v1.6h-3.6z" style="fill:currentColor;fill-rule:evenodd;stroke:none"/><path d="M7 2.5v3M17 2.5v3"/>',
   ideaF:'<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z" style="fill:currentColor"/>',
-  fileF:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" style="fill:currentColor"/><path d="M14 3v5h5" style="stroke:var(--tab-cut)"/><path d="M9 13h6M9 17h4" style="stroke:var(--tab-cut)"/>',
+  fileF:'<path d="M14.4 2H7a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7.6z M8.2 12.2h7.6v1.6H8.2z M8.2 16.2h4.6v1.6H8.2z" style="fill:currentColor;fill-rule:evenodd;stroke:none"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', home:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>', up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   flight:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   stay:'<path d="M3 19V6"/><path d="M3 15h18v4"/><path d="M21 15v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11.5" r="2"/>',
@@ -945,7 +946,7 @@ const IC = {
   share:'<path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
   people:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9.5" r="2.3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M15.5 14.4c2.3 0 4.1 1.5 4.6 4.1"/>',
-  walletF:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z" style="fill:currentColor"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.3" style="fill:var(--tab-cut);stroke:var(--tab-cut)"/>',
+  walletF:'<path d="M3 7.6A1.6 1.6 0 0 1 4.6 6H18a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H5a2 2 0 0 1-2-2z M17.3 13.5a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0z" style="fill:currentColor;fill-rule:evenodd;stroke:none"/><path d="M4 7l11-3v3"/>',
   wallet:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1z"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.2"/>',
   wifiOff:'<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M14.8 10.3A10 10 0 0 1 19 12.9"/><path d="M2 9.3a15 15 0 0 1 4.3-2.6M10.7 5.1A15 15 0 0 1 22 9.3"/><path d="M12 20h.01"/>',
   wxFog:'<path d="M4 9h12M6 13h14M4 17h11"/>',
@@ -1631,13 +1632,17 @@ function selectTab(k, landed){
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
 const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0};
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
-document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar) return;
+/* like LINE: the moment a finger touches the bar, the grey pill glides under it and swells into the clear lens;
+   it then follows the finger, and letting go settles it (grey again) on that page */
+document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar || e.button > 0) return;
   const r = bar.getBoundingClientRect(); TB.cell = (r.width - 8) / TRIP_TABS.length; TB.max = TB.cell * (TRIP_TABS.length - 1);
-  TB.on = true; TB.moved = false; TB.x = e.clientX; TB.lx = e.clientX; TB.t = 0; TB.start = (+getComputedStyle(bar).getPropertyValue("--i") || 0) * TB.cell;
-  bar.classList.add("press"); });
+  const at = Math.max(0, Math.min(TB.max, e.clientX - r.left - 4 - TB.cell / 2));
+  TB.on = true; TB.moved = true; TB.x = e.clientX; TB.lx = e.clientX; TB.t = 0; TB.start = at;
+  bar.style.setProperty("--x", ((+getComputedStyle(bar).getPropertyValue("--i") || 0) * TB.cell) + "px");   // start where the pill is…
+  bar.classList.add("drag", "lens-in"); bar.getBoundingClientRect();
+  bar.style.setProperty("--x", at + "px"); tabHot(bar, Math.round(at / TB.cell));                                // …and glide to the finger
+  clearTimeout(TB.lensIn); TB.lensIn = setTimeout(() => bar.classList.remove("lens-in"), 260); });
 document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = document.querySelector(".tabbar"); if(!bar) return;
-  if(!TB.moved && Math.abs(e.clientX - TB.x) > 6){ TB.moved = true; bar.style.setProperty("--x", TB.start + "px"); bar.classList.add("drag"); }
-  if(!TB.moved) return;
   /* the lens sticks to the finger, with a little resistance past either end */
   let x = TB.start + (e.clientX - TB.x);
   if(x < 0) x = Math.max(-4, x / 6); else if(x > TB.max) x = Math.min(TB.max + 4, TB.max + (x - TB.max) / 6);
@@ -1650,12 +1655,13 @@ document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = d
 function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimationFrame(TB.raf);
   const bar = document.querySelector(".tabbar"); if(!bar) return; bar.classList.remove("press");
   if(!TB.moved) return;
+  clearTimeout(TB.lensIn); bar.classList.remove("lens-in");
   const x = parseFloat(bar.style.getPropertyValue("--x")) || 0, n = cancel ? +bar.dataset.to : Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell);
   bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
   clearTimeout(TB.rest); bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   TB.suppress = true; setTimeout(() => TB.suppress = false, 400);
-  if(!cancel) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 310); }
+  if(!cancel && TRIP_TABS[n][0] !== (["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "")) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 300); }
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
@@ -2524,6 +2530,10 @@ function dmLabels(){
     if(hit) b.classList.add("off"); else shown.push(r); }
 }
 function dmAttribSmall(){ const a = DM.box?.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact"); if(a){ a.removeAttribute("open"); a.classList.remove("maplibregl-compact-show"); } }
+/* the chosen leg in orange on top; the other legs step back a little */
+function dmHi(leg){ const f = ["==", ["get", "id"], leg || ""];
+  DM.map.setFilter("leg-hi", f); DM.map.setFilter("leg-hi-edge", f);
+  DM.map.setPaintProperty("leg-ride", "line-opacity", leg ? .45 : 1); DM.map.setPaintProperty("leg-ride-edge", "line-opacity", leg ? .45 : 1); }
 /* map mode: the trip header shows the day on a map */
 const dmCtx = () => document.getElementById("hm-slot") && S.hm?.date ? S.hm : null;
 const dmPad = () => ({top:90, bottom:30, left:44, right:44});
@@ -2589,8 +2599,12 @@ async function dayMapMount(){
     DM.map.on("resize", dmAttribSmall); DM.map.on("moveend", dmLabels); DM.map.once("load", dmAttribSmall);
     await DM.ready;
     DM.map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
-    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#17808A", "line-width":2.5, "line-opacity":.85, "line-dasharray":[2, 1.6]}});
-    DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:{"line-cap":"round", "line-join":"round"}, paint:{"line-color":"#FF8A00", "line-width":3.5, "line-dasharray":[2, 1.4]}});
+    /* solid routes with a darker edge, like Google Maps: the edge underneath, the colour on top */
+    const R = {"line-cap":"round", "line-join":"round"};
+    DM.map.addLayer({id:"leg-ride-edge", type:"line", source:"legs", layout:R, paint:{"line-color":"#0D5A61", "line-width":7}});
+    DM.map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:R, paint:{"line-color":"#1A8F99", "line-width":4.5}});
+    DM.map.addLayer({id:"leg-hi-edge", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:R, paint:{"line-color":"#B85A00", "line-width":8}});
+    DM.map.addLayer({id:"leg-hi", type:"line", source:"legs", filter:["==", ["get", "id"], ""], layout:R, paint:{"line-color":"#FF9A1F", "line-width":5.5}});
   }
   await DM.ready; if(!DM.map.getSource("legs")) return;   // another redraw is still setting the map up
   DM.box.classList.remove("wait");   // the first map fades in once it is ready
@@ -2601,7 +2615,7 @@ async function dayMapMount(){
   const nLL = stops.filter(x => x.ll).length;
   if(sig === DM.sig) return; const moved = DM.date !== s.date || DM.nLL !== nLL || DM.where !== where; DM.where = where; DM.nLL = nLL; DM.sig = sig; DM.date = s.date; DM.stops = stops;
   DM.map.getSource("legs").setData({type:"FeatureCollection", features:lines});
-  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]); DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
+  dmHi(s.leg);
   DM.markers.forEach(m => m.remove()); DM.markers = [];
   const placed = new Set();
   for(const x of stops){ if(!x.ll || placed.has(x.id)) continue; placed.add(x.id);
@@ -2650,7 +2664,7 @@ function dayMapLeg(id){
   s.leg = s.leg === id ? "" : id; DM.legShown = s.leg;   // tap again to see the whole day
   hmMark();
   if(!DM.map || DM.where !== (s === S.hm ? "head" : "sheet")) return;
-  DM.map.setFilter("leg-hi", ["==", ["get", "id"], s.leg || ""]);
+  dmHi(s.leg);
   DM.map.setPaintProperty("leg-ride", "line-opacity", s.leg ? .3 : .85);
   const f = s.leg && dayMapData(s.date).lines.find(x => x.properties.id === s.leg), pts = f ? f.geometry.coordinates : DM.stops.filter(x => x.ll).map(x => x.ll);
   if(pts.length){ const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])); DM.map.fitBounds(b, {padding:dmPad(s), maxZoom:16}); }
@@ -4677,7 +4691,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-19-tab2";
+const BUILD = "2026-11-19-tab3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
