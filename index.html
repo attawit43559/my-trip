@@ -657,8 +657,8 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .idea-suggest-row{display:flex;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink)}.idea-suggest-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line)}.idea-suggest-row:disabled{opacity:.58}.idea-suggest-results h3{font-size:16px}.idea-compose-sheet .chips.t-idea{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.idea-compose-sheet .chips.t-idea button{white-space:nowrap;min-width:0;justify-content:center;padding:7px 2px;flex-direction:column;gap:3px;border-radius:14px;font-size:12.5px;line-height:1.2}html.kb .idea-compose-sheet .chips.t-idea button{padding:5px 2px}
 
 /* trip pages behind a floating glass tab bar */
-.screen.has-tabbar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 24px),520px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
+.screen.has-tabbar{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:calc(2px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100% - 20px),540px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
@@ -685,9 +685,9 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tab-pill::before,.tab-pill::after{transition:opacity .25s}
 .tabbar.drag button.hot{transform:scale(1.12) translateY(-1px)}
 .tabbar.drag button.hot .tb-ic .ic{transform:scale(1.22)}
-.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s,transform .24s cubic-bezier(.3,1.4,.5,1)}
-.tb-ic{position:relative;width:21px;height:21px;display:block}
-.tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .25s ease-out}
+.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 5px;font-size:11.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s,transform .24s cubic-bezier(.3,1.4,.5,1)}
+.tb-ic{position:relative;width:24px;height:24px;display:block}
+.tb-ic .ic{position:absolute;inset:0;width:24px;height:24px;transition:opacity .18s,transform .25s ease-out}
 .tb-ic .ic+.ic{opacity:0}
 .tabbar button[aria-current="page"],.tabbar button.hot{color:var(--ink);font-weight:600}
 .tabbar button[aria-current="page"] .tb-ic .ic:first-child,.tabbar button.hot .tb-ic .ic:first-child{opacity:0}
@@ -1622,12 +1622,19 @@ function filteredIdeas(){return S.items.filter(i => i.type === "idea" && (!S.ide
 function selectTab(k, landed){
   const cur = ["planning","idea","info","money","help"].includes(S.catTab) ? S.catTab : "";
   k = k || "";
-  S.tabFrom = landed ? TRIP_TABS.findIndex(x => x[0] === k) : Math.max(0, TRIP_TABS.findIndex(x => x[0] === cur));
+  /* the page changes at once; the pill carries on from exactly where it is on screen (part way through its move) to the new tab */
+  const old = document.querySelector(".tabbar .tab-pill")?.getBoundingClientRect();
+  S.tabFrom = null;
   hmTabAnim(cur, k);
   S.catTab = k; S.sheet = null; S.dockHidden = false;
   if(k === "planning") S.planner ||= {query:"", filter:""};
   render(); if(k !== cur) window.scrollTo(0,0);
-  requestAnimationFrame(() => requestAnimationFrame(() => { const bar = document.querySelector(".tabbar"); if(bar){ const pill = bar.querySelector(".tab-pill"); if(!landed && k !== cur && pill) pill.classList.add("flow"); bar.style.setProperty("--i", bar.dataset.to); } S.tabFrom = null; }));
+  const pill = document.querySelector(".tabbar .tab-pill");
+  if(old && pill && old.width){ const r = pill.getBoundingClientRect(), i = +pill.parentElement.dataset.to;
+    const dx = (old.left + old.width / 2) - (r.left + r.width / 2);
+    if(Math.abs(dx) > 1 || Math.abs(old.width - r.width) > 1){
+      pill.style.transition = "none"; pill.style.translate = `calc(${i * 100}% + ${dx.toFixed(1)}px) 0`; pill.style.scale = `${(old.width / r.width).toFixed(3)} ${(old.height / r.height).toFixed(3)}`;
+      pill.getBoundingClientRect(); pill.style.transition = ""; pill.style.translate = ""; pill.style.scale = ""; } }
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
 const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0};
@@ -1666,7 +1673,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false;
   bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
   bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
-  if(!cancel && TRIP_TABS[n][0] !== curTab()) TB.done = setTimeout(() => selectTab(TRIP_TABS[n][0], true), 440);
+  if(!cancel && TRIP_TABS[n][0] !== curTab()) requestAnimationFrame(() => selectTab(TRIP_TABS[n][0], true));   // the page changes right away; the pill finishes its landing over it
 }
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
@@ -4697,7 +4704,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-19-tab6";
+const BUILD = "2026-11-19-tab7";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
