@@ -1639,9 +1639,10 @@ function tabSpring(){
   const bar = document.querySelector(".tabbar"); if(!bar){ TB.anim = 0; return; }
   TB.vx = (TB.vx + (TB.target - TB.px) * .12) * .65; TB.px += TB.vx;            // spring towards the finger
   const st = Math.min(.22, Math.abs(TB.vx) * .022);                              // moving fast: wider and flatter
-  bar.style.setProperty("--x", TB.px.toFixed(2) + "px");
+  const edge = (1.3 + st - 1) * TB.cell / 2 - 3;                                  // the swollen lens stays inside the bar, even at the ends
+  bar.style.setProperty("--x", Math.max(edge, Math.min(TB.max - edge, TB.px)).toFixed(2) + "px");
   bar.style.setProperty("--sx", (1.3 + st).toFixed(3)); bar.style.setProperty("--sy", (1.42 - st * .7).toFixed(3));
-  tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, TB.px)) / TB.cell));
+  tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, TB.target)) / TB.cell));   // only the tab under the finger turns dark, not each one the lens passes
   if(TB.on || Math.abs(TB.vx) > .05 || Math.abs(TB.target - TB.px) > .3) TB.anim = requestAnimationFrame(tabSpring); else TB.anim = 0;
 }
 document.addEventListener("pointerdown", e => { const bar = e.target.closest?.(".tabbar"); if(!bar || e.button > 0) return;
@@ -4699,7 +4700,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-19-tab4";
+const BUILD = "2026-11-19-tab5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
