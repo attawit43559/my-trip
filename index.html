@@ -678,6 +678,10 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
   background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 55%,rgba(255,255,255,.1));
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.08),inset 0 0 0 2px rgba(255,255,255,.35),inset 0 0 10px rgba(150,190,255,.18),0 12px 28px rgba(43,33,28,.18),0 2px 6px rgba(43,33,28,.10)}
 .tabbar.press:not(.drag) .tab-pill{scale:1.06}
+/* at rest the chosen page sits on a flat, soft grey (like LINE); the clear glass only shows while the finger slides */
+.tabbar:not(.drag) .tab-pill{background:rgba(43,33,28,.075);border-color:rgba(255,255,255,.35);box-shadow:inset 0 1px 1px rgba(255,255,255,.45);-webkit-backdrop-filter:none;backdrop-filter:none}
+.tabbar:not(.drag) .tab-pill::before,.tabbar:not(.drag) .tab-pill::after{opacity:0}
+.tab-pill::before,.tab-pill::after{transition:opacity .25s}
 .tabbar.drag button.hot{transform:scale(1.12) translateY(-1px)}
 .tabbar.drag button.hot .tb-ic .ic{transform:scale(1.22)}
 .tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s,transform .24s cubic-bezier(.3,1.4,.5,1)}
@@ -4673,7 +4677,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-19-tab1";
+const BUILD = "2026-11-19-tab2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
