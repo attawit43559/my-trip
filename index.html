@@ -667,14 +667,14 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
-  translate:calc(var(--i) * 100%) 0;transition:translate .55s cubic-bezier(.3,1.3,.5,1),scale .55s cubic-bezier(.3,1.45,.5,1),background .35s,border-color .35s,box-shadow .35s}
+  translate:calc(var(--i) * 100%) 0;transition:translate .44s cubic-bezier(.22,.8,.3,1),scale .44s cubic-bezier(.22,.8,.3,1),background .4s ease-out,border-color .4s,box-shadow .4s ease-out}
 .tab-pill.flow{animation:tabDrop .41s cubic-bezier(.42,.05,.22,1)}
 @keyframes tabDrop{0%{scale:1 1}45%{scale:1.08 .96}100%{scale:1 1}}
 .tab-pill::before{content:"";position:absolute;left:10%;right:30%;top:7%;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.45}
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
 /* sliding a finger along the bar: the pill swells into a clear lens, bigger than the bar, that magnifies the page under it;
    letting go, it shrinks back into the pill with a small bounce */
-.tabbar.drag .tab-pill{translate:var(--x) 0;transition:scale .34s cubic-bezier(.25,1.7,.45,1),background-color .28s ease-out,border-color .28s,box-shadow .28s ease-out;scale:var(--sx,1.3) var(--sy,1.42);
+.tabbar.drag .tab-pill{translate:var(--x) 0;transition:scale .3s cubic-bezier(.3,1.25,.5,1),background-color .28s ease-out,border-color .28s,box-shadow .28s ease-out;scale:var(--sx,1.3) var(--sy,1.42);
   background-color:rgba(255,255,255,0);
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.08),inset 0 0 0 2px rgba(255,255,255,.35),inset 0 0 10px rgba(150,190,255,.18),0 12px 28px rgba(43,33,28,.18),0 2px 6px rgba(43,33,28,.10)}
 
@@ -1637,7 +1637,7 @@ function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList
    sticky and squishy), and letting go settles it (grey again) on that page. A quick tap lets the lens arrive first. */
 function tabSpring(){
   const bar = document.querySelector(".tabbar"); if(!bar){ TB.anim = 0; return; }
-  TB.vx = (TB.vx + (TB.target - TB.px) * .12) * .65; TB.px += TB.vx;            // spring towards the finger
+  TB.vx = (TB.vx + (TB.target - TB.px) * .14) * .56; TB.px += TB.vx;            // spring towards the finger
   const st = Math.min(.22, Math.abs(TB.vx) * .022);                              // moving fast: wider and flatter
   const edge = (1.3 + st - 1) * TB.cell / 2 - 3;                                  // the swollen lens stays inside the bar, even at the ends
   bar.style.setProperty("--x", Math.max(edge, Math.min(TB.max - edge, TB.px)).toFixed(2) + "px");
@@ -1661,15 +1661,12 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false;
   const bar = document.querySelector(".tabbar"); if(!bar) return; bar.classList.remove("press");
   const n = cancel ? +bar.dataset.to : Math.round(Math.max(0, Math.min(TB.max, TB.target)) / TB.cell);
   TB.suppress = true; setTimeout(() => TB.suppress = false, 500);
-  const tap = TB.far < 8 && performance.now() - TB.down < 350;
-  /* a tap: let the lens reach the tab and swell there for a moment before it settles */
-  TB.done = setTimeout(() => {
-    cancelAnimationFrame(TB.anim); TB.anim = 0;
-    bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
-    bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
-    bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
-    if(!cancel && TRIP_TABS[n][0] !== curTab()) setTimeout(() => selectTab(TRIP_TABS[n][0], true), 380);
-  }, tap && !cancel ? 230 : 0);
+  /* landing is one movement: from wherever the lens is, it travels to the tab while it shrinks and turns grey */
+  cancelAnimationFrame(TB.anim); TB.anim = 0;
+  bar.querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.n === n ? "page" : "false"));
+  bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
+  bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
+  if(!cancel && TRIP_TABS[n][0] !== curTab()) TB.done = setTimeout(() => selectTab(TRIP_TABS[n][0], true), 440);
 }
 document.addEventListener("pointerup", e => tabRelease(e, false));
 document.addEventListener("pointercancel", e => tabRelease(e, true));
@@ -4700,7 +4697,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-19-tab5";
+const BUILD = "2026-11-19-tab6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
