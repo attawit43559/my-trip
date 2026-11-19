@@ -667,14 +667,20 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
   -webkit-backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);backdrop-filter:saturate(2.2) brightness(1.06) contrast(1.08);
   border:1px solid rgba(255,255,255,.75);
   box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.10),inset 0 0 0 3px rgba(255,255,255,.22),0 6px 16px rgba(43,33,28,.14),0 1px 3px rgba(43,33,28,.10);
-  transform:translateX(calc(var(--i) * 100%));transition:transform .41s cubic-bezier(.42,.05,.22,1),scale .22s ease-out}
+  translate:calc(var(--i) * 100%) 0;transition:translate .41s cubic-bezier(.42,.05,.22,1),scale .42s cubic-bezier(.34,1.5,.64,1),background .25s,box-shadow .25s}
 .tab-pill.flow{animation:tabDrop .41s cubic-bezier(.42,.05,.22,1)}
 @keyframes tabDrop{0%{scale:1 1}45%{scale:1.08 .96}100%{scale:1 1}}
 .tab-pill::before{content:"";position:absolute;left:10%;right:30%;top:7%;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.45}
 .tab-pill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 125%,rgba(255,255,255,.22),rgba(255,255,255,0) 55%)}
-.tabbar.drag .tab-pill{transform:translateX(var(--x));transition:scale .2s ease-out;scale:var(--sx,1.04) var(--sy,1.03)}
-.tabbar.press:not(.drag) .tab-pill{scale:1.02}
-.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s}
+/* sliding a finger along the bar: the pill swells into a clear lens, bigger than the bar, that magnifies the page under it;
+   letting go, it shrinks back into the pill with a small bounce */
+.tabbar.drag .tab-pill{translate:var(--x) 0;transition:scale .24s cubic-bezier(.3,1.4,.5,1),background .2s,box-shadow .2s;scale:var(--sx,1.3) var(--sy,1.42);
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 55%,rgba(255,255,255,.1));
+  box-shadow:inset 2px 3px 2px -1px rgba(255,255,255,.95),inset -2px -3px 4px -1px rgba(43,33,28,.08),inset 0 0 0 2px rgba(255,255,255,.35),inset 0 0 10px rgba(150,190,255,.18),0 12px 28px rgba(43,33,28,.18),0 2px 6px rgba(43,33,28,.10)}
+.tabbar.press:not(.drag) .tab-pill{scale:1.06}
+.tabbar.drag button.hot{transform:scale(1.12) translateY(-1px)}
+.tabbar.drag button.hot .tb-ic .ic{transform:scale(1.22)}
+.tabbar button{position:relative;z-index:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 3px;font-size:10.5px;white-space:nowrap;min-width:0;line-height:1.25;color:var(--muted);border-radius:999px;-webkit-tap-highlight-color:transparent;transition:color .2s,transform .24s cubic-bezier(.3,1.4,.5,1)}
 .tb-ic{position:relative;width:21px;height:21px;display:block}
 .tb-ic .ic{position:absolute;inset:0;width:21px;height:21px;transition:opacity .18s,transform .25s ease-out}
 .tb-ic .ic+.ic{opacity:0}
@@ -1635,8 +1641,8 @@ document.addEventListener("pointermove", e => { if(!TB.on) return; const bar = d
   const now = performance.now(), v = TB.t ? (e.clientX - TB.lx) / Math.max(1, now - TB.t) : 0; TB.t = now; TB.lx = e.clientX;
   const st = Math.min(.08, Math.abs(v) * .06);
   cancelAnimationFrame(TB.raf); clearTimeout(TB.rest);
-  TB.raf = requestAnimationFrame(() => { bar.style.setProperty("--x", x + "px"); bar.style.setProperty("--sx", (1.04 + st).toFixed(3)); bar.style.setProperty("--sy", (1.03 - st * .4).toFixed(3)); tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell)); });
-  TB.rest = setTimeout(() => { bar.style.setProperty("--sx", "1.04"); bar.style.setProperty("--sy", "1.03"); }, 90); });
+  TB.raf = requestAnimationFrame(() => { bar.style.setProperty("--x", x + "px"); bar.style.setProperty("--sx", (1.3 + st * 1.5).toFixed(3)); bar.style.setProperty("--sy", (1.42 - st).toFixed(3)); tabHot(bar, Math.round(Math.max(0, Math.min(TB.max, x)) / TB.cell)); });
+  TB.rest = setTimeout(() => { bar.style.setProperty("--sx", "1.3"); bar.style.setProperty("--sy", "1.42"); }, 90); });
 function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false; cancelAnimationFrame(TB.raf);
   const bar = document.querySelector(".tabbar"); if(!bar) return; bar.classList.remove("press");
   if(!TB.moved) return;
@@ -4667,7 +4673,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-18-rv2";
+const BUILD = "2026-11-19-tab1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
