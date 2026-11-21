@@ -2444,15 +2444,17 @@ function shareSection(){
 }
 /* how to use the app: picture cards shown once to a new person, then kept in the profile sheet */
 const GUIDE = [
-  {img:3, t:"สร้างทริป", d:"กด “สร้างทริป” ใส่ชื่อ และวันไป–กลับ"},
-  {img:4, t:"ใส่ตั๋วและที่พัก", d:"แท็บข้อมูล → “เพิ่ม” เลือกรูปหรือ PDF ใบจองตั๋วเครื่องบินและโรงแรม แอปอ่านแล้วใส่ในแผนให้"},
-  {img:1, t:"เชื่อมกับ Google Maps", d:"กดรูปโปรไฟล์มุมขวาบน → “แชร์เข้าทริป” แล้วทำตามขั้นตอน ทำครั้งเดียว"},
-  {img:2, t:"แชร์สถานที่เข้าทริป", d:"ใน Google Maps กด “Share” → เลื่อนลงแล้วกด “My Trip” สถานที่จะไปอยู่ในแท็บวางแผน"},
-  {img:5, t:"ใส่ที่เที่ยวลงวัน", d:"แท็บวางแผน เลือกวันด้านบน แล้วกด + ที่สถานที่"},
+  {img:1, t:"สร้างทริป", d:"กด “สร้างทริป” ใส่ชื่อ และวันไป–กลับ"},
+  {img:2, t:"ใส่ตั๋วและที่พัก", d:"แท็บข้อมูล → “เพิ่ม” เลือกรูปหรือ PDF ใบจองตั๋วเครื่องบินและโรงแรม แอปอ่านแล้วใส่ในแผนให้"},
+  {img:3, t:"เชื่อมกับ Google Maps", d:"กดรูปโปรไฟล์มุมขวาบน → “แชร์เข้าทริป” แล้วทำตามขั้นตอน ทำครั้งเดียว"},
+  {img:4, t:"แชร์สถานที่เข้าทริป", d:"ใน Google Maps กด “Share” → เลือก “My Trip” สถานที่จะไปอยู่ในแท็บวางแผน"},
+  {img:5, t:"ใส่ที่เที่ยวลงวัน", d:"แท็บวางแผน เลือกวันด้านบน แล้วกด + ที่สถานที่ · สลับหน้าได้ทั้งแตะหรือลากแถบด้านล่าง"},
   {img:6, t:"ตั้งเวลา · เรียงลำดับ", d:"แตะเวลาเพื่อตั้งเวลา · กดค้างที่สถานที่แล้วลากเพื่อเรียงใหม่"},
-  {img:7, t:"เลือกการเดินทาง", d:"แตะช่องระหว่างสถานที่ แอปหาเส้นทางไว้ให้แล้ว เลือกแบบที่ชอบ"},
-  {img:8, t:"ให้ AI ช่วย", d:"แท็บ AI แนะนำที่เที่ยวใกล้แผน หรือรีวิวแผนทั้งวัน"},
-  {img:9, t:"ส่งออกเป็นรูป", d:"กด ⋯ มุมขวาบนของทริป → “ส่งออกแผนเที่ยว” ได้ทั้งรูปและ PDF"}
+  {img:7, t:"เลือกการเดินทาง", d:"แตะ “เพิ่มการเดินทาง” ระหว่างสถานที่ แอปหาเส้นทางไว้ให้ เลือกแบบที่ชอบ"},
+  {img:8, t:"ดูแผนบนแผนที่", d:"แตะสองครั้งที่ภาพปกทริปเพื่อเปิดแผนที่ แตะแถวการเดินทางเพื่อดูเส้นทาง · แตะสองครั้งอีกทีเพื่อปิด"},
+  {img:9, t:"ลงค่าใช้จ่าย", d:"แท็บค่าใช้จ่าย → “จด” ใส่ยอด เลือก ¥ หรือ ฿ แล้วกดบันทึก แอปแปลงเป็นเงินบาทให้"},
+  {img:10, t:"ให้ AI ดูแผน", d:"แท็บ AI → “รีวิว” พิมพ์สิ่งที่อยากได้ของแต่ละวัน แล้วกด “ดูแผนทุกวัน” AI จะดูทีละวันพร้อมปุ่มแก้ให้"},
+  {img:11, t:"ส่งออกเป็นรูป", d:"กด ⋯ มุมขวาบนของทริป → “ส่งออกแผนเที่ยว” ได้ทั้งรูปและ PDF"}
 ];
 /* ---------- day map: a free map (OpenFreeMap, no key) with the day's stops in order and the routes chosen for each leg ---------- */
 const MAP_LIB = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl";
@@ -2676,7 +2678,7 @@ function vGuide(s){
   return `<div class="scrim guide-scrim" data-act="guide-done"><div class="guide-card" role="dialog" aria-modal="true" aria-label="วิธีใช้ My Trip" data-stop="1">
     <div class="guide-top"><span class="guide-n">${i + 1}/${n}</span><button class="link-btn" data-act="guide-done" style="${last ? "visibility:hidden" : ""}">ข้าม</button></div>
     <div class="guide-view" data-guide-view><div class="guide-track" style="transform:translate3d(${-i * 100}%,0,0)">${GUIDE.map((g, k) => `<section class="guide-slide" aria-label="${k + 1} จาก ${n}" ${k === i ? "" : 'aria-hidden="true"'}>
-      <img src="guide/${g.img}.webp?v=3" alt="" width="300" height="280" decoding="async" draggable="false">
+      <img src="guide/${g.img}.webp?v=4" alt="" width="300" height="280" decoding="async" draggable="false">
       <h2>${g.t}</h2><p>${g.d}</p></section>`).join("")}</div></div>
     <div class="guide-dots" aria-hidden="true">${GUIDE.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
     <div class="guide-btns"><button type="button" class="btn ghost" data-act="guide-step" data-d="-1" ${i ? "" : "disabled"}>ย้อนกลับ</button><button type="button" class="btn primary" data-act="${last ? "guide-done" : "guide-step"}" data-d="1">${last ? "เริ่มใช้งาน" : "ถัดไป"}</button></div>
@@ -4650,7 +4652,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-21-lean1";
+const BUILD = "2026-11-21-guide4";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
