@@ -299,18 +299,29 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
       const a = pts[i], b = pts[j]; let dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy); if(dd >= r * 2 + 4) continue;
       if(dd < .1){ dx = 1; dy = 0; dd = 1; } const m = (r * 2 + 4 - dd) / 2; a.x -= dx / dd * m; a.y -= dy / dd * m; b.x += dx / dd * m; b.y += dy / dd * m; }
     const boxes = pts.map(p => [p.x - r, p.y - r, p.x + r, p.y + r]), hit = q => boxes.some(b => q[0] < b[2] && q[2] > b[0] && q[1] < b[3] && q[3] > b[1]);
-    x.font = font(500, 17);
-    for(const p of pts){ const tw = x.measureText(p.name).width;
-      const opt = [[p.x + r + 7, "left"], [p.x - r - 7, "right"]].map(([tx, al]) => ({tx, al, q:al === "left" ? [tx, p.y - 11, tx + tw, p.y + 11] : [tx - tw, p.y - 11, tx, p.y + 11]})).filter(o => o.q[0] > 4 && o.q[2] < W - 4 && !hit(o.q));
-      p.lab = opt[0]; if(opt[0]) boxes.push(opt[0].q); }
+    // every stop gets its name: try beside, above and below, then a smaller size; if nothing is free, the smallest size beside the pin
+    for(const p of pts){ let pick = null;
+      for(const fs of [17, 15, 13]){ x.font = font(400, fs); const tw = x.measureText(p.name).width, h = fs * 0.65, g = r + 6;
+        const ring = k => [[p.x + g, p.y, "left"], [p.x - g, p.y, "right"], [p.x, p.y - r - h - 2 - k, "center"], [p.x, p.y + r + h + 2 + k, "center"],
+          [p.x + g - 4, p.y - r - k, "left"], [p.x + g - 4, p.y + r + k, "left"], [p.x - g + 4, p.y - r - k, "right"], [p.x - g + 4, p.y + r + k, "right"]];
+        const opts = [...ring(0), ...ring(h * 2 + 2).map(o => [...o, 1]), ...ring(h * 4 + 4).map(o => [...o, 1])];
+        const fit = opts.map(([tx, ty, al, far]) => { const L = al === "left" ? tx : al === "right" ? tx - tw : tx - tw / 2; return {tx, ty, al, fs, far, q:[L, ty - h, L + tw, ty + h]}; })
+          .filter(o => o.q[0] > 4 && o.q[2] < W - 4 && o.q[1] > 4 && o.q[3] < H - 26);
+        pick = fit.find(o => !hit(o.q)); if(pick) break;
+        if(fs === 13){ const n = q => boxes.filter(b => q[0] < b[2] && q[2] > b[0] && q[1] < b[3] && q[3] > b[1]).length;   // the spot that covers the fewest others
+          pick = fit.slice().sort((a, b) => n(a.q) - n(b.q))[0] || {tx:p.x + g, ty:p.y, al:"left", fs, q:[0, 0, 0, 0]}; } }
+      p.lab = pick; boxes.push(pick.q); }
     for(const p of pts){
       const [soft, line] = SPOT[p.spot] || SPOT.sight;
       x.beginPath(); x.arc(p.x, p.y, r, 0, Math.PI * 2); x.fillStyle = soft; x.fill(); x.lineWidth = 2.5; x.strokeStyle = "#FFFFFF"; x.stroke();
       if(p.n){ x.fillStyle = line; x.font = font(600, 17, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(p.n), p.x, p.y + 1); }
       else spot(x, p.spot, p.x, p.y, r - 2, icons);
     }
-    x.font = font(500, 17); x.textBaseline = "middle";
-    for(const p of pts){ if(!p.lab) continue; x.textAlign = p.lab.al; x.lineWidth = 4; x.lineJoin = "round"; x.strokeStyle = "rgba(255,253,249,.92)"; x.strokeText(p.name, p.lab.tx, p.y + 1); x.fillStyle = "#5A4D44"; x.fillText(p.name, p.lab.tx, p.y + 1); }
+    for(const p of pts){ const l = p.lab; if(!l || !l.far) continue;   // a name set a little away from its pin gets a faint line back to it
+      const cx = Math.max(l.q[0], Math.min(p.x, l.q[2])), cy = l.ty < p.y ? l.q[3] : l.q[1];
+      const dd = Math.hypot(cx - p.x, cy - p.y) || 1; x.beginPath(); x.moveTo(p.x + (cx - p.x) / dd * (r + 2), p.y + (cy - p.y) / dd * (r + 2)); x.lineTo(cx, cy); x.strokeStyle = "rgba(110,98,89,.55)"; x.lineWidth = 1.5; x.stroke(); }
+    x.textBaseline = "middle";
+    for(const p of pts){ const l = p.lab; if(!l) continue; x.font = font(400, l.fs); x.textAlign = l.al; x.lineWidth = 3.5; x.lineJoin = "round"; x.strokeStyle = "rgba(255,253,249,.9)"; x.strokeText(p.name, l.tx, l.ty + 1); x.fillStyle = "#6E6259"; x.fillText(p.name, l.tx, l.ty + 1); }
     x.font = font(400, 15); x.textAlign = "right"; x.textBaseline = "alphabetic"; const cr = "© OpenFreeMap · OpenStreetMap";
     x.lineWidth = 4; x.strokeStyle = "rgba(255,255,255,.85)"; x.strokeText(cr, W - 14, H - 12); x.fillStyle = "#8A7B6E"; x.fillText(cr, W - 14, H - 12);
     return c;
