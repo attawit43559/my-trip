@@ -293,24 +293,24 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
   async function mapPicture(src, pins, icons){
     await fontsReady();
     const W = src.width, H = src.height, c = document.createElement("canvas"); c.width = W; c.height = H;
-    const x = tr2d(c.getContext("2d")), r = 26; x.drawImage(src, 0, 0);
+    const x = tr2d(c.getContext("2d")), r = 16; x.drawImage(src, 0, 0);
     const pts = pins.map(p => ({...p}));
     for(let k = 0; k < 20; k++) for(let i = 0; i < pts.length; i++) for(let j = i + 1; j < pts.length; j++){   // stops right next to each other step apart a little
       const a = pts[i], b = pts[j]; let dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy); if(dd >= r * 2 + 4) continue;
       if(dd < .1){ dx = 1; dy = 0; dd = 1; } const m = (r * 2 + 4 - dd) / 2; a.x -= dx / dd * m; a.y -= dy / dd * m; b.x += dx / dd * m; b.y += dy / dd * m; }
     const boxes = pts.map(p => [p.x - r, p.y - r, p.x + r, p.y + r]), hit = q => boxes.some(b => q[0] < b[2] && q[2] > b[0] && q[1] < b[3] && q[3] > b[1]);
-    x.font = font(500, 21);
+    x.font = font(500, 17);
     for(const p of pts){ const tw = x.measureText(p.name).width;
-      const opt = [[p.x + 34, "left"], [p.x - 34, "right"]].map(([tx, al]) => ({tx, al, q:al === "left" ? [tx, p.y - 13, tx + tw, p.y + 13] : [tx - tw, p.y - 13, tx, p.y + 13]})).filter(o => o.q[0] > 4 && o.q[2] < W - 4 && !hit(o.q));
+      const opt = [[p.x + r + 7, "left"], [p.x - r - 7, "right"]].map(([tx, al]) => ({tx, al, q:al === "left" ? [tx, p.y - 11, tx + tw, p.y + 11] : [tx - tw, p.y - 11, tx, p.y + 11]})).filter(o => o.q[0] > 4 && o.q[2] < W - 4 && !hit(o.q));
       p.lab = opt[0]; if(opt[0]) boxes.push(opt[0].q); }
     for(const p of pts){
       const [soft, line] = SPOT[p.spot] || SPOT.sight;
-      x.beginPath(); x.arc(p.x, p.y, r, 0, Math.PI * 2); x.fillStyle = soft; x.fill(); x.lineWidth = 3.5; x.strokeStyle = "#FFFFFF"; x.stroke();
-      if(p.n){ x.fillStyle = line; x.font = font(600, 25, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(p.n), p.x, p.y + 1); }
-      else spot(x, p.spot, p.x, p.y, r - 3, icons);
+      x.beginPath(); x.arc(p.x, p.y, r, 0, Math.PI * 2); x.fillStyle = soft; x.fill(); x.lineWidth = 2.5; x.strokeStyle = "#FFFFFF"; x.stroke();
+      if(p.n){ x.fillStyle = line; x.font = font(600, 17, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(p.n), p.x, p.y + 1); }
+      else spot(x, p.spot, p.x, p.y, r - 2, icons);
     }
-    x.font = font(500, 21); x.textBaseline = "middle";
-    for(const p of pts){ if(!p.lab) continue; x.textAlign = p.lab.al; x.lineWidth = 5; x.lineJoin = "round"; x.strokeStyle = "rgba(255,253,249,.92)"; x.strokeText(p.name, p.lab.tx, p.y + 1); x.fillStyle = "#5A4D44"; x.fillText(p.name, p.lab.tx, p.y + 1); }
+    x.font = font(500, 17); x.textBaseline = "middle";
+    for(const p of pts){ if(!p.lab) continue; x.textAlign = p.lab.al; x.lineWidth = 4; x.lineJoin = "round"; x.strokeStyle = "rgba(255,253,249,.92)"; x.strokeText(p.name, p.lab.tx, p.y + 1); x.fillStyle = "#5A4D44"; x.fillText(p.name, p.lab.tx, p.y + 1); }
     x.font = font(400, 15); x.textAlign = "right"; x.textBaseline = "alphabetic"; const cr = "© OpenFreeMap · OpenStreetMap";
     x.lineWidth = 4; x.strokeStyle = "rgba(255,255,255,.85)"; x.strokeText(cr, W - 14, H - 12); x.fillStyle = "#8A7B6E"; x.fillText(cr, W - 14, H - 12);
     return c;
