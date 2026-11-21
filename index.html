@@ -3304,7 +3304,6 @@ function exportEntries(d, descs){
   });
 }
 /* ---------- the trip book: overview + one page per day ---------- */
-const exMin = m => { m = Math.round(m); if(!m) return ""; const h = Math.floor(m / 60), r = m % 60; return h ? `${h} ชม.${r ? ` ${r} นาที` : ""}` : `${r} นาที`; };
 function bookDay(d, i, dates){
   const ents = dayEntries(d);
   const places = ents.filter(e => !e.night && !e.start && e.it.type === "place");
@@ -3315,10 +3314,7 @@ function bookDay(d, i, dates){
   const stops = ents.filter(e => !e.night && !e.start && e.it.type !== "move").map(e => ({t:e.time || "", name:briefName(e.title)}));
   const stayIt = night && night.it.type === "stay" ? night.it : null;
   const stay = night ? {name: briefName(stayIt ? (stayIt.title || "ที่พัก") : night.title), sub: stayIt && stayIt.date === d && stayIt.time ? `เช็กอิน ${stayIt.time}` : ""} : null;
-  const byMode = {};
-  ents.filter(e => e.it.type === "move").forEach(e => { const m = s_((e.it.data || {}).mode) || "เดินทาง", n = +(e.it.data || {}).durationMinutes || 0; byMode[m] = (byMode[m] || 0) + n; });
-  const travel = Object.entries(byMode).filter(([, n]) => n).map(([m, n]) => `${m} ~${exMin(n)}`);
-  return {date:d, dayNo:i + 1, title, stops, stay, travel, places};
+  return {date:d, dayNo:i + 1, title, stops, stay, places};
 }
 async function placePhoto(it){
   const d = it.data || {}, key = d.placeId || (it.title + "|" + (d.address || ""));
@@ -3456,7 +3452,7 @@ async function exportRun(kind){
     for(const b of days){
       if(S.sheet !== s) return;
       s.busy = `กำลังวาดหน้า ${b.dayNo} จาก ${days.length}…`; render();
-      const d = {tripName:t.name, dayNo:b.dayNo, dayCount:days.length, dateLong:dLong(b.date) + " " + parseD(b.date).getFullYear(), title:b.title, entries:exportEntries(b.date, descs), map:maps[b.date] || null, photos:b.photos, tips:tips[b.date] || [], stay:b.stay, travel:b.travel};
+      const d = {tripName:t.name, dayNo:b.dayNo, dayCount:days.length, dateLong:dLong(b.date) + " " + parseD(b.date).getFullYear(), title:b.title, entries:exportEntries(b.date, descs), map:maps[b.date] || null, photos:b.photos, tips:tips[b.date] || [], stay:b.stay};
       let c = await PlanExport.renderBookDay(d, {icons:IC}), bl;
       try { bl = await toBlob(c); } catch(_){ c = await PlanExport.renderBookDay({...d, photos:[]}, {icons:IC}); bl = await toBlob(c); }   // a photo that can't be drawn into a file: the page without photos
       pages.push(bl);
@@ -4715,7 +4711,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-21-book2";
+const BUILD = "2026-11-21-book3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {

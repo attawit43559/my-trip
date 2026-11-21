@@ -109,7 +109,7 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
   /* ---------- A4 trip book: one overview page, then one page per day (photos, timeline, AI tips) ---------- */
   const PW = 1588, PH = 2246, PM = 104;                       // A4 at 2x (794 x 1123 css px)
   const B = {bg:"#FFFDF9", tile:"#F6F1EA", ink:"#2B211C", muted:"#6E6259", line:"#EFE9E0", rule:"#E8DFD3", accent:"#B4501A",
-    plum:["#F1E5F6","#6A3A86","#4F3A5C"], teal:["#EEF8F9","#12626A","#24464A"], blue:["#E0ECFF","#2B61B2","#1F3354"]};
+    plum:["#F1E5F6","#6A3A86","#4F3A5C"], blue:["#E0ECFF","#2B61B2","#1F3354"]};
   const DAYTONE = [["#FFE8D6","#B4501A"],["#E2F5E2","#2F7A2E"],["#E0ECFF","#2B61B2"],["#F1E5F6","#6A3A86"],["#FFF4C7","#8A6A00"],["#EEF8F9","#12626A"],["#FCE4EC","#B83A68"],["#F1E7DE","#6F4A2F"]];
   async function fontsReady(){
     await logoImg();
@@ -272,7 +272,6 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
       sy += h + 22;
     };
     if(d.stay) box("ที่พักคืนนี้", B.plum, [d.stay.name, d.stay.sub].filter(Boolean), true);
-    if(d.travel && d.travel.length) box("เดินทางวันนี้", B.teal, d.travel, false);
     if(d.tips && d.tips.length){
       x.font = font(400, 24); const lines = []; d.tips.forEach(t => wrap(x, t, side - 84, 4).forEach((w, i) => lines.push([w, i === 0])));
       let h = 84 + lines.length * 36 + d.tips.length * 8;
