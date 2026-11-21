@@ -221,20 +221,23 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
       if(e.type === "move"){ x.font = font(400, 23 * s); const label = [e.mode, e.minutes ? fmtMin(e.minutes) : ""].filter(Boolean).join(" · ") || e.title; return {e, h:56 * s, line:wrap(x, label, LW - 180 * s, 1)[0] || ""}; }
       x.font = font(500, 30 * s); const tl = wrap(x, e.title, LW - 190 * s, 2);
       x.font = font(400, 23 * s); const nl = e.note ? wrap(x, e.note, LW - 190 * s, 1) : [];
-      const th = tl.length * 40 * s + nl.length * 32 * s; return {e, h:Math.max(92 * s, th + 28 * s), tl, nl, th};
+      x.font = font(400, 22 * s); const dl = e.desc ? wrap(x, e.desc, LW - 160 * s, 4) : [];
+      const th = tl.length * 40 * s + nl.length * 32 * s + (dl.length ? 12 * s + dl.length * 33 * s : 0); return {e, h:Math.max(92 * s, th + 28 * s), tl, nl, dl, th};
     });
     let s = 1, rows = rowsOf(s); const tot = () => rows.reduce((a, r) => a + r.h, 0);
     while(y + tot() > bottom && s > 0.55){ s -= 0.03; rows = rowsOf(s); }
     while(rows.length && y + tot() < bottom - 260 && s < 1.25){ s += 0.03; rows = rowsOf(s); }   // a light day gets roomier rows
     if(y + tot() > bottom){ s -= 0.03; rows = rowsOf(s); }
     const tX = PM, icX = PM + 108 * s, txX = icX + 54 * s;
+    // a stop with a description: the sticker and time line up with the name, the words run below
+    const rowCy = (r, ry) => r.dl && r.dl.length ? ry + 34 * s : ry + r.h / 2;
     if(rows.length){
       // one quiet line through the stops
-      let first = null, last = null, yy = y; rows.forEach(r => { if(r.e.type !== "move"){ const cy = yy + r.h / 2; if(first == null) first = cy; last = cy; } yy += r.h; });
+      let first = null, last = null, yy = y; rows.forEach(r => { if(r.e.type !== "move"){ const cy = rowCy(r, yy); if(first == null) first = cy; last = cy; } yy += r.h; });
       if(first != null && last > first){ x.fillStyle = B.rule; x.fillRect(icX - 2, first, 4, last - first); }
       let ry = y;
       rows.forEach(r => {
-        const e = r.e, cy = ry + r.h / 2;
+        const e = r.e, cy = rowCy(r, ry);
         if(e.type === "move"){
           const k = 0.95 * s; ride(x, e.ride || "car", txX - 6 * s, cy - 15 * k, k, icons);
           x.fillStyle = (RIDE[e.ride] || RIDE.car)[1]; x.font = font(400, 23 * s); x.textBaseline = "middle"; x.fillText(r.line, txX + 46 * k + 8 * s, cy + 1); x.textBaseline = "alphabetic";
@@ -245,9 +248,10 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
           if(e.night){ x.fillStyle = SPOT.night[1]; x.font = font(500, 24 * s, DISPLAY); x.fillText("คืนนี้", tX + 62 * s, cy + 1); }
           else if(e.time){ x.fillStyle = B.ink; x.font = font(600, 27 * s, DISPLAY); x.fillText(e.time, tX + 62 * s, cy + 1); }
           x.textAlign = "left"; x.textBaseline = "alphabetic";
-          let ty = cy - r.th / 2 + 30 * s;
+          let ty = r.dl && r.dl.length ? ry + 44 * s : cy - r.th / 2 + 30 * s;
           x.fillStyle = B.ink; x.font = font(500, 30 * s); r.tl.forEach(l => { x.fillText(l, txX, ty); ty += 40 * s; });
           x.fillStyle = B.muted; x.font = font(400, 23 * s); r.nl.forEach(l => { x.fillText(l, txX, ty - 4 * s); ty += 32 * s; });
+          if(r.dl && r.dl.length){ ty += 8 * s; x.fillStyle = "#7A6A5C"; x.font = font(400, 22 * s); r.dl.forEach(l => { x.fillText(l, txX, ty); ty += 33 * s; }); }
         }
         ry += r.h;
       });
@@ -255,6 +259,8 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
 
     // side cards
     const SX = PW - PM - side; let sy = y;
+    // the day on a map, above the stay card
+    if(d.map){ const mh = Math.round(side * d.map.height / d.map.width); x.save(); rrect(x, SX, sy, side, mh, 32); x.clip(); x.drawImage(d.map, SX, sy, side, mh); x.restore(); rrect(x, SX, sy, side, mh, 32); x.strokeStyle = B.line; x.lineWidth = 2; x.stroke(); sy += mh + 22; }
     const box = (title, tone, lines, big) => {
       x.font = font(big ? 600 : 400, big ? 29 : 24); const ls = []; lines.forEach((l, i) => { x.font = i === 0 && big ? font(600, 29) : font(400, 24); wrap(x, l, side - 60, 3).forEach(w => ls.push([w, i === 0 && big])); });
       const h = 76 + ls.reduce((a, [, b]) => a + (b ? 40 : 34), 0);
@@ -284,5 +290,32 @@ const tr2d = x => { const T = window.myTripT; if(!T) return x; const f = x.fillT
     return c;
   }
 
-  window.PlanExport = { renderOverview, renderBookDay, PW, PH };
+  /* the day map for a page: the map picture with the day's stops as stickers (number for places, icon for stays and airports) and small names that never overlap */
+  async function mapPicture(src, pins, icons){
+    await fontsReady();
+    const W = src.width, H = src.height, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = tr2d(c.getContext("2d")), r = 26; x.drawImage(src, 0, 0);
+    const pts = pins.map(p => ({...p}));
+    for(let k = 0; k < 20; k++) for(let i = 0; i < pts.length; i++) for(let j = i + 1; j < pts.length; j++){   // stops right next to each other step apart a little
+      const a = pts[i], b = pts[j]; let dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy); if(dd >= r * 2 + 4) continue;
+      if(dd < .1){ dx = 1; dy = 0; dd = 1; } const m = (r * 2 + 4 - dd) / 2; a.x -= dx / dd * m; a.y -= dy / dd * m; b.x += dx / dd * m; b.y += dy / dd * m; }
+    const boxes = pts.map(p => [p.x - r, p.y - r, p.x + r, p.y + r]), hit = q => boxes.some(b => q[0] < b[2] && q[2] > b[0] && q[1] < b[3] && q[3] > b[1]);
+    x.font = font(500, 21);
+    for(const p of pts){ const tw = x.measureText(p.name).width;
+      const opt = [[p.x + 34, "left"], [p.x - 34, "right"]].map(([tx, al]) => ({tx, al, q:al === "left" ? [tx, p.y - 13, tx + tw, p.y + 13] : [tx - tw, p.y - 13, tx, p.y + 13]})).filter(o => o.q[0] > 4 && o.q[2] < W - 4 && !hit(o.q));
+      p.lab = opt[0]; if(opt[0]) boxes.push(opt[0].q); }
+    for(const p of pts){
+      const [soft, line] = SPOT[p.spot] || SPOT.sight;
+      x.beginPath(); x.arc(p.x, p.y, r, 0, Math.PI * 2); x.fillStyle = soft; x.fill(); x.lineWidth = 3.5; x.strokeStyle = "#FFFFFF"; x.stroke();
+      if(p.n){ x.fillStyle = line; x.font = font(600, 25, DISPLAY); x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(p.n), p.x, p.y + 1); }
+      else spot(x, p.spot, p.x, p.y, r - 3, icons);
+    }
+    x.font = font(500, 21); x.textBaseline = "middle";
+    for(const p of pts){ if(!p.lab) continue; x.textAlign = p.lab.al; x.lineWidth = 5; x.lineJoin = "round"; x.strokeStyle = "rgba(255,253,249,.92)"; x.strokeText(p.name, p.lab.tx, p.y + 1); x.fillStyle = "#5A4D44"; x.fillText(p.name, p.lab.tx, p.y + 1); }
+    x.font = font(400, 15); x.textAlign = "right"; x.textBaseline = "alphabetic"; const cr = "© OpenFreeMap · OpenStreetMap";
+    x.lineWidth = 4; x.strokeStyle = "rgba(255,255,255,.85)"; x.strokeText(cr, W - 14, H - 12); x.fillStyle = "#8A7B6E"; x.fillText(cr, W - 14, H - 12);
+    return c;
+  }
+
+  window.PlanExport = { renderOverview, renderBookDay, mapPicture, PW, PH };
 })();

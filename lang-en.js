@@ -425,7 +425,7 @@ window.MYTRIP_EN = {
 "ภาษา · Language": "Language",
 "ส่งออกแผนเที่ยว": "Export the plan",
 "ส่งออกแผนเที่ยว (PDF / รูป)": "Export the plan (PDF / pictures)",
-"กำลังหารูปสถานที่ และให้ AI เขียน Tips…": "Finding place photos and writing AI tips…",
+"กำลังหารูป วาดแผนที่ และให้ AI เขียนคำบรรยาย…": "Finding photos, drawing maps and writing descriptions…",
 "กำลังวาดหน้าสรุปทริป…": "Drawing the trip overview…",
 "ที่พักคืนนี้": "Tonight's stay",
 "เดินทางวันนี้": "Getting around today",

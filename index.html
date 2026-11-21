@@ -3268,13 +3268,17 @@ function vExport(s){
     : `<div class="grid2"><button class="pill-btn ex-go" data-act="export-run" data-k="img">${ic("image",18)}รูปภาพ</button><button class="pill-btn ex-go" data-act="export-run" data-k="pdf">${ic("file",18)}PDF</button></div>`;
   return `<div class="scrim" data-act="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="ส่งออกแผนเที่ยว" data-stop="1">
     <div class="hd"><span class="thumb tc t-place">${ic("image")}</span><h2>ส่งออกแผนเที่ยว</h2><button class="round" data-act="close-sheet" aria-label="ปิด">${ic("close")}</button></div>
-    <p class="muted small" style="margin-top:-8px">หน้าแรกสรุปทั้งทริป แล้ววันละ 1 หน้า (${dates.length} วัน) พร้อมรูปสถานที่และ Tips จาก AI</p>
+    <p class="muted small" style="margin-top:-8px">หน้าแรกสรุปทั้งทริป แล้ววันละ 1 หน้า (${dates.length} วัน) พร้อมรูป แผนที่ คำบรรยายสถานที่ และ Tips จาก AI</p>
     ${s.err ? `<div class="err" role="alert">${esc(s.err)}</div>` : ""}
     ${body}
   </div></div>`;
 }
+const spotOf = it => { const data = it.data || {};
+  return it.type === "flight" ? "plane" : it.type === "stay" ? "hotel" : data.kind === "ร้านอาหาร" || data.kind === "คาเฟ่" ? "food" : data.kind === "ช้อปปิ้ง" ? "shop"
+    : /disney|universal|สวนสนุก|theme park|amusement|fuji-q|legoland|sanrio puroland/i.test(it.title || "") ? "park" : "sight"; };
 /* what one day looks like on paper: same rows as the plan, with map positions where we have them */
-function exportEntries(d){
+function exportEntries(d, descs){
+  descs = descs || {};
   return dayEntries(d).map(e => {
     const it = e.it, data = it.data || {};
     const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
@@ -3294,9 +3298,9 @@ function exportEntries(d){
       return {type:"flight", time:e.time, title:e.title, note:[e.sub, e.note].filter(Boolean).join(" · "), icon:"flight", tone:"t-flight", spot:"plane", qs:ends};
     }
     const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
-    const spot = it.type === "stay" ? "hotel" : data.kind === "ร้านอาหาร" || data.kind === "คาเฟ่" ? "food" : data.kind === "ช้อปปิ้ง" ? "shop"
-      : /disney|universal|สวนสนุก|theme park|amusement|fuji-q|legoland|sanrio puroland/i.test(it.title || "") ? "park" : "sight";
-    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : (it.sub || ""), kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
+    const spot = spotOf(it);
+    const desc = it.type === "place" ? descs[it.id] || "" : "";
+    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : desc ? "" : (it.sub || ""), desc, kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
 }
 /* ---------- the trip book: overview + one page per day ---------- */
@@ -3363,6 +3367,65 @@ async function bookTips(t, days){
   }
   return out;
 }
+/* a few lines about each place, like a tour programme (AI); kept per place until its name or note changes */
+async function bookDescs(t, dates){
+  let all = {}; try { all = JSON.parse(localStorage.getItem("mytrip-descs") || "{}"); } catch(_){}
+  const mine = all[t.id] || {}, out = {}, need = [];
+  for(const it of S.items){
+    if(it.type !== "place" || !dates.includes(it.date)) continue;
+    const d = it.data || {}, sig = [LANG, it.title, it.sub, d.kind, it.time].map(s_).join("|");
+    if(mine[it.id] && mine[it.id].sig === sig) out[it.id] = mine[it.id].text;
+    else need.push({id:it.id, name:it.title || "", kind:s_(d.kind), time:it.time || "", note:s_(it.sub), sig});
+  }
+  if(need.length && CONNECTED){
+    const parts = []; for(let i = 0; i < need.length; i += 15) parts.push(need.slice(i, i + 15));
+    await pool(parts, 3, async part => {
+      try{
+        const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 60000);
+        const r = await api("placeDescs", {trip:{name:t.name, destination:t.destination || ""}, lang:LANG, places:part.map(({sig, ...p}) => p)}, ctl.signal).finally(() => clearTimeout(timer));
+        part.forEach(p => { const tx = r && r.descs && r.descs[p.id]; if(tx){ out[p.id] = tx; mine[p.id] = {sig:p.sig, text:tx}; } });
+      } catch(_){}
+    });
+    for(const id of Object.keys(mine)) if(!S.items.some(i => i.id === id)) delete mine[id];
+    all[t.id] = mine; try { localStorage.setItem("mytrip-descs", JSON.stringify(all)); } catch(_){}
+  }
+  return out;
+}
+/* each day on a map for its page (same map and route lines as map mode); a day with no known spots gets none */
+async function bookMaps(t, dates){
+  const out = {};
+  try{
+    // places with no pin yet: ask once for all days
+    const need = [...new Set(dates.flatMap(d => dayMapData(d).stops.filter(x => !x.ll && !x.air).map(x => x.id)))];
+    if(need.length && CONNECTED){ try { const r = await api("placeCoords", {tripId:t.id, ids:need.slice(0, 60)});
+      for(const [id, ll] of Object.entries(r.coords || {})){ const it = S.items.find(i => i.id === id); if(it && it.type !== "flight" && !llOf(it.data)) it.data = {...(it.data || {}), lat:ll.lat, lon:ll.lon}; } } catch(_){} }
+    const plan = dates.map(d => { const {stops, lines} = dayMapData(d), seen = new Set();
+      const pins = stops.filter(x => x.ll && !seen.has(x.id) && seen.add(x.id)).map(x => { const it = S.items.find(i => i.id === x.id) || {};
+        return {ll:x.ll, n:x.n || 0, spot:x.air ? "plane" : spotOf(it), name:briefName(x.name.replace(/^(เริ่มจาก|กลับ|ถึง|ออกจาก) /, ""))}; });
+      return {d, pins, lines}; }).filter(p => p.pins.length);
+    if(!plan.length) return out;
+    const [gl, style] = await Promise.all([dayMapLib(), dayMapStyle()]);
+    const W = 236, H = 210, box = document.createElement("div");   // drawn at 2x: 472 x 420 on the page
+    box.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;height:${H}px`; document.body.appendChild(box);
+    const map = new gl.Map({container:box, style, interactive:false, attributionControl:false, preserveDrawingBuffer:true, pixelRatio:2, fadeDuration:0, center:plan[0].pins[0].ll, zoom:12});
+    try{
+      await Promise.race([new Promise(r => map.once("load", r)), new Promise((_, no) => setTimeout(() => no(new Error("map_load")), 15000))]);
+      map.addSource("legs", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
+      const R = {"line-cap":"round", "line-join":"round"};
+      map.addLayer({id:"leg-ride-edge", type:"line", source:"legs", layout:R, paint:{"line-color":"#4F6488", "line-width":7}});
+      map.addLayer({id:"leg-ride", type:"line", source:"legs", layout:R, paint:{"line-color":"#7F95B8", "line-width":4.5}});
+      for(const p of plan){
+        map.getSource("legs").setData({type:"FeatureCollection", features:p.lines});
+        const pts = [...p.pins.map(x => x.ll), ...p.lines.flatMap(f => f.geometry.coordinates)], b = pts.reduce((b, q) => b.extend(q), new gl.LngLatBounds(pts[0], pts[0]));
+        map.fitBounds(b, {padding:{top:30, bottom:26, left:34, right:34}, maxZoom:15, duration:0});
+        await new Promise(r => { const tm = setTimeout(r, 8000); map.once("idle", () => { clearTimeout(tm); r(); }); map.triggerRepaint(); });
+        const pins = p.pins.map(x => { const q = map.project(x.ll); return {...x, x:q.x * 2, y:q.y * 2}; });
+        out[p.d] = await PlanExport.mapPicture(map.getCanvas(), pins, IC);
+      }
+    } finally { map.remove(); box.remove(); }
+  } catch(_){}
+  return out;
+}
 async function pool(items, n, fn){ const out = new Array(items.length); let k = 0; await Promise.all(Array.from({length:Math.min(n, items.length)}, async () => { while(k < items.length){ const i = k++; out[i] = await fn(items[i], i); } })); return out; }
 async function exportRun(kind){
   const s = S.sheet; if(!s || s.kind !== "export" || s.busy) return;
@@ -3372,9 +3435,9 @@ async function exportRun(kind){
     await exportLibs(kind === "pdf");
     const days = dates.map((d, i) => bookDay(d, i, dates));
     // photos and AI tips at the same time
-    s.busy = "กำลังหารูปสถานที่ และให้ AI เขียน Tips…"; render();
+    s.busy = "กำลังหารูป วาดแผนที่ และให้ AI เขียนคำบรรยาย…"; render();
     const jobs = []; days.forEach(b => b.places.slice(0, 3).forEach(e => jobs.push({b, e})));
-    const [shots, tips] = await Promise.all([pool(jobs, 6, j => placePhoto(j.e.it)), bookTips(t, days)]);
+    const [shots, tips, descs, maps] = await Promise.all([pool(jobs, 6, j => placePhoto(j.e.it)), bookTips(t, days), bookDescs(t, dates), bookMaps(t, dates)]);
     days.forEach(b => b.photos = []);
     jobs.forEach((j, i) => { if(shots[i]) j.b.photos.push({img:shots[i].img, by:shots[i].by, name:briefName(j.e.title)}); });
     if(S.sheet !== s) return;
@@ -3393,7 +3456,7 @@ async function exportRun(kind){
     for(const b of days){
       if(S.sheet !== s) return;
       s.busy = `กำลังวาดหน้า ${b.dayNo} จาก ${days.length}…`; render();
-      const d = {tripName:t.name, dayNo:b.dayNo, dayCount:days.length, dateLong:dLong(b.date) + " " + parseD(b.date).getFullYear(), title:b.title, entries:exportEntries(b.date), photos:b.photos, tips:tips[b.date] || [], stay:b.stay, travel:b.travel};
+      const d = {tripName:t.name, dayNo:b.dayNo, dayCount:days.length, dateLong:dLong(b.date) + " " + parseD(b.date).getFullYear(), title:b.title, entries:exportEntries(b.date, descs), map:maps[b.date] || null, photos:b.photos, tips:tips[b.date] || [], stay:b.stay, travel:b.travel};
       let c = await PlanExport.renderBookDay(d, {icons:IC}), bl;
       try { bl = await toBlob(c); } catch(_){ c = await PlanExport.renderBookDay({...d, photos:[]}, {icons:IC}); bl = await toBlob(c); }   // a photo that can't be drawn into a file: the page without photos
       pages.push(bl);
@@ -4652,7 +4715,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-21-guide4";
+const BUILD = "2026-11-21-book1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
