@@ -3282,14 +3282,14 @@ function exportEntries(d, descs){
   return dayEntries(d).map(e => {
     const it = e.it, data = it.data || {};
     const pos = data.lat != null && data.lon != null && data.lat !== "" ? {lat:+data.lat, lon:+data.lon} : null;
-    if(e.night) return {type:"stay", night:true, title:e.title, icon:"moon", tone:"t-stay", spot:"night"};
+    if(e.night) return {type:"stay", night:true, title:briefName(e.title), icon:"moon", tone:"t-stay", spot:"night"};
     if(it.type === "move"){
       // what the ride looks like on the page, and the word for it
       const how = [data.mode, it.sub, it.title].map(s_).join(" ");
       const ride = /รถไฟ|ชินคันเซ็น|train|rail|metro|subway|monorail/i.test(how) ? "train" : /รถบัส|รถเมล์|รถประจำทาง|bus|coach/i.test(how) ? "bus"
         : /เดิน|walk/i.test(how) ? "walk" : /เรือ|ferry|boat/i.test(how) ? "boat" : /เครื่องบิน|flight|plane/i.test(how) ? "plane" : /ขนส่งสาธารณะ|transit/i.test(how) ? "train" : "car";
       const mode = {train:"รถไฟ", bus:"รถบัส", walk:"เดิน", boat:"เรือ", plane:"เครื่องบิน", car:"รถ"}[ride];
-      return {type:"move", time:e.time, title:"ไป " + (s_(data.to) || it.title), note:it.sub || "", minutes:+data.durationMinutes || 0, icon:itemIcon(it), ride, mode};
+      return {type:"move", time:e.time, title:"ไป " + briefName(s_(data.to) || it.title), note:it.sub || "", minutes:+data.durationMinutes || 0, icon:itemIcon(it), ride, mode};
     }
     if(it.type === "flight"){
       // pin the airport: where you land on the arrival row, otherwise whichever end of the flight is nearer the rest of the day
@@ -3300,7 +3300,7 @@ function exportEntries(d, descs){
     const q = it.type === "stay" ? (s_(data.address) || it.title) : [it.title, s_(data.address) || s_(S.trip.destination)].filter(Boolean).join(", ");
     const spot = spotOf(it);
     const desc = it.type === "place" ? descs[it.id] || "" : "";
-    return {type:it.type, time:e.time, title:e.title, note:it.type === "stay" ? (e.sub || "") : desc ? "" : (it.sub || ""), desc, kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
+    return {type:it.type, time:e.time, title:briefName(e.title), note:it.type === "stay" ? (e.sub || "") : desc ? "" : (it.sub || ""), desc, kind:it.type === "place" ? s_(data.kind) : "", spot, icon:itemIcon(it), tone:toneOf(it), ...(pos || {}), q:pos ? "" : q};
   });
 }
 /* ---------- the trip book: overview + one page per day ---------- */
@@ -3314,7 +3314,7 @@ function bookDay(d, i, dates){
     : flights.length ? (i === 0 ? "ออกเดินทาง" : i === dates.length - 1 ? "เดินทางกลับ" : flights[0].title) : night ? "พักผ่อน" : "วันว่าง";
   const stops = ents.filter(e => !e.night && !e.start && e.it.type !== "move").map(e => ({t:e.time || "", name:briefName(e.title)}));
   const stayIt = night && night.it.type === "stay" ? night.it : null;
-  const stay = night ? {name: stayIt ? (stayIt.title || "ที่พัก") : night.title, sub: stayIt && stayIt.date === d && stayIt.time ? `เช็กอิน ${stayIt.time}` : ""} : null;
+  const stay = night ? {name: briefName(stayIt ? (stayIt.title || "ที่พัก") : night.title), sub: stayIt && stayIt.date === d && stayIt.time ? `เช็กอิน ${stayIt.time}` : ""} : null;
   const byMode = {};
   ents.filter(e => e.it.type === "move").forEach(e => { const m = s_((e.it.data || {}).mode) || "เดินทาง", n = +(e.it.data || {}).durationMinutes || 0; byMode[m] = (byMode[m] || 0) + n; });
   const travel = Object.entries(byMode).filter(([, n]) => n).map(([m, n]) => `${m} ~${exMin(n)}`);
@@ -3373,9 +3373,9 @@ async function bookDescs(t, dates){
   const mine = all[t.id] || {}, out = {}, need = [];
   for(const it of S.items){
     if(it.type !== "place" || !dates.includes(it.date)) continue;
-    const d = it.data || {}, sig = [LANG, it.title, it.sub, d.kind, it.time].map(s_).join("|");
+    const d = it.data || {}, sig = ["v2", LANG, it.title, it.sub, d.kind, it.time].map(s_).join("|");
     if(mine[it.id] && mine[it.id].sig === sig) out[it.id] = mine[it.id].text;
-    else need.push({id:it.id, name:it.title || "", kind:s_(d.kind), time:it.time || "", note:s_(it.sub), sig});
+    else need.push({id:it.id, name:briefName(it.title || ""), kind:s_(d.kind), time:it.time || "", note:s_(it.sub), sig});
   }
   if(need.length && CONNECTED){
     const parts = []; for(let i = 0; i < need.length; i += 15) parts.push(need.slice(i, i + 15));
@@ -4715,7 +4715,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-21-book1";
+const BUILD = "2026-11-21-book2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
