@@ -658,7 +658,7 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
-.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:max(4px, calc(env(safe-area-inset-bottom,0px) - 10px));transform:translateX(-50%);width:min(calc(100% - 36px),500px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
+.tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:max(4px, calc(env(safe-area-inset-bottom,0px) - 10px));translate:-50% 0;width:min(calc(100% - 36px),500px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
   border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
 /* the selected page sits under a thick, clear piece of glass that slides */
@@ -698,11 +698,11 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tabbar button.hot .tb-ic .ic{transform:scale(1.12)}
 html.kb .tabbar{display:none}
 /* like LINE: the whole bar swells a little while a finger is on it, then settles back with a tiny undershoot (measured from LINE: +4.5%, ~0.4s) */
-.tabbar{transition:scale .16s cubic-bezier(.2,.8,.3,1)}
-.tabbar.held{scale:1.045}
-@keyframes tbTap{0%{scale:1}35%{scale:1.045}72%{scale:.996}100%{scale:1}}
-@keyframes tbLet{0%{scale:1.045}62%{scale:.996}100%{scale:1}}
-.tabbar.bounce{animation:tbTap .42s cubic-bezier(.3,.6,.4,1) both}
+.tabbar{transition:scale .18s cubic-bezier(.25,.6,.35,1)}
+.tabbar.held{scale:1.046 1.025}
+@keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.25,.6,.35,1)}40%{scale:1.046 1.025;animation-timing-function:cubic-bezier(.45,0,.4,1)}82%{scale:.996 .998;animation-timing-function:ease-out}100%{scale:1 1}}
+@keyframes tbLet{0%{scale:1.046 1.025;animation-timing-function:cubic-bezier(.45,0,.4,1)}75%{scale:.996 .998;animation-timing-function:ease-out}100%{scale:1 1}}
+.tabbar.bounce{animation:tbTap .46s linear both}
 .tabbar.bounce.let{animation-name:tbLet;animation-duration:.3s}
 @media (prefers-reduced-motion: reduce){.tabbar.held{scale:1}.tabbar.bounce{animation:none}}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{--tab-cut:#251F1B;background:linear-gradient(180deg,rgba(60,50,44,.55),rgba(37,31,27,.35));border-color:rgba(255,255,255,.12);box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 1px 1px rgba(255,255,255,.12)}:root:not([data-theme="light"]) .tab-pill{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border-color:rgba(255,255,255,.22)}}
@@ -1627,7 +1627,7 @@ function selectTab(k, landed){
       pill.getBoundingClientRect(); pill.style.transition = ""; pill.style.translate = ""; pill.style.scale = ""; } }
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
-const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return this.cx + (x - this.cx) / 1.045; }};
+const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return this.cx + (x - this.cx) / 1.046; }};
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 /* like LINE: the moment a finger touches the bar, the grey pill swells into a clear lens and springs to the finger;
    it follows the finger on a soft spring (it lags a touch, overshoots a little and squashes as it moves, so it feels
@@ -2342,7 +2342,7 @@ function tripHead(t, d, tab){
 const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["help","AI","spark"],["money","ค่าใช้จ่าย","wallet"],["info","ข้อมูล","file"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
-  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 420 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};animation-delay:-${Math.round(bt)}ms` : `" style="--i:${from}`;
+  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 460 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};animation-delay:-${Math.round(bt)}ms` : `" style="--i:${from}`;
   return `<nav class="tabbar${bn}" aria-label="หน้าในทริป" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
     `<button type="button" data-act="tab" data-k="${k}" data-n="${n}" aria-current="${n===i?"page":"false"}"><span class="tb-ic">${ic(icn,23)}${ic(icn+"F",23)}</span><span>${l}</span></button>`).join("")}</nav>`;
 }
@@ -4725,7 +4725,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-22-tb1";
+const BUILD = "2026-11-22-tb2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
