@@ -700,12 +700,12 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tabbar button.hot .tb-ic .ic{transform:scale(1.12)}
 html.kb .tabbar{display:none}
 /* like LINE: the glass swells while a finger is on the bar and settles back like jelly; the icons don't move (LINE: about +4.6% wide, +2.5% tall, ~0.45s) */
-.tabbar::before{transition:scale .3s cubic-bezier(.25,.6,.35,1)}
-.tabbar.held::before{scale:1.05 1.06}
-@keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.25,.6,.35,1)}36%{scale:1.05 1.06;animation-timing-function:cubic-bezier(.45,0,.4,1)}62%{scale:.985 .97;animation-timing-function:cubic-bezier(.4,0,.5,1)}82%{scale:1.006 1.012;animation-timing-function:ease-in-out}100%{scale:1 1}}
-@keyframes tbLet{0%{scale:1.05 1.06;animation-timing-function:cubic-bezier(.45,0,.4,1)}45%{scale:.985 .97;animation-timing-function:cubic-bezier(.4,0,.5,1)}75%{scale:1.006 1.012;animation-timing-function:ease-in-out}100%{scale:1 1}}
-.tabbar.bounce::before{animation:tbTap .85s linear both;animation-delay:var(--bd,0ms)}
-.tabbar.bounce.let::before{animation-name:tbLet;animation-duration:.62s}
+.tabbar::before{transition:scale .34s cubic-bezier(.33,1,.68,1)}
+.tabbar.held::before{scale:1.045 1.04}
+@keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.33,1,.68,1)}38%{scale:1.045 1.04;animation-timing-function:cubic-bezier(.37,0,.63,1)}68%{scale:.993 .988;animation-timing-function:cubic-bezier(.37,0,.63,1)}86%{scale:1.002 1.004;animation-timing-function:cubic-bezier(.37,0,.63,1)}100%{scale:1 1}}
+@keyframes tbLet{0%{scale:1.045 1.04;animation-timing-function:cubic-bezier(.37,0,.63,1)}52%{scale:.993 .988;animation-timing-function:cubic-bezier(.37,0,.63,1)}78%{scale:1.002 1.004;animation-timing-function:cubic-bezier(.37,0,.63,1)}100%{scale:1 1}}
+.tabbar.bounce::before{animation:tbTap .9s linear both;animation-delay:var(--bd,0ms)}
+.tabbar.bounce.let::before{animation-name:tbLet;animation-duration:.66s}
 @media (prefers-reduced-motion: reduce){.tabbar.held::before{scale:1}.tabbar.bounce::before{animation:none}}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{--tab-cut:#251F1B;--tb-bg:linear-gradient(180deg,rgba(60,50,44,.55),rgba(37,31,27,.35));--tb-bd:rgba(255,255,255,.12);--tb-sh:0 12px 32px rgba(0,0,0,.45),inset 0 1px 1px rgba(255,255,255,.12)}:root:not([data-theme="light"]) .tab-pill{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border-color:rgba(255,255,255,.22)}}
 @media (prefers-reduced-motion:reduce){.tab-pill{transition:none}}
@@ -1668,7 +1668,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false;
   bar.style.removeProperty("--sx"); bar.style.removeProperty("--sy");
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   // a quick tap plays the whole swell; after a hold or a slide the bar settles back from its swollen size
-  const held = performance.now() - TB.down; TB.let = held > 300; TB.bounceAt = TB.let ? performance.now() : TB.down;   // a tap carries on from where the swell already is
+  const held = performance.now() - TB.down; TB.let = held > 340; TB.bounceAt = TB.let ? performance.now() : TB.down;   // a tap carries on from where the swell already is
   bar.classList.remove("held", "bounce", "let"); void bar.offsetWidth; bar.style.setProperty("--bd", TB.let ? "0ms" : `-${Math.round(held)}ms`); bar.classList.add("bounce"); if(TB.let) bar.classList.add("let");
   if(!cancel && TRIP_TABS[n][0] !== curTab()) requestAnimationFrame(() => selectTab(TRIP_TABS[n][0], true));   // the page changes right away; the pill finishes its landing over it
 }
@@ -2344,7 +2344,7 @@ function tripHead(t, d, tab){
 const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["help","AI","spark"],["money","ค่าใช้จ่าย","wallet"],["info","ข้อมูล","file"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
-  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 850 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};--bd:-${Math.round(bt)}ms` : `" style="--i:${from}`;
+  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 900 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};--bd:-${Math.round(bt)}ms` : `" style="--i:${from}`;
   return `<nav class="tabbar${bn}" aria-label="หน้าในทริป" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
     `<button type="button" data-act="tab" data-k="${k}" data-n="${n}" aria-current="${n===i?"page":"false"}"><span class="tb-ic">${ic(icn,23)}${ic(icn+"F",23)}</span><span>${l}</span></button>`).join("")}</nav>`;
 }
@@ -4727,7 +4727,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-22-tb4";
+const BUILD = "2026-11-22-tb5";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
