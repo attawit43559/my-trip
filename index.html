@@ -659,8 +659,10 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 /* trip pages behind a floating glass tab bar */
 .screen.has-tabbar{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
 .tabbar{--tab-cut:#FFFFFF;position:fixed;z-index:15;left:50%;bottom:max(4px, calc(env(safe-area-inset-bottom,0px) - 10px));translate:-50% 0;width:min(calc(100% - 36px),500px);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px;border-radius:999px;
-  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);
-  border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
+  --tb-bg:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 55%,rgba(255,255,255,.07));--tb-bd:rgba(255,255,255,.55);
+  --tb-sh:0 10px 28px rgba(43,33,28,.13),0 1px 2px rgba(43,33,28,.08),inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.35),inset 0 0 12px rgba(255,255,255,.18);touch-action:none;user-select:none;-webkit-user-select:none}
+/* the glass itself is a layer of its own, so it can stretch like jelly while the icons stay still */
+.tabbar::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--tb-bg);-webkit-backdrop-filter:blur(4px) saturate(1.8);backdrop-filter:blur(4px) saturate(1.8);border:1px solid var(--tb-bd);box-shadow:var(--tb-sh)}
 /* the selected page sits under a thick, clear piece of glass that slides */
 .tab-pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 5);border-radius:999px;pointer-events:none;overflow:hidden;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0) 60%,rgba(255,255,255,.05));
@@ -697,15 +699,15 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tabbar.drag button[aria-current="page"]:not(.hot) .tb-ic .ic+.ic{opacity:0}
 .tabbar button.hot .tb-ic .ic{transform:scale(1.12)}
 html.kb .tabbar{display:none}
-/* like LINE: the whole bar swells a little while a finger is on it, then settles back with a tiny undershoot (measured from LINE: +4.5%, ~0.4s) */
-.tabbar{transition:scale .18s cubic-bezier(.25,.6,.35,1)}
-.tabbar.held{scale:1.046 1.025}
-@keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.25,.6,.35,1)}40%{scale:1.046 1.025;animation-timing-function:cubic-bezier(.45,0,.4,1)}82%{scale:.996 .998;animation-timing-function:ease-out}100%{scale:1 1}}
-@keyframes tbLet{0%{scale:1.046 1.025;animation-timing-function:cubic-bezier(.45,0,.4,1)}75%{scale:.996 .998;animation-timing-function:ease-out}100%{scale:1 1}}
-.tabbar.bounce{animation:tbTap .46s linear both}
-.tabbar.bounce.let{animation-name:tbLet;animation-duration:.3s}
-@media (prefers-reduced-motion: reduce){.tabbar.held{scale:1}.tabbar.bounce{animation:none}}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{--tab-cut:#251F1B;background:linear-gradient(180deg,rgba(60,50,44,.55),rgba(37,31,27,.35));border-color:rgba(255,255,255,.12);box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 1px 1px rgba(255,255,255,.12)}:root:not([data-theme="light"]) .tab-pill{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border-color:rgba(255,255,255,.22)}}
+/* like LINE: the glass swells while a finger is on the bar and settles back like jelly; the icons don't move (LINE: about +4.6% wide, +2.5% tall, ~0.45s) */
+.tabbar::before{transition:scale .18s cubic-bezier(.25,.6,.35,1)}
+.tabbar.held::before{scale:1.05 1.06}
+@keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.25,.6,.35,1)}36%{scale:1.05 1.06;animation-timing-function:cubic-bezier(.45,0,.4,1)}62%{scale:.985 .97;animation-timing-function:cubic-bezier(.4,0,.5,1)}82%{scale:1.006 1.012;animation-timing-function:ease-in-out}100%{scale:1 1}}
+@keyframes tbLet{0%{scale:1.05 1.06;animation-timing-function:cubic-bezier(.45,0,.4,1)}45%{scale:.985 .97;animation-timing-function:cubic-bezier(.4,0,.5,1)}75%{scale:1.006 1.012;animation-timing-function:ease-in-out}100%{scale:1 1}}
+.tabbar.bounce::before{animation:tbTap .55s linear both;animation-delay:var(--bd,0ms)}
+.tabbar.bounce.let::before{animation-name:tbLet;animation-duration:.42s}
+@media (prefers-reduced-motion: reduce){.tabbar.held::before{scale:1}.tabbar.bounce::before{animation:none}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{--tab-cut:#251F1B;--tb-bg:linear-gradient(180deg,rgba(60,50,44,.55),rgba(37,31,27,.35));--tb-bd:rgba(255,255,255,.12);--tb-sh:0 12px 32px rgba(0,0,0,.45),inset 0 1px 1px rgba(255,255,255,.12)}:root:not([data-theme="light"]) .tab-pill{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border-color:rgba(255,255,255,.22)}}
 @media (prefers-reduced-motion:reduce){.tab-pill{transition:none}}
 .page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
 .page .picker-list{max-height:none;overflow:visible;flex:none}
@@ -1627,7 +1629,7 @@ function selectTab(k, landed){
       pill.getBoundingClientRect(); pill.style.transition = ""; pill.style.translate = ""; pill.style.scale = ""; } }
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
-const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return this.cx + (x - this.cx) / 1.046; }};
+const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return x; }};
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 /* like LINE: the moment a finger touches the bar, the grey pill swells into a clear lens and springs to the finger;
    it follows the finger on a soft spring (it lags a touch, overshoots a little and squashes as it moves, so it feels
@@ -1667,7 +1669,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false;
   bar.style.setProperty("--i", n); bar.classList.remove("drag"); bar.style.removeProperty("--x"); tabHot(bar, -1);
   // a quick tap plays the whole swell; after a hold or a slide the bar settles back from its swollen size
   const held = performance.now() - TB.down; TB.let = held > 140; TB.bounceAt = TB.let ? performance.now() : TB.down;   // a tap carries on from where the swell already is
-  bar.classList.remove("held", "bounce", "let"); void bar.offsetWidth; bar.style.animationDelay = TB.let ? "0ms" : `-${Math.round(held)}ms`; bar.classList.add("bounce"); if(TB.let) bar.classList.add("let");
+  bar.classList.remove("held", "bounce", "let"); void bar.offsetWidth; bar.style.setProperty("--bd", TB.let ? "0ms" : `-${Math.round(held)}ms`); bar.classList.add("bounce"); if(TB.let) bar.classList.add("let");
   if(!cancel && TRIP_TABS[n][0] !== curTab()) requestAnimationFrame(() => selectTab(TRIP_TABS[n][0], true));   // the page changes right away; the pill finishes its landing over it
 }
 document.addEventListener("pointerup", e => tabRelease(e, false));
@@ -2342,7 +2344,7 @@ function tripHead(t, d, tab){
 const TRIP_TABS = [["","หน้าหลัก","home"],["planning","วางแผน","calendar"],["help","AI","spark"],["money","ค่าใช้จ่าย","wallet"],["info","ข้อมูล","file"]];
 function tabBar(tab){
   const i = Math.max(0, TRIP_TABS.findIndex(x => x[0] === tab)), from = S.tabFrom ?? i;
-  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 460 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};animation-delay:-${Math.round(bt)}ms` : `" style="--i:${from}`;
+  const bt = performance.now() - (TB.bounceAt || -1e9), bn = bt < 550 ? ` bounce${TB.let ? " let" : ""}" style="--i:${from};--bd:-${Math.round(bt)}ms` : `" style="--i:${from}`;
   return `<nav class="tabbar${bn}" aria-label="หน้าในทริป" data-to="${i}"><span class="tab-pill" aria-hidden="true"></span>${TRIP_TABS.map(([k,l,icn],n) =>
     `<button type="button" data-act="tab" data-k="${k}" data-n="${n}" aria-current="${n===i?"page":"false"}"><span class="tb-ic">${ic(icn,23)}${ic(icn+"F",23)}</span><span>${l}</span></button>`).join("")}</nav>`;
 }
@@ -4725,7 +4727,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-22-tb2";
+const BUILD = "2026-11-22-tb3";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
