@@ -699,14 +699,14 @@ html.kb .idea-compose-sheet:not(.steady){padding-top:12px;padding-bottom:12px;ga
 .tabbar.drag button[aria-current="page"]:not(.hot) .tb-ic .ic+.ic{opacity:0}
 .tabbar button.hot .tb-ic .ic{transform:scale(1.12)}
 html.kb .tabbar{display:none}
-/* like LINE: the glass swells while a finger is on the bar and settles back like jelly; the icons don't move (LINE: about +4.6% wide, +2.5% tall, ~0.45s) */
-.tabbar::before{transition:scale .34s cubic-bezier(.33,1,.68,1)}
-.tabbar.held::before{scale:1.045 1.04}
+/* like LINE: the whole bar, icons included, swells while a finger is on it and settles back softly like jelly */
+.tabbar{transition:scale .34s cubic-bezier(.33,1,.68,1)}
+.tabbar.held{scale:1.045 1.04}
 @keyframes tbTap{0%{scale:1 1;animation-timing-function:cubic-bezier(.33,1,.68,1)}38%{scale:1.045 1.04;animation-timing-function:cubic-bezier(.37,0,.63,1)}68%{scale:.993 .988;animation-timing-function:cubic-bezier(.37,0,.63,1)}86%{scale:1.002 1.004;animation-timing-function:cubic-bezier(.37,0,.63,1)}100%{scale:1 1}}
 @keyframes tbLet{0%{scale:1.045 1.04;animation-timing-function:cubic-bezier(.37,0,.63,1)}52%{scale:.993 .988;animation-timing-function:cubic-bezier(.37,0,.63,1)}78%{scale:1.002 1.004;animation-timing-function:cubic-bezier(.37,0,.63,1)}100%{scale:1 1}}
-.tabbar.bounce::before{animation:tbTap .9s linear both;animation-delay:var(--bd,0ms)}
-.tabbar.bounce.let::before{animation-name:tbLet;animation-duration:.66s}
-@media (prefers-reduced-motion: reduce){.tabbar.held::before{scale:1}.tabbar.bounce::before{animation:none}}
+.tabbar.bounce{animation:tbTap .9s linear both;animation-delay:var(--bd,0ms)}
+.tabbar.bounce.let{animation-name:tbLet;animation-duration:.66s}
+@media (prefers-reduced-motion: reduce){.tabbar.held{scale:1}.tabbar.bounce{animation:none}}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabbar{--tab-cut:#251F1B;--tb-bg:linear-gradient(180deg,rgba(60,50,44,.55),rgba(37,31,27,.35));--tb-bd:rgba(255,255,255,.12);--tb-sh:0 12px 32px rgba(0,0,0,.45),inset 0 1px 1px rgba(255,255,255,.12)}:root:not([data-theme="light"]) .tab-pill{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border-color:rgba(255,255,255,.22)}}
 @media (prefers-reduced-motion:reduce){.tab-pill{transition:none}}
 .page .planner-picker,.page .compact-picker{overflow:visible!important;max-height:none}
@@ -1629,7 +1629,7 @@ function selectTab(k, landed){
       pill.getBoundingClientRect(); pill.style.transition = ""; pill.style.translate = ""; pill.style.scale = ""; } }
 }
 /* slide a finger along the bar: the pill follows, lifting the finger opens that page */
-const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return x; }};
+const TB = {on:false, moved:false, x:0, start:0, cell:0, max:0, suppress:false, raf:0, cx:0, ux(x){ return this.cx + (x - this.cx) / 1.045; }};
 function tabHot(bar, n){ bar.querySelectorAll("button").forEach(b => b.classList.toggle("hot", +b.dataset.n === n)); }
 /* like LINE: the moment a finger touches the bar, the grey pill swells into a clear lens and springs to the finger;
    it follows the finger on a soft spring (it lags a touch, overshoots a little and squashes as it moves, so it feels
@@ -1673,6 +1673,7 @@ function tabRelease(e, cancel){ if(!TB.on) return; TB.on = false;
   if(!cancel && TRIP_TABS[n][0] !== curTab()) requestAnimationFrame(() => selectTab(TRIP_TABS[n][0], true));   // the page changes right away; the pill finishes its landing over it
 }
 document.addEventListener("pointerup", e => tabRelease(e, false));
+document.addEventListener("animationend", e => { if(e.target.classList?.contains("tabbar") && /^tb(Tap|Let)$/.test(e.animationName)) e.target.classList.remove("bounce", "let"); });
 document.addEventListener("pointercancel", e => tabRelease(e, true));
 document.addEventListener("click", e => { if(TB.suppress && e.target.closest?.(".tabbar")){ e.preventDefault(); e.stopImmediatePropagation(); TB.suppress = false; } }, true);
 /* ---------- booking files kept on the phone (IndexedDB) and opened in the app, also without internet ---------- */
@@ -4727,7 +4728,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-22-tb5";
+const BUILD = "2026-11-22-tb6";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
