@@ -176,7 +176,7 @@ p{margin:0}
 .day-list.day-list{padding:2px 0}
 .day-list li+li{border-top:0}
 .day-list li+li::before{content:"";position:absolute;top:0;left:16px;right:16px;height:1px;background:var(--line);z-index:1;pointer-events:none}
-.reorderable-entry{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:grab}.day-list:has(.place-placeholder){border-radius:0;box-shadow:none;border-color:transparent}.day-list .place-placeholder{border-radius:0;background:transparent!important;outline:0;border:0;box-shadow:none}.day-list .place-placeholder::before{display:none}.place-placeholder>*{visibility:hidden}.place-floating{position:fixed;left:0;top:0;z-index:10000;pointer-events:none;background:var(--surface);border-radius:18px;box-shadow:0 14px 36px rgba(43,33,28,.24),0 2px 8px rgba(43,33,28,.14);outline:1px solid var(--line);overflow:hidden;will-change:transform;animation:placeLift .12s ease-out}.place-floating .entry{padding:14px 16px;width:100%;cursor:grabbing}.place-floating .sw-btn{display:none}@keyframes placeLift{from{opacity:.7;box-shadow:0 2px 6px rgba(43,33,28,.1)}to{opacity:1}}
+.reorderable-entry.pressing{transform:scale(.975);transition:transform .19s cubic-bezier(.3,.7,.4,1)}.reorderable-entry{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:grab}.day-list:has(.place-placeholder){border-radius:0;box-shadow:none;border-color:transparent}.day-list .place-placeholder{border-radius:0;background:transparent!important;outline:0;border:0;box-shadow:none}.day-list .place-placeholder::before{display:none}.place-placeholder>*{visibility:hidden}.place-floating{position:fixed;left:0;top:0;z-index:10000;pointer-events:none;background:var(--surface);border-radius:18px;box-shadow:0 14px 36px rgba(43,33,28,.24),0 2px 8px rgba(43,33,28,.14);outline:1px solid var(--line);overflow:hidden;will-change:transform;animation:placeLift .12s ease-out}.place-floating .entry{padding:14px 16px;width:100%;cursor:grabbing}.place-floating .sw-btn{display:none}@keyframes placeLift{from{opacity:.7;box-shadow:0 2px 6px rgba(43,33,28,.1)}to{opacity:1}}
 
 .day-list .entry{padding-left:16px;padding-right:16px}
 .cat-list.cat-list{padding:0}
@@ -1244,6 +1244,7 @@ document.addEventListener("scroll", e => { if(e.target && e.target.classList && 
 document.addEventListener("touchstart", e => { if(e.target.closest && e.target.closest(".dock-body")) panelScrollAt = Date.now(); }, {passive:true, capture:true});
 function softRender(){
   if(busyForm()) return;
+  if(typeof PLACE_DRAG !== "undefined" && PLACE_DRAG){ clearTimeout(softRender.t); softRender.t = setTimeout(softRender, 400); return; }
   if(Date.now() - panelScrollAt < 1500){ clearTimeout(softRender.t); softRender.t = setTimeout(softRender, 1600); return; }
   render();
 }
@@ -4316,11 +4317,15 @@ document.addEventListener("drop", e => {
 /* Hold a place to lift its card; moving before the hold keeps normal scrolling/swiping. */
 let PLACE_DRAG=null,PLACE_SUPPRESS_UNTIL=0;
 function cancelPlacePress(){
-  const d=PLACE_DRAG;if(!d)return;PLACE_DRAG=null;clearTimeout(d.timer);cancelAnimationFrame(d.frame);d.floating?.remove();d.row.classList.remove('place-placeholder');
+  const d=PLACE_DRAG;if(!d)return;PLACE_DRAG=null;clearTimeout(d.timer);clearTimeout(d.hint);d.card.classList.remove('pressing');cancelAnimationFrame(d.frame);d.floating?.remove();d.row.classList.remove('place-placeholder');
   if(d.active){PLACE_SUPPRESS_UNTIL=Date.now()+500;render();}
 }
 function activatePlacePress(){
-  const d=PLACE_DRAG;if(!d||d.active||!d.row.isConnected||S.trip?.id!==d.tripId||S.directSaving)return;
+  const d=PLACE_DRAG;if(!d||d.active||S.trip?.id!==d.tripId||S.directSaving)return;
+  if(!d.row.isConnected){   // the list was redrawn under the finger: pick up the same card again
+    const card=[...document.querySelectorAll('[data-place-drag]')].find(c=>c.dataset.placeDrag===d.key),row=card?.closest('.trow'),list=row?.closest('.day-list');
+    if(!list){cancelPlacePress();return;} Object.assign(d,{card,row,list}); }
+  d.card.classList.remove('pressing');
   d.active=true;SW.active=false;S.swipeOpen=null;d.row.classList.remove('open','ask');
   const box=d.row.getBoundingClientRect();d.offsetX=d.x-box.left;d.offsetY=d.y-box.top;
   const floating=document.createElement('div');floating.className='place-floating';floating.setAttribute('aria-hidden','true');floating.inert=true;floating.style.width=box.width+'px';floating.appendChild(d.card.cloneNode(true));document.body.appendChild(floating);d.floating=floating;
@@ -4333,8 +4338,9 @@ function beginPlacePress(card,x,y,pointer,touch){
   if(PLACE_DRAG||S.directSaving)return;
   const row=card.closest('.trow'),list=row?.closest('.day-list'),date=tripDates(S.trip)[S.day];
   if(!list||!dayEntries(date).some(e=>!e.night&&dayEntryKey(e)===card.dataset.placeDrag))return;
-  PLACE_DRAG={card,row,list,date,tripId:S.trip.id,x,y,startX:x,startY:y,pointer,touch,active:false};
-  PLACE_DRAG.timer=setTimeout(activatePlacePress,330);
+  PLACE_DRAG={card,row,list,date,key:card.dataset.placeDrag,tripId:S.trip.id,x,y,startX:x,startY:y,pointer,touch,active:false};
+  PLACE_DRAG.timer=setTimeout(activatePlacePress,300);
+  PLACE_DRAG.hint=setTimeout(()=>{if(PLACE_DRAG?.card===card&&!PLACE_DRAG.active)card.classList.add('pressing');},110);   // the card sinks a little so you know to keep holding
 }
 function placeDragFrame(now=performance.now()){
   const d=PLACE_DRAG;if(!d||!d.active)return;
@@ -4363,13 +4369,13 @@ function placeDragFrame(now=performance.now()){
 }
 function movePlacePress(x,y){
   const d=PLACE_DRAG;if(!d||d.settling)return;d.x=x;d.y=y;
-  if(!d.active&&Math.hypot(x-d.startX,y-d.startY)>8){
+  if(!d.active&&Math.hypot(x-d.startX,y-d.startY)>(d.touch?14:8)){   // a finger wobbles; only a real scroll or swipe gives up the hold
     if(d.touch){cancelPlacePress();return;}clearTimeout(d.timer);activatePlacePress();
   }
 }
 function finishPlacePress(cancelled=false){
   const d=PLACE_DRAG;if(!d||d.settling)return;
-  clearTimeout(d.timer);cancelAnimationFrame(d.frame);PLACE_DRAG=null;
+  clearTimeout(d.timer);clearTimeout(d.hint);d.card.classList.remove('pressing');cancelAnimationFrame(d.frame);PLACE_DRAG=null;
   if(!d.active)return;
   PLACE_SUPPRESS_UNTIL=Date.now()+600;
   const complete=()=>{
@@ -4737,7 +4743,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-23-pl1";
+const BUILD = "2026-11-23-pl2";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
