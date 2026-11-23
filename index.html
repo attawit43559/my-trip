@@ -1826,20 +1826,39 @@ const WX_KEY = "mytrip-wx";
 const WX = (() => { try { return JSON.parse(localStorage.getItem(WX_KEY)) || {}; } catch(_){ return {}; } })();
 WX.spots ||= {}; WX.geo ||= {};
 const wxSave = () => { try { localStorage.setItem(WX_KEY, JSON.stringify(WX)); } catch(_){} };
-/* where a day is: its places, else the hotel that night, else anywhere in the trip, else the trip's name looked up */
+/* where a day is: the main spot among that day's places (the one in the middle of them, so a single far-off stop
+   doesn't decide), else the hotel that night, else anywhere in the trip, else the trip's name looked up */
 function wxSpot(date){
-  const has = i => i.data && i.data.lat !== "" && i.data.lat != null && isFinite(+i.data.lat) && isFinite(+i.data.lon);
-  const p = S.items.find(i => i.type === "place" && i.date === date && has(i))
+  const has = i => !!llOf(i.data), at = i => ({lat:+(+i.data.lat).toFixed(2), lon:+(+i.data.lon).toFixed(2)});
+  const ps = S.items.filter(i => i.type === "place" && i.date === date && has(i));
+  if(ps.length){
+    const mid = k => { const v = ps.map(i => +i.data[k]).sort((a, b) => a - b); return v[v.length >> 1]; }, mla = mid("lat"), mlo = mid("lon");
+    return at(ps.reduce((b, i) => Math.hypot(+i.data.lat - mla, +i.data.lon - mlo) < Math.hypot(+b.data.lat - mla, +b.data.lon - mlo) ? i : b));
+  }
+  const p = S.items.find(i => i.type === "stay" && i.date <= date && (i.endDate || i.date) > date && has(i))
     || S.items.find(i => i.type === "stay" && i.date <= date && (i.endDate || i.date) >= date && has(i))
     || S.items.find(i => ["place", "stay", "idea"].includes(i.type) && has(i));
-  if(p) return {lat:+(+p.data.lat).toFixed(2), lon:+(+p.data.lon).toFixed(2)};
+  if(p) return at(p);
   const g = WX.geo[wxName()]; return g && g.lat != null ? g : null;
+}
+/* the forecast days' places and hotels that have no pin yet: look them up once (same lookup the map uses) */
+const WXF = new Set();
+async function wxFill(dates){
+  if(!CONNECTED || !S.trip) return false;
+  const need = S.items.filter(i => (i.type === "place" && dates.includes(i.date) || i.type === "stay" && dates.some(d => i.date <= d && (i.endDate || i.date) >= d))
+    && !llOf(i.data) && !WXF.has(i.id)).map(i => i.id).slice(0, 60);
+  if(!need.length) return false; need.forEach(id => WXF.add(id));
+  let changed = false;
+  try { const r = await api("placeCoords", {tripId:S.trip.id, ids:need});
+    for(const [id, ll] of Object.entries(r.coords || {})){ const it = S.items.find(i => i.id === id); if(it && !llOf(it.data)){ it.data = {...(it.data || {}), lat:ll.lat, lon:ll.lon}; changed = true; } } } catch(_){}
+  return changed;
 }
 const wxName = () => String((S.trip && (S.trip.destination || S.trip.name)) || "").replace(/\d{4}|\d+\s*(วัน|days?)/gi, "").replace(/ทริป|trip/gi, "").trim();
 async function wxLoad(){
   const t = S.trip; if(!t || !navigator.onLine) return;
   const dates = tripDates(t), first = today(), last = addDays(first, 15);
   const want = dates.filter(d => d >= first && d <= last); if(!want.length) return;
+  await wxFill(want);
   const name = wxName();
   if(!S.items.some(i => i.data && i.data.lat != null && i.data.lat !== "") && name && !WX.geo[name]){
     try { const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(name)).then(r => r.json());
@@ -4711,7 +4730,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-22-tb0";
+const BUILD = "2026-11-23-wx1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
