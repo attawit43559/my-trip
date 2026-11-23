@@ -224,9 +224,12 @@ html.kb .dock{bottom:calc(6px + var(--kb,0px))}
 @keyframes dialOut{to{opacity:0;transform:translateY(var(--dy)) scale(.35)}}
 @keyframes dialLabelOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(10px)}}
 @media (prefers-reduced-motion:reduce){.dial-item,.dial-item .dial-label,.closing .dial-item{animation-duration:.01s;animation-delay:0s}}
-.dial-label{background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
-.dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
+.dial-label{background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;box-shadow:0 2px 8px rgba(43,33,28,.12);white-space:nowrap}
+.dial-btn{width:48px;height:48px;flex:none;border-radius:999px;background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,33,28,.16)}
 .dial-danger .dial-btn{background:#FDECEC;color:#C0392B}
+/* dark: the menu sits on a deeper scrim and its pills take the dark surface, so white-on-white never happens */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dial-scrim{background:rgba(0,0,0,.5)}:root:not([data-theme="light"]) .dial-label,:root:not([data-theme="light"]) .dial-btn{box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.08)}:root:not([data-theme="light"]) .dial-danger .dial-btn{background:#4A2222;color:#FF8A80}}
+:root[data-theme="dark"] .dial-scrim{background:rgba(0,0,0,.5)}:root[data-theme="dark"] .dial-label,:root[data-theme="dark"] .dial-btn{box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.08)}:root[data-theme="dark"] .dial-danger .dial-btn{background:#4A2222;color:#FF8A80}
 .dm-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;text-align:center;padding:20px}
 
 .dm-drop{width:30px;height:40px;position:relative;cursor:pointer}.dm-drop>svg{position:absolute;inset:0;width:30px;height:40px;fill:var(--soft);stroke:#FFFFFF;stroke-width:1.6;overflow:visible;filter:drop-shadow(0 1px 2px rgba(43,33,28,.22))}
@@ -4730,7 +4733,7 @@ async function logout(){
 
 /* ---------- boot ---------- */
 /* phones keep an old copy of the page; reload once when a newer one is online */
-const BUILD = "2026-11-23-wx1";
+const BUILD = "2026-11-23-dk1";
 async function checkUpdate(){
   if(location.protocol !== "https:") return;
   try {
